@@ -12,7 +12,7 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/products/by-brand', [HomeController::class, 'getProductsByBrand'])->name('products.by-brand');
 
 Route::get('/dashboard', [HomeController::class, 'dashboard'])
-    ->middleware(['auth', 'verified'])
+    ->middleware(['auth'])
     ->name('dashboard');
 
 Route::get('/api/products', [HomeController::class, 'getApiProducts'])->name('api.products');
@@ -75,6 +75,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/users', [AdminController::class, 'users'])->name('users');
     Route::get('/users/{user}/edit', [AdminController::class, 'usersEdit'])->name('users.edit');
     Route::put('/users/{user}', [AdminController::class, 'usersUpdate'])->name('users.update');
+
+    Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
+    Route::post('/settings', [AdminController::class, 'settingsUpdate'])->name('settings.update');
 });
 
 require __DIR__.'/auth.php';

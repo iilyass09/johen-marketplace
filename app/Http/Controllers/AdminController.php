@@ -6,6 +6,7 @@ use App\Models\Brand;
 use App\Models\Order;
 use App\Models\PaymentMethod;
 use App\Models\Product;
+use App\Models\SiteSetting;
 use App\Models\User;
 use App\Services\DigiflazzService;
 use Illuminate\Http\Request;
@@ -190,11 +191,11 @@ class AdminController extends Controller
             'sort_order' => $request->integer('sort_order', 0),
         ];
 
-        if ($request->hasFile('thumbnail')) {
+        if ($request->hasFile('thumbnail') && $request->file('thumbnail')->isValid()) {
             $data['thumbnail'] = $request->file('thumbnail')->store('brands', 'public');
         }
 
-        if ($request->hasFile('carousel_bg')) {
+        if ($request->hasFile('carousel_bg') && $request->file('carousel_bg')->isValid()) {
             $data['carousel_bg'] = $request->file('carousel_bg')->store('brands/bg', 'public');
         }
 
@@ -230,14 +231,14 @@ class AdminController extends Controller
             'sort_order' => $request->integer('sort_order', 0),
         ];
 
-        if ($request->hasFile('thumbnail')) {
+        if ($request->hasFile('thumbnail') && $request->file('thumbnail')->isValid()) {
             if ($brand->thumbnail) {
                 Storage::disk('public')->delete($brand->thumbnail);
             }
             $data['thumbnail'] = $request->file('thumbnail')->store('brands', 'public');
         }
 
-        if ($request->hasFile('carousel_bg')) {
+        if ($request->hasFile('carousel_bg') && $request->file('carousel_bg')->isValid()) {
             if ($brand->carousel_bg) {
                 Storage::disk('public')->delete($brand->carousel_bg);
             }
@@ -344,7 +345,7 @@ class AdminController extends Controller
             'is_active' => $request->boolean('is_active', true),
         ];
 
-        if ($request->hasFile('photo')) {
+        if ($request->hasFile('photo') && $request->file('photo')->isValid()) {
             $data['photo'] = $request->file('photo')->store('payments', 'public');
         }
 
@@ -373,7 +374,7 @@ class AdminController extends Controller
             'is_active' => $request->boolean('is_active', true),
         ];
 
-        if ($request->hasFile('photo')) {
+        if ($request->hasFile('photo') && $request->file('photo')->isValid()) {
             if ($paymentMethod->photo) {
                 Storage::disk('public')->delete($paymentMethod->photo);
             }
@@ -395,5 +396,43 @@ class AdminController extends Controller
     {
         $paymentMethod->delete();
         return redirect()->route('admin.payment-methods')->with('success', 'Metode pembayaran berhasil dihapus');
+    }
+
+    public function settings()
+    {
+        $settings = \App\Models\SiteSetting::allKeyValue();
+        return view('admin.settings', compact('settings'));
+    }
+
+    public function settingsUpdate(Request $request)
+    {
+        $request->validate([
+            'site_name' => 'required|string|max:255',
+            'site_tagline' => 'nullable|string|max:255',
+            'site_description' => 'nullable|string',
+            'contact_email' => 'nullable|email|max:255',
+            'contact_whatsapp' => 'nullable|string|max:50',
+            'contact_instagram' => 'nullable|string|max:255',
+            'footer_text' => 'nullable|string|max:500',
+        ]);
+
+        $textKeys = ['site_name', 'site_tagline', 'site_description', 'contact_email', 'contact_whatsapp', 'contact_instagram', 'footer_text', 'min_balance_alert'];
+
+        foreach ($textKeys as $key) {
+            if ($request->has($key)) {
+                \App\Models\SiteSetting::set($key, $request->input($key, ''));
+            }
+        }
+
+        if ($request->hasFile('site_logo') && $request->file('site_logo')->isValid()) {
+            $oldLogo = \App\Models\SiteSetting::get('site_logo');
+            if ($oldLogo && Storage::disk('public')->exists($oldLogo)) {
+                Storage::disk('public')->delete($oldLogo);
+            }
+            $path = $request->file('site_logo')->store('settings', 'public');
+            \App\Models\SiteSetting::set('site_logo', $path, 'image');
+        }
+
+        return redirect()->route('admin.settings')->with('success', 'Pengaturan berhasil disimpan');
     }
 }

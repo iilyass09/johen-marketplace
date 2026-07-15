@@ -7,17 +7,17 @@ use Illuminate\Support\Facades\Log;
 
 class DigiflazzService
 {
-    protected string $username;
-    protected string $key;
-    protected string $baseUrl;
-    protected bool $production;
+    protected string $username = '';
+    protected string $key = '';
+    protected string $baseUrl = 'https://api.digiflazz.com/v1';
+    protected bool $production = false;
 
     public function __construct()
     {
-        $this->username = config('digiflazz.username');
-        $this->key = config('digiflazz.key');
-        $this->baseUrl = config('digiflazz.base_url');
-        $this->production = config('digiflazz.production');
+        $this->username = (string) config('digiflazz.username', '');
+        $this->key = (string) config('digiflazz.key', '');
+        $this->baseUrl = (string) config('digiflazz.base_url', 'https://api.digiflazz.com/v1');
+        $this->production = (bool) config('digiflazz.production', false);
     }
 
     public function checkBalance(): array

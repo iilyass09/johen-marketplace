@@ -49,6 +49,10 @@
                     <i class="fas fa-users w-5"></i>
                     <span>Pengguna</span>
                 </a>
+                <a href="{{ route('admin.settings') }}" class="flex items-center space-x-3 px-4 py-3 rounded-lg {{ request()->routeIs('admin.settings*') ? 'bg-purple-600 text-white' : 'text-gray-300 hover:bg-[#024073]' }}">
+                    <i class="fas fa-cog w-5"></i>
+                    <span>Pengaturan</span>
+                </a>
                 <hr class="border-[#043a66] my-4">
                 <a href="{{ route('home') }}" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-[#024073]">
                     <i class="fas fa-arrow-left w-5"></i>

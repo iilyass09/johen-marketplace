@@ -86,7 +86,7 @@ class HomeController extends Controller
 
     public function getPaymentMethods()
     {
-        $methods = PaymentMethod::where('is_active', true)->get(['name', 'code', 'photo']);
+        $methods = PaymentMethod::where('is_active', true)->get(['name', 'code', 'icon', 'photo']);
         return response()->json($methods);
     }
 

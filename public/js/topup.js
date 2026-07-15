@@ -408,7 +408,9 @@ async function openTopupModal(brand) {
     if (payments.length) {
       paySelectGrid.innerHTML = payments.map(p => {
         const photo = p.photo_url || '';
-        return `<div class="pay-opt" data-pay="${p.name}">${photo ? `<img src="${photo}" alt="${p.name}" class="pay-opt-img">` : p.name}</div>`;
+        const icon = p.icon || '';
+        const content = photo ? `<img src="${photo}" alt="${p.name}" class="pay-opt-img">` : (icon ? `<span class="pay-opt-icon">${icon}</span><span class="pay-opt-name">${p.name}</span>` : p.name);
+        return `<div class="pay-opt" data-pay="${p.name}">${content}</div>`;
       }).join('');
       paySelectGrid.querySelectorAll('.pay-opt').forEach(opt => {
         opt.addEventListener('click', () => {
@@ -525,7 +527,7 @@ const paymentTrack = document.getElementById('paymentTrack');
   if (!methods.length) {
     methods = ['QRIS','GoPay','OVO','DANA','BCA','BRI','Mandiri','Alfamart','Indomaret'];
   }
-  const items = methods.map(m => typeof m === 'string' ? { name: m, photo_url: null } : m);
+  const items = methods.map(m => typeof m === 'string' ? { name: m, photo_url: null, icon: null } : m);
   const doubled = [...items, ...items];
   paymentTrack.innerHTML = '';
   doubled.forEach(p => {
@@ -533,6 +535,8 @@ const paymentTrack = document.getElementById('paymentTrack');
     badge.className = 'pay-badge';
     if (p.photo_url) {
       badge.innerHTML = `<img src="${p.photo_url}" alt="${p.name}" class="pay-badge-img">`;
+    } else if (p.icon) {
+      badge.innerHTML = `<span class="pay-badge-icon">${p.icon}</span><span class="pay-badge-name">${p.name}</span>`;
     } else {
       badge.textContent = p.name;
     }

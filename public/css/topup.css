@@ -579,7 +579,11 @@ img{max-width:100%;display:block;}
 }
 .pay-badge:hover{border-color:var(--purple-light);transform:translateY(-3px);}
 .pay-badge-img{width:36px;height:36px;object-fit:contain;border-radius:4px;display:block;}
+.pay-badge-icon{font-size:1.4rem;margin-right:.4rem;line-height:1;}
+.pay-badge-name{font-size:.82rem;font-weight:600;}
 .pay-opt-img{width:36px;height:36px;object-fit:contain;border-radius:4px;display:block;margin:0 auto;}
+.pay-opt-icon{font-size:1.3rem;display:block;margin-bottom:.2rem;line-height:1;}
+.pay-opt-name{font-size:.68rem;font-weight:600;display:block;}
 
 /* ============ NEWSLETTER ============ */
 .newsletter-section{max-width:800px;margin:3.6rem auto 0;padding:2.6rem 2rem 3.2rem;text-align:center;}

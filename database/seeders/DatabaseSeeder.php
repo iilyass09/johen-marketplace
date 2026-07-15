@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             PaymentMethodSeeder::class,
             BrandSeeder::class,
+            SiteSettingSeeder::class,
         ]);
     }
 }

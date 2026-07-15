@@ -1,30 +1,26 @@
 <x-guest-layout>
-    <div class="mb-4 text-sm text-gray-600">
-        {{ __('Thanks for signing up! Before getting started, could you verify your email address by clicking on the link we just emailed to you? If you didn\'t receive the email, we will gladly send you another.') }}
-    </div>
+    <h2>Verifikasi Email</h2>
+    <p class="subtitle">Terima kasih sudah mendaftar! Silakan verifikasi email kamu dengan mengklik link yang kami kirimkan.</p>
 
     @if (session('status') == 'verification-link-sent')
-        <div class="mb-4 font-medium text-sm text-green-600">
-            {{ __('A new verification link has been sent to the email address you provided during registration.') }}
+        <div class="alert alert-success">
+            <i class="fas fa-check-circle"></i>
+            Link verifikasi baru telah dikirim ke email kamu.
         </div>
     @endif
 
-    <div class="mt-4 flex items-center justify-between">
-        <form method="POST" action="{{ route('verification.send') }}">
-            @csrf
+    <form method="POST" action="{{ route('verification.send') }}">
+        @csrf
+        <button type="submit" class="btn-primary">
+            <i class="fas fa-redo" style="margin-right:.4rem;"></i> Kirim Ulang Email Verifikasi
+        </button>
+    </form>
 
-            <div>
-                <x-primary-button>
-                    {{ __('Resend Verification Email') }}
-                </x-primary-button>
-            </div>
-        </form>
-
+    <div class="auth-footer" style="margin-top:1rem;">
         <form method="POST" action="{{ route('logout') }}">
             @csrf
-
-            <button type="submit" class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                {{ __('Log Out') }}
+            <button type="submit" style="background:none;border:none;color:#94a3b8;font-size:.85rem;cursor:pointer;font-family:inherit;">
+                atau <span style="color:#0987F5;font-weight:600;">Logout</span>
             </button>
         </form>
     </div>
