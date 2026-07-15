@@ -11,7 +11,7 @@
     <div class="bg-gray-800 rounded-xl border border-gray-700 p-6">
         <h2 class="text-xl font-semibold mb-6">Edit Produk</h2>
 
-        <form action="{{ route('admin.products.update', $product) }}" method="POST">
+        <form action="{{ route('admin.products.update', $product) }}" method="POST" enctype="multipart/form-data">
             @csrf
             @method('PUT')
 
@@ -82,6 +82,25 @@
                     <input type="number" name="selling_price" value="{{ old('selling_price', $product->selling_price) }}" required step="0.01" min="0"
                            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-purple-500">
                     @error('selling_price') <p class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-sm font-medium mb-2">Foto Produk (opsional)</label>
+                <div class="flex items-center gap-4">
+                    <div class="w-20 h-20 rounded-lg bg-gray-700 border border-gray-600 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        @if($product->photo_url)
+                            <img src="{{ $product->photo_url }}" alt="{{ $product->product_name }}" class="w-full h-full object-cover">
+                        @else
+                            <span class="text-gray-500 text-xs">No Image</span>
+                        @endif
+                    </div>
+                    <div class="flex-1">
+                        <input type="file" name="photo" id="photo-input" accept="image/jpeg,image/png,image/jpg,image/webp"
+                               class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700">
+                        <p class="text-gray-500 text-xs mt-1">Kosongkan jika tidak ingin mengubah. Maksimal 2MB. Format: JPG, PNG, WebP.</p>
+                        @error('photo') <p class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
+                    </div>
                 </div>
             </div>
 

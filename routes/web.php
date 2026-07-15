@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AuthController as AdminAuthController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\OrderController;
@@ -79,5 +80,11 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
     Route::post('/settings', [AdminController::class, 'settingsUpdate'])->name('settings.update');
 });
+
+Route::get('/admin/login', [AdminAuthController::class, 'showLoginForm'])
+    ->middleware('guest')
+    ->name('admin.login');
+Route::post('/admin/login', [AdminAuthController::class, 'login'])
+    ->middleware('guest');
 
 require __DIR__.'/auth.php';

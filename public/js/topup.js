@@ -97,7 +97,7 @@ if (heroSlides.length) {
 
 const pesanJokiBtn = document.getElementById('pesanJokiBtn');
 if (pesanJokiBtn) {
-  pesanJokiBtn.addEventListener('click', () => openModal('registerModal'));
+  pesanJokiBtn.addEventListener('click', () => window.location.href = '/register');
 }
 
 // ============ FEATURED GAMES CAROUSEL ============
@@ -341,9 +341,6 @@ document.querySelectorAll('[data-close-modal]').forEach(btn => {
 document.querySelectorAll('.modal-overlay').forEach(overlay => {
   overlay.addEventListener('click', (e) => { if (e.target === overlay) closeAllModals(); });
 });
-document.querySelectorAll('[data-switch-modal]').forEach(link => {
-  link.addEventListener('click', (e) => { e.preventDefault(); openModal(link.dataset.switchModal); });
-});
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAllModals(); });
 
 // ============ TOPUP MODAL ============
@@ -554,49 +551,6 @@ if (leaderboardList) {
     leaderboardList.appendChild(item);
   });
 }
-
-// ============ AUTH FORMS ============
-document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const form = e.target;
-  const formData = new FormData(form);
-  try {
-    const res = await fetch('/login', {
-      method: 'POST',
-      headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '', 'Accept': 'application/json' },
-      body: formData
-    });
-    if (res.redirected || res.ok) {
-      window.location.reload();
-    } else {
-      const data = await res.json();
-      showToast(data.message || 'Login gagal. Periksa email dan kata sandi.', true);
-    }
-  } catch (err) {
-    showToast('Terjadi kesalahan. Silakan coba lagi.', true);
-  }
-});
-
-document.getElementById('registerForm')?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const form = e.target;
-  const formData = new FormData(form);
-  try {
-    const res = await fetch('/register', {
-      method: 'POST',
-      headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '', 'Accept': 'application/json' },
-      body: formData
-    });
-    if (res.redirected || res.ok) {
-      window.location.reload();
-    } else {
-      const data = await res.json();
-      showToast(data.message || 'Registrasi gagal. Coba lagi.', true);
-    }
-  } catch (err) {
-    showToast('Terjadi kesalahan. Silakan coba lagi.', true);
-  }
-});
 
 // ============ CHECK TRANSACTION ============
 document.getElementById('checkForm')?.addEventListener('submit', async (e) => {

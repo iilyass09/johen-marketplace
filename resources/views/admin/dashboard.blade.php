@@ -3,99 +3,186 @@
 @section('title', 'Dashboard')
 
 @section('content')
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-    <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div class="stat-card" style="--accent-color: #0987F5">
+        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent-color),#6366f1);border-radius:16px 16px 0 0"></div>
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-gray-400 text-sm">Total Produk</p>
-                <p class="text-3xl font-bold mt-1">{{ $stats['total_products'] }}</p>
+                <p style="color:var(--text-muted);font-size:0.78rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em">Total Produk</p>
+                <p style="font-size:1.75rem;font-weight:800;margin-top:0.25rem" id="stat1">{{ $stats['total_products'] }}</p>
             </div>
-            <div class="w-12 h-12 bg-purple-600/20 rounded-lg flex items-center justify-center">
-                <i class="fas fa-box text-purple-400 text-xl"></i>
+            <div class="stat-icon" style="background:rgba(9,135,245,0.12);color:#0987F5">
+                <i class="fas fa-box"></i>
             </div>
         </div>
-        <p class="text-green-400 text-sm mt-2">{{ $stats['active_products'] }} aktif</p>
+        <p style="color:var(--success);font-size:0.78rem;margin-top:0.5rem">
+            <i class="fas fa-circle" style="font-size:0.4rem;vertical-align:middle;margin-right:0.3rem"></i>
+            {{ $stats['active_products'] }} aktif
+        </p>
     </div>
 
-    <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+    <div class="stat-card" style="--accent-color: #3b82f6">
+        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent-color),#06b6d4);border-radius:16px 16px 0 0"></div>
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-gray-400 text-sm">Total Pesanan</p>
-                <p class="text-3xl font-bold mt-1">{{ $stats['total_orders'] }}</p>
+                <p style="color:var(--text-muted);font-size:0.78rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em">Total Pesanan</p>
+                <p style="font-size:1.75rem;font-weight:800;margin-top:0.25rem" id="stat2">{{ $stats['total_orders'] }}</p>
             </div>
-            <div class="w-12 h-12 bg-blue-600/20 rounded-lg flex items-center justify-center">
-                <i class="fas fa-shopping-cart text-blue-400 text-xl"></i>
+            <div class="stat-icon" style="background:rgba(59,130,246,0.12);color:#3b82f6">
+                <i class="fas fa-shopping-cart"></i>
             </div>
         </div>
-        <p class="text-yellow-400 text-sm mt-2">{{ $stats['pending_orders'] }} pending</p>
-    </div>
-
-    <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-gray-400 text-sm">Pendapatan</p>
-                <p class="text-3xl font-bold mt-1 text-green-400">Rp {{ number_format($stats['total_revenue'], 0, ',', '.') }}</p>
-            </div>
-            <div class="w-12 h-12 bg-green-600/20 rounded-lg flex items-center justify-center">
-                <i class="fas fa-money-bill-wave text-green-400 text-xl"></i>
+        <div class="flex items-center gap-3" style="margin-top:0.5rem">
+            <p style="color:var(--warning);font-size:0.78rem">
+                <i class="fas fa-circle" style="font-size:0.4rem;vertical-align:middle;margin-right:0.3rem"></i>
+                {{ $stats['pending_orders'] }} pending
+            </p>
+            <div style="flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden">
+                <div style="height:100%;width:{{ $stats['total_orders'] > 0 ? ($stats['pending_orders']/$stats['total_orders']*100) : 0 }}%;background:var(--warning);border-radius:2px;transition:width 0.6s ease"></div>
             </div>
         </div>
-        <p class="text-green-400 text-sm mt-2">{{ $stats['success_orders'] }} transaksi sukses</p>
     </div>
 
-    <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+    <div class="stat-card" style="--accent-color: #10b981">
+        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent-color),#34d399);border-radius:16px 16px 0 0"></div>
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-gray-400 text-sm">Total Pengguna</p>
-                <p class="text-3xl font-bold mt-1">{{ $stats['total_users'] }}</p>
+                <p style="color:var(--text-muted);font-size:0.78rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em">Pendapatan</p>
+                <p style="font-size:1.75rem;font-weight:800;margin-top:0.25rem;color:var(--success)" id="stat3">Rp {{ number_format($stats['total_revenue'], 0, ',', '.') }}</p>
             </div>
-            <div class="w-12 h-12 bg-yellow-600/20 rounded-lg flex items-center justify-center">
-                <i class="fas fa-users text-yellow-400 text-xl"></i>
+            <div class="stat-icon" style="background:rgba(16,185,129,0.12);color:#10b981">
+                <i class="fas fa-money-bill-wave"></i>
+            </div>
+        </div>
+        <p style="color:var(--success);font-size:0.78rem;margin-top:0.5rem">
+            <i class="fas fa-circle" style="font-size:0.4rem;vertical-align:middle;margin-right:0.3rem"></i>
+            {{ $stats['success_orders'] }} transaksi sukses
+        </p>
+    </div>
+
+    <div class="stat-card" style="--accent-color: #f59e0b">
+        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent-color),#f97316);border-radius:16px 16px 0 0"></div>
+        <div class="flex items-center justify-between">
+            <div>
+                <p style="color:var(--text-muted);font-size:0.78rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em">Total Pengguna</p>
+                <p style="font-size:1.75rem;font-weight:800;margin-top:0.25rem" id="stat4">{{ $stats['total_users'] }}</p>
+            </div>
+            <div class="stat-icon" style="background:rgba(245,158,11,0.12);color:#f59e0b">
+                <i class="fas fa-users"></i>
             </div>
         </div>
     </div>
 </div>
 
-<div class="bg-gray-800 rounded-xl border border-gray-700">
-    <div class="px-6 py-4 border-b border-gray-700 flex justify-between items-center">
-        <h2 class="text-lg font-semibold">Pesanan Terbaru</h2>
-        <a href="{{ route('admin.orders') }}" class="text-purple-400 hover:text-purple-300 text-sm">Lihat Semua</a>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <div class="lg:col-span-2">
+        <div class="card-glass">
+            <div class="flex items-center justify-between px-5 py-4" style="border-bottom:1px solid var(--glass-border)">
+                <h2 class="font-semibold" style="font-size:0.95rem">
+                    <i class="fas fa-clock" style="color:var(--accent);margin-right:0.5rem"></i>
+                    Pesanan Terbaru
+                </h2>
+                <a href="{{ route('admin.orders') }}" class="btn btn-ghost btn-xs">Lihat Semua</a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr>
+                            <th style="padding:0.7rem 1rem;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-dim);font-weight:600;text-align:left">Order ID</th>
+                            <th style="padding:0.7rem 1rem;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-dim);font-weight:600;text-align:left">Pelanggan</th>
+                            <th style="padding:0.7rem 1rem;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-dim);font-weight:600;text-align:left">Produk</th>
+                            <th style="padding:0.7rem 1rem;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-dim);font-weight:600;text-align:center">Status</th>
+                            <th style="padding:0.7rem 1rem;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-dim);font-weight:600;text-align:right">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($recentOrders as $order)
+                        <tr style="border-bottom:1px solid var(--glass-border);transition:background 0.15s" onmouseover="this.style.background='rgba(9,135,245,0.03)'" onmouseout="this.style.background='transparent'">
+                            <td style="padding:0.7rem 1rem;font-size:0.82rem;font-family:monospace">{{ $order->order_id }}</td>
+                            <td style="padding:0.7rem 1rem;font-size:0.85rem">
+                                <div class="flex items-center gap-2">
+                                    <div style="width:26px;height:26px;border-radius:6px;background:linear-gradient(135deg,var(--accent),#6366f1);display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;color:#fff;flex-shrink:0">
+                                        {{ substr($order->user->name ?? '?', 0, 1) }}
+                                    </div>
+                                    <span>{{ $order->user->name ?? 'N/A' }}</span>
+                                </div>
+                            </td>
+                            <td style="padding:0.7rem 1rem;font-size:0.82rem;color:var(--text-muted)">{{ $order->product_name }}</td>
+                            <td style="padding:0.7rem 1rem;text-align:center">
+                                <span class="badge
+                                    @if($order->status === 'success') badge-success
+                                    @elseif($order->status === 'pending') badge-warning badge-pulse
+                                    @elseif($order->status === 'processing') badge-info
+                                    @else badge-error @endif">
+                                    {{ ucfirst($order->status) }}
+                                </span>
+                            </td>
+                            <td style="padding:0.7rem 1rem;text-align:right;font-weight:700;color:var(--accent);font-size:0.85rem">Rp {{ number_format($order->price, 0, ',', '.') }}</td>
+                        </tr>
+                        @empty
+                        <tr><td colspan="5" class="empty-state" style="padding:2rem"><i class="fas fa-shopping-cart"></i><p>Belum ada pesanan</p></td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-    <div class="overflow-x-auto">
-        <table class="w-full">
-            <thead>
-                <tr class="text-gray-400 text-sm border-b border-gray-700">
-                    <th class="text-left px-6 py-3">Order ID</th>
-                    <th class="text-left px-6 py-3">Pelanggan</th>
-                    <th class="text-left px-6 py-3">Produk</th>
-                    <th class="text-left px-6 py-3">Status</th>
-                    <th class="text-right px-6 py-3">Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse($recentOrders as $order)
-                <tr class="border-b border-gray-700 hover:bg-gray-700/50">
-                    <td class="px-6 py-4 text-sm">{{ $order->order_id }}</td>
-                    <td class="px-6 py-4">{{ $order->user->name ?? 'N/A' }}</td>
-                    <td class="px-6 py-4 text-sm text-gray-300">{{ $order->product_name }}</td>
-                    <td class="px-6 py-4">
-                        <span class="px-3 py-1 rounded-full text-xs font-semibold
-                            @if($order->status === 'success') bg-green-600
-                            @elseif($order->status === 'pending') bg-yellow-600
-                            @elseif($order->status === 'processing') bg-blue-600
-                            @else bg-red-600 @endif">
-                            {{ ucfirst($order->status) }}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 text-right font-semibold">Rp {{ number_format($order->price, 0, ',', '.') }}</td>
-                </tr>
-                @empty
-                <tr>
-                    <td colspan="5" class="px-6 py-8 text-center text-gray-400">Belum ada pesanan</td>
-                </tr>
-                @endforelse
-            </tbody>
-        </table>
+
+    <div>
+        <div class="card-glass" style="margin-bottom:1rem">
+            <div class="px-5 py-4" style="border-bottom:1px solid var(--glass-border)">
+                <h2 class="font-semibold" style="font-size:0.95rem">
+                    <i class="fas fa-bolt" style="color:var(--accent);margin-right:0.5rem"></i>
+                    Aksi Cepat
+                </h2>
+            </div>
+            <div style="padding:0.75rem;display:flex;flex-direction:column;gap:0.5rem">
+                <a href="{{ route('admin.products') }}" class="btn btn-ghost" style="justify-content:flex-start;padding:0.65rem 0.9rem;gap:0.6rem">
+                    <i class="fas fa-plus-circle" style="color:var(--accent)"></i>
+                    <span>Tambah Produk</span>
+                </a>
+                <a href="{{ route('admin.orders') }}" class="btn btn-ghost" style="justify-content:flex-start;padding:0.65rem 0.9rem;gap:0.6rem">
+                    <i class="fas fa-eye" style="color:var(--warning)"></i>
+                    <span>Lihat Pesanan Baru</span>
+                </a>
+                <form action="{{ route('admin.products.sync') }}" method="POST">
+                    @csrf
+                    <button type="submit" class="btn btn-ghost" style="justify-content:flex-start;padding:0.65rem 0.9rem;gap:0.6rem;width:100%">
+                        <i class="fas fa-sync" style="color:var(--success)"></i>
+                        <span>Sinkronisasi Digiflazz</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card-glass">
+            <div class="px-5 py-4" style="border-bottom:1px solid var(--glass-border)">
+                <h2 class="font-semibold" style="font-size:0.95rem">
+                    <i class="fas fa-chart-simple" style="color:var(--accent);margin-right:0.5rem"></i>
+                    Ringkasan
+                </h2>
+            </div>
+            <div style="padding:1rem 1.25rem;display:flex;flex-direction:column;gap:0.9rem">
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <span style="font-size:0.82rem;color:var(--text-muted)">Produk Aktif</span>
+                        <span style="font-size:0.82rem;font-weight:700">{{ $stats['active_products'] }}/{{ $stats['total_products'] }}</span>
+                    </div>
+                    <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+                        <div style="height:100%;width:{{ $stats['total_products'] > 0 ? ($stats['active_products']/$stats['total_products']*100) : 0 }}%;background:linear-gradient(90deg,var(--success),#34d399);border-radius:3px;transition:width 0.6s ease"></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <span style="font-size:0.82rem;color:var(--text-muted)">Sukses / Total Pesanan</span>
+                        <span style="font-size:0.82rem;font-weight:700">{{ $stats['success_orders'] }}/{{ $stats['total_orders'] }}</span>
+                    </div>
+                    <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+                        <div style="height:100%;width:{{ $stats['total_orders'] > 0 ? ($stats['success_orders']/$stats['total_orders']*100) : 0 }}%;background:linear-gradient(90deg,var(--accent),#6366f1);border-radius:3px;transition:width 0.6s ease"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 @endsection

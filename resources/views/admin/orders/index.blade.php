@@ -3,54 +3,70 @@
 @section('title', 'Manajemen Pesanan')
 
 @section('content')
-<div class="flex justify-between items-center mb-6">
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
     <h2 class="text-lg font-semibold">Semua Pesanan</h2>
-    <span class="bg-gray-700 px-3 py-1 rounded-full text-sm">{{ $orders->total() }} total</span>
+    <span class="badge badge-neutral">{{ $orders->total() }} total</span>
 </div>
 
-<div class="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+<div class="search-wrap mb-4" style="max-width:320px">
+    <i class="fas fa-search search-icon"></i>
+    <input type="text" class="input-field" id="orderSearch" placeholder="Cari order ID, pelanggan..." style="padding-left:2.4rem">
+</div>
+
+<div class="table-wrap">
     <div class="overflow-x-auto">
-        <table class="w-full">
+        <table class="w-full" id="ordersTable">
             <thead>
-                <tr class="text-gray-400 text-sm border-b border-gray-700">
-                    <th class="text-left px-4 py-3">Order ID</th>
-                    <th class="text-left px-4 py-3">Pelanggan</th>
-                    <th class="text-left px-4 py-3">Produk</th>
-                    <th class="text-left px-4 py-3">Penerima</th>
-                    <th class="text-center px-4 py-3">Status</th>
-                    <th class="text-right px-4 py-3">Total</th>
-                    <th class="text-right px-4 py-3">Tanggal</th>
-                    <th class="text-center px-4 py-3">Aksi</th>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Pelanggan</th>
+                    <th>Produk</th>
+                    <th>Penerima</th>
+                    <th class="text-center">Status</th>
+                    <th class="text-right">Total</th>
+                    <th class="text-right">Tanggal</th>
+                    <th class="text-center">Aksi</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($orders as $order)
-                <tr class="border-b border-gray-700 hover:bg-gray-700/50">
-                    <td class="px-4 py-3 text-sm font-mono">{{ $order->order_id }}</td>
-                    <td class="px-4 py-3">{{ $order->user->name ?? 'N/A' }}</td>
-                    <td class="px-4 py-3 text-sm">{{ $order->product_name }}</td>
-                    <td class="px-4 py-3 text-sm">{{ $order->customer_number }}</td>
-                    <td class="px-4 py-3 text-center">
-                        <span class="px-3 py-1 rounded-full text-xs font-semibold
-                            @if($order->status === 'success') bg-green-600
-                            @elseif($order->status === 'pending') bg-yellow-600
-                            @elseif($order->status === 'processing') bg-blue-600
-                            @else bg-red-600 @endif">
+                <tr>
+                    <td style="font-size:0.82rem;font-family:monospace">{{ $order->order_id }}</td>
+                    <td>
+                        <div class="flex items-center gap-2">
+                            <div style="width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,var(--accent),#6366f1);display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;color:#fff;flex-shrink:0">
+                                {{ substr($order->user->name ?? '?', 0, 1) }}
+                            </div>
+                            <span>{{ $order->user->name ?? 'N/A' }}</span>
+                        </div>
+                    </td>
+                    <td style="font-size:0.85rem;color:var(--text-muted)">{{ $order->product_name }}</td>
+                    <td style="font-size:0.82rem">{{ $order->customer_number }}</td>
+                    <td class="text-center">
+                        <span class="badge
+                            @if($order->status === 'success') badge-success
+                            @elseif($order->status === 'pending') badge-warning badge-pulse
+                            @elseif($order->status === 'processing') badge-info
+                            @else badge-error @endif">
                             {{ ucfirst($order->status) }}
                         </span>
                     </td>
-                    <td class="px-4 py-3 text-right font-semibold">Rp {{ number_format($order->price, 0, ',', '.') }}</td>
-                    <td class="px-4 py-3 text-right text-sm text-gray-400">{{ $order->created_at->format('d/m/Y H:i') }}</td>
-                    <td class="px-4 py-3 text-center">
-                        <a href="{{ route('admin.orders.show', $order) }}" class="bg-purple-600 px-3 py-1.5 rounded text-xs hover:bg-purple-700 transition inline-flex items-center space-x-1">
-                            <i class="fas fa-eye"></i>
-                            <span>Detail</span>
+                    <td class="text-right font-semibold" style="color:var(--accent);font-size:0.88rem">Rp {{ number_format($order->price, 0, ',', '.') }}</td>
+                    <td class="text-right" style="font-size:0.8rem;color:var(--text-muted)">{{ $order->created_at->format('d/m/Y H:i') }}</td>
+                    <td class="text-center">
+                        <a href="{{ route('admin.orders.show', $order) }}" class="btn btn-primary btn-xs">
+                            <i class="fas fa-eye"></i> Detail
                         </a>
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="8" class="px-4 py-8 text-center text-gray-400">Belum ada pesanan</td>
+                    <td colspan="8">
+                        <div class="empty-state">
+                            <i class="fas fa-shopping-cart"></i>
+                            <p>Belum ada pesanan</p>
+                        </div>
+                    </td>
                 </tr>
                 @endforelse
             </tbody>
@@ -58,7 +74,17 @@
     </div>
 </div>
 
-<div class="mt-6">
-    {{ $orders->links() }}
-</div>
+<div class="pagination-wrap">{{ $orders->links() }}</div>
+
+@push('scripts')
+<script>
+document.getElementById('orderSearch')?.addEventListener('keyup', function() {
+    const q = this.value.toLowerCase();
+    document.querySelectorAll('#ordersTable tbody tr').forEach(row => {
+        const txt = row.textContent.toLowerCase();
+        row.style.display = txt.includes(q) ? '' : 'none';
+    });
+});
+</script>
+@endpush
 @endsection

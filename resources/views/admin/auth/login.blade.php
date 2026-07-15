@@ -1,19 +1,19 @@
 <x-guest-layout>
-@section('title', 'Masuk — ' . config('app.name'))
+@section('title', 'Admin — Masuk — ' . config('app.name'))
 
 <div class="auth-header">
-    <h1>Selamat Datang Kembali</h1>
-    <p>Masuk untuk melanjutkan top up dan joki game favoritmu.</p>
+    <h1>Login Admin</h1>
+    <p>Masuk dengan akun admin untuk mengelola toko.</p>
 </div>
 
-<form method="POST" action="{{ route('login') }}" class="auth-form" id="loginForm">
+<form method="POST" action="{{ route('admin.login') }}" class="auth-form" id="adminLoginForm">
     @csrf
 
     <div class="form-group">
         <label for="username">Username</label>
         <div class="input-wrap">
             <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
-            <input id="username" type="text" name="username" value="{{ old('username') }}" required autofocus autocomplete="username" placeholder="Masukkan username" onfocus="this.closest('.input-wrap').classList.add('focused')" onblur="if(!this.value)this.closest('.input-wrap').classList.remove('focused')">
+            <input id="username" type="text" name="username" value="{{ old('username') }}" required autofocus autocomplete="username" placeholder="username admin" onfocus="this.closest('.input-wrap').classList.add('focused')" onblur="if(!this.value)this.closest('.input-wrap').classList.remove('focused')">
         </div>
         @error('username')
             <div class="error-text"><i class="fas fa-exclamation-circle"></i> {{ $message }}</div>
@@ -24,7 +24,7 @@
         <label for="password">Kata Sandi</label>
         <div class="input-wrap">
             <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            <input id="password" type="password" name="password" required autocomplete="current-password" placeholder="Masukkan kata sandi" onfocus="this.closest('.input-wrap').classList.add('focused')" onblur="if(!this.value)this.closest('.input-wrap').classList.remove('focused')">
+            <input id="password" type="password" name="password" required autocomplete="current-password" placeholder="kata sandi" onfocus="this.closest('.input-wrap').classList.add('focused')" onblur="if(!this.value)this.closest('.input-wrap').classList.remove('focused')">
             <button type="button" class="toggle-pass" onclick="togglePass(this)" tabindex="-1" aria-label="Tampilkan sandi">
                 <i class="fas fa-eye"></i>
             </button>
@@ -39,19 +39,16 @@
             <input type="checkbox" name="remember" {{ old('remember') ? 'checked' : '' }}>
             Ingat saya
         </label>
-        @if (Route::has('password.request'))
-            <a href="{{ route('password.request') }}">Lupa sandi?</a>
-        @endif
     </div>
 
-    <button type="submit" class="btn-primary" id="loginBtn">
+    <button type="submit" class="btn-primary" id="adminLoginBtn">
         <span class="spinner"></span>
-        <span class="btn-text"><i class="fas fa-sign-in-alt"></i> Masuk</span>
+        <span class="btn-text"><i class="fas fa-sign-in-alt"></i> Masuk sebagai Admin</span>
     </button>
 </form>
 
 <div class="auth-footer-text">
-    Belum punya akun? <a href="{{ route('register') }}">Daftar sekarang</a>
+    <a href="{{ route('home') }}">Kembali ke toko</a>
 </div>
 
 @push('scripts')
@@ -68,8 +65,8 @@ function togglePass(btn) {
     }
 }
 
-document.getElementById('loginForm')?.addEventListener('submit', function(e) {
-    const btn = document.getElementById('loginBtn');
+document.getElementById('adminLoginForm')?.addEventListener('submit', function(e) {
+    const btn = document.getElementById('adminLoginBtn');
     btn.disabled = true;
     btn.classList.add('loading');
 });

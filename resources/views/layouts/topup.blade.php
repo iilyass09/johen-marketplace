@@ -69,8 +69,8 @@
       </div>
     @else
       <div class="auth-buttons">
-        <button class="btn btn-outline" data-open-modal="loginModal">Masuk</button>
-        <button class="btn btn-solid" data-open-modal="registerModal">Daftar</button>
+        <a href="{{ route('login') }}" class="btn btn-outline">Masuk</a>
+        <a href="{{ route('register') }}" class="btn btn-solid">Daftar</a>
       </div>
     @endauth
 
@@ -102,8 +102,8 @@
       </div>
     @else
       <div class="mobile-auth">
-        <button class="btn btn-outline" data-open-modal="loginModal">Masuk</button>
-        <button class="btn btn-solid" data-open-modal="registerModal">Daftar</button>
+        <a href="{{ route('login') }}" class="btn btn-outline" style="flex:1;justify-content:center;">Masuk</a>
+        <a href="{{ route('register') }}" class="btn btn-solid" style="flex:1;justify-content:center;">Daftar</a>
       </div>
     @endauth
   </div>
@@ -149,55 +149,7 @@
 </footer>
 
 <!-- ===== MODALS ===== -->
-<div class="modal-overlay" id="loginModal">
-  <div class="modal-box">
-    <button class="modal-close" data-close-modal>&times;</button>
-    <h3>Masuk ke Akun</h3>
-    <p class="modal-sub">Masuk untuk melanjutkan top up dan joki kamu.</p>
-    <form class="modal-form" id="loginForm">
-      @csrf
-      <label>Email
-        <input type="email" name="email" required placeholder="nama@email.com">
-      </label>
-      <label>Kata Sandi
-        <input type="password" name="password" required placeholder="••••••••">
-      </label>
-      <div class="form-row-between">
-        <label class="checkbox-label"><input type="checkbox" name="remember"> Ingat saya</label>
-        <a href="{{ route('password.request') }}" class="link-small">Lupa kata sandi?</a>
-      </div>
-      <button type="submit" class="btn btn-solid btn-full">Masuk</button>
-    </form>
-    <p class="modal-switch">Belum punya akun? <a href="#" data-switch-modal="registerModal">Daftar sekarang</a></p>
-  </div>
-</div>
-
-<div class="modal-overlay" id="registerModal">
-  <div class="modal-box">
-    <button class="modal-close" data-close-modal>&times;</button>
-    <h3>Buat Akun Baru</h3>
-    <p class="modal-sub">Daftar gratis dan nikmati promo member baru.</p>
-    <form class="modal-form" id="registerForm">
-      @csrf
-      <label>Nama Lengkap
-        <input type="text" name="name" required placeholder="Nama kamu">
-      </label>
-      <label>Email
-        <input type="email" name="email" required placeholder="nama@email.com">
-      </label>
-      <label>Kata Sandi
-        <input type="password" name="password" required placeholder="Minimal 8 karakter" minlength="8">
-      </label>
-      <label>Konfirmasi Kata Sandi
-        <input type="password" name="password_confirmation" required placeholder="Ulangi kata sandi" minlength="8">
-      </label>
-      <label class="checkbox-label"><input type="checkbox" required> Saya setuju dengan Syarat & Ketentuan</label>
-      <button type="submit" class="btn btn-solid btn-full">Daftar</button>
-    </form>
-    <p class="modal-switch">Sudah punya akun? <a href="#" data-switch-modal="loginModal">Masuk di sini</a></p>
-  </div>
-</div>
-
+<!-- Topup Modal -->
 <div class="modal-overlay" id="topupModal">
   <div class="modal-box modal-box-wide">
     <button class="modal-close" data-close-modal>&times;</button>

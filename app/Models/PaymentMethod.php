@@ -10,6 +10,7 @@ class PaymentMethod extends Model
     protected $fillable = [
         'name',
         'code',
+        'category',
         'icon',
         'photo',
         'is_active',

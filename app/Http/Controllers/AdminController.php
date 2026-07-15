@@ -53,11 +53,12 @@ class AdminController extends Controller
 
     public function productsStore(Request $request)
     {
-        $request->validate([
+        $validator = validator($request->all(), [
             'buyer_sku_code' => 'required|string|unique:products',
             'brand' => 'required|string',
             'category' => 'required|string',
             'product_name' => 'required|string',
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'price' => 'required|numeric|min:0',
             'selling_price' => 'required|numeric|min:0',
             'type' => 'required|string',
@@ -65,7 +66,14 @@ class AdminController extends Controller
             'region' => 'nullable|string|in:ID,MY,PH',
         ]);
 
-        Product::create([
+        if ($validator->fails()) {
+            if ($request->expectsJson()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
+
+        $data = [
             'buyer_sku_code' => $request->buyer_sku_code,
             'brand' => $request->brand,
             'category' => $request->category,
@@ -76,7 +84,17 @@ class AdminController extends Controller
             'stock' => $request->stock ?? 0,
             'region' => $request->region,
             'is_active' => true,
-        ]);
+        ];
+
+        if ($request->hasFile('photo') && $request->file('photo')->isValid()) {
+            $data['photo'] = $request->file('photo')->store('products', 'public');
+        }
+
+        Product::create($data);
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Produk berhasil ditambahkan']);
+        }
 
         return redirect()->route('admin.products')->with('success', 'Produk berhasil ditambahkan');
     }
@@ -88,11 +106,12 @@ class AdminController extends Controller
 
     public function productsUpdate(Request $request, Product $product)
     {
-        $request->validate([
+        $validator = validator($request->all(), [
             'buyer_sku_code' => 'required|string|unique:products,buyer_sku_code,' . $product->id,
             'brand' => 'required|string',
             'category' => 'required|string',
             'product_name' => 'required|string',
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'price' => 'required|numeric|min:0',
             'selling_price' => 'required|numeric|min:0',
             'type' => 'required|string',
@@ -101,7 +120,14 @@ class AdminController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        $product->update([
+        if ($validator->fails()) {
+            if ($request->expectsJson()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
+
+        $data = [
             'buyer_sku_code' => $request->buyer_sku_code,
             'brand' => $request->brand,
             'category' => $request->category,
@@ -112,7 +138,20 @@ class AdminController extends Controller
             'stock' => $request->stock ?? 0,
             'region' => $request->region,
             'is_active' => $request->boolean('is_active', true),
-        ]);
+        ];
+
+        if ($request->hasFile('photo') && $request->file('photo')->isValid()) {
+            if ($product->photo) {
+                Storage::disk('public')->delete($product->photo);
+            }
+            $data['photo'] = $request->file('photo')->store('products', 'public');
+        }
+
+        $product->update($data);
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Produk berhasil diperbarui']);
+        }
 
         return redirect()->route('admin.products')->with('success', 'Produk berhasil diperbarui');
     }
@@ -171,16 +210,25 @@ class AdminController extends Controller
 
     public function brandsStore(Request $request)
     {
-        $request->validate([
+        $validator = validator($request->all(), [
             'name' => 'required|string|max:255|unique:brands',
             'category' => 'required|string|max:50',
             'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'carousel_bg' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'detail_bg' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'detail_bg_position' => 'nullable|string|max:50',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
             'is_popular' => 'boolean',
             'sort_order' => 'nullable|integer|min:0',
         ]);
+
+        if ($validator->fails()) {
+            if ($request->expectsJson()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
 
         $data = [
             'name' => $request->name,
@@ -189,6 +237,7 @@ class AdminController extends Controller
             'is_active' => $request->boolean('is_active', true),
             'is_popular' => $request->boolean('is_popular', false),
             'sort_order' => $request->integer('sort_order', 0),
+            'detail_bg_position' => $request->input('detail_bg_position', 'center'),
         ];
 
         if ($request->hasFile('thumbnail') && $request->file('thumbnail')->isValid()) {
@@ -199,7 +248,15 @@ class AdminController extends Controller
             $data['carousel_bg'] = $request->file('carousel_bg')->store('brands/bg', 'public');
         }
 
+        if ($request->hasFile('detail_bg') && $request->file('detail_bg')->isValid()) {
+            $data['detail_bg'] = $request->file('detail_bg')->store('brands/bg', 'public');
+        }
+
         Brand::create($data);
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Game berhasil ditambahkan']);
+        }
 
         return redirect()->route('admin.brands')->with('success', 'Game berhasil ditambahkan');
     }
@@ -211,16 +268,25 @@ class AdminController extends Controller
 
     public function brandsUpdate(Request $request, Brand $brand)
     {
-        $request->validate([
+        $validator = validator($request->all(), [
             'name' => 'required|string|max:255|unique:brands,name,' . $brand->id,
             'category' => 'required|string|max:50',
             'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'carousel_bg' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'detail_bg' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'detail_bg_position' => 'nullable|string|max:50',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
             'is_popular' => 'boolean',
             'sort_order' => 'nullable|integer|min:0',
         ]);
+
+        if ($validator->fails()) {
+            if ($request->expectsJson()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
 
         $data = [
             'name' => $request->name,
@@ -245,7 +311,20 @@ class AdminController extends Controller
             $data['carousel_bg'] = $request->file('carousel_bg')->store('brands/bg', 'public');
         }
 
+        if ($request->hasFile('detail_bg') && $request->file('detail_bg')->isValid()) {
+            if ($brand->detail_bg) {
+                Storage::disk('public')->delete($brand->detail_bg);
+            }
+            $data['detail_bg'] = $request->file('detail_bg')->store('brands/bg', 'public');
+        }
+
+        $data['detail_bg_position'] = $request->input('detail_bg_position', 'center');
+
         $brand->update($data);
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Game berhasil diperbarui']);
+        }
 
         return redirect()->route('admin.brands')->with('success', 'Game berhasil diperbarui');
     }
@@ -260,6 +339,9 @@ class AdminController extends Controller
     {
         if ($brand->thumbnail) {
             Storage::disk('public')->delete($brand->thumbnail);
+        }
+        if ($brand->detail_bg) {
+            Storage::disk('public')->delete($brand->detail_bg);
         }
         $brand->delete();
         return redirect()->route('admin.brands')->with('success', 'Game berhasil dihapus');
@@ -332,16 +414,25 @@ class AdminController extends Controller
 
     public function paymentMethodsStore(Request $request)
     {
-        $request->validate([
+        $validator = validator($request->all(), [
             'name' => 'required|string|max:255',
             'code' => 'required|string|max:50|unique:payment_methods',
+            'category' => 'required|string|in:qris,ewallet,va,convenience_store',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'is_active' => 'boolean',
         ]);
 
+        if ($validator->fails()) {
+            if ($request->expectsJson()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
+
         $data = [
             'name' => $request->name,
             'code' => $request->code,
+            'category' => $request->category,
             'is_active' => $request->boolean('is_active', true),
         ];
 
@@ -350,6 +441,10 @@ class AdminController extends Controller
         }
 
         PaymentMethod::create($data);
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Metode pembayaran berhasil ditambahkan']);
+        }
 
         return redirect()->route('admin.payment-methods')->with('success', 'Metode pembayaran berhasil ditambahkan');
     }
@@ -361,16 +456,25 @@ class AdminController extends Controller
 
     public function paymentMethodsUpdate(Request $request, PaymentMethod $paymentMethod)
     {
-        $request->validate([
+        $validator = validator($request->all(), [
             'name' => 'required|string|max:255',
             'code' => 'required|string|max:50|unique:payment_methods,code,' . $paymentMethod->id,
+            'category' => 'required|string|in:qris,ewallet,va,convenience_store',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'is_active' => 'boolean',
         ]);
 
+        if ($validator->fails()) {
+            if ($request->expectsJson()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
+
         $data = [
             'name' => $request->name,
             'code' => $request->code,
+            'category' => $request->category,
             'is_active' => $request->boolean('is_active', true),
         ];
 
@@ -382,6 +486,10 @@ class AdminController extends Controller
         }
 
         $paymentMethod->update($data);
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Metode pembayaran berhasil diperbarui']);
+        }
 
         return redirect()->route('admin.payment-methods')->with('success', 'Metode pembayaran berhasil diperbarui');
     }

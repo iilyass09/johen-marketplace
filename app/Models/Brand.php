@@ -12,6 +12,8 @@ class Brand extends Model
         'icon',
         'thumbnail',
         'carousel_bg',
+        'detail_bg',
+        'detail_bg_position',
         'category',
         'description',
         'is_active',
@@ -25,7 +27,7 @@ class Brand extends Model
         'sort_order' => 'integer',
     ];
 
-    protected $appends = ['thumbnail_url', 'carousel_bg_url'];
+    protected $appends = ['thumbnail_url', 'carousel_bg_url', 'detail_bg_url'];
 
     public function getThumbnailUrlAttribute(): ?string
     {
@@ -39,6 +41,14 @@ class Brand extends Model
     {
         if ($this->carousel_bg) {
             return Storage::url($this->carousel_bg);
+        }
+        return null;
+    }
+
+    public function getDetailBgUrlAttribute(): ?string
+    {
+        if ($this->detail_bg) {
+            return Storage::url($this->detail_bg);
         }
         return null;
     }
