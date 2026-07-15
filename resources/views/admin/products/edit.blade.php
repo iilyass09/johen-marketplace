@@ -38,9 +38,12 @@
                 </div>
 
                 <div class="mb-4">
-                    <label class="block text-sm font-medium mb-2">Type</label>
-                    <input type="text" name="type" value="{{ old('type', $product->type) }}" required
-                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-purple-500">
+                    <label class="block text-sm font-medium mb-2">Tipe Produk</label>
+                    <select name="type" required
+                            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-purple-500">
+                        <option value="instant" {{ old('type', $product->type) === 'instant' ? 'selected' : '' }}>Top Up (Instant)</option>
+                        <option value="joki" {{ old('type', $product->type) === 'joki' ? 'selected' : '' }}>Joki</option>
+                    </select>
                     @error('type') <p class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
                 </div>
 

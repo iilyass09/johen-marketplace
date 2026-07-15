@@ -20,6 +20,7 @@
                     <th>Nama Game</th>
                     <th class="text-center">Urutan</th>
                     <th>Kategori</th>
+                    <th class="text-center">Tipe</th>
                     <th class="text-center">Populer</th>
                     <th class="text-center">Status</th>
                     <th>Dibuat</th>
@@ -43,6 +44,11 @@
                     <td class="text-center text-sm" style="color:var(--text-muted)">{{ $brand->sort_order }}</td>
                     <td><span class="badge badge-neutral">{{ $brand->category ?? '-' }}</span></td>
                     <td class="text-center">
+                        <span class="badge {{ $brand->service_type === 'joki' ? 'badge-warning' : 'badge-info' }}">
+                            {{ $brand->service_type === 'joki' ? 'Joki' : 'Top Up' }}
+                        </span>
+                    </td>
+                    <td class="text-center">
                         @if($brand->is_popular)
                             <span style="color:var(--warning);font-size:0.78rem;font-weight:700">★ Populer</span>
                         @else
@@ -58,7 +64,7 @@
                     <td>
                         <div class="flex items-center justify-center gap-1.5">
                             <button type="button" class="btn btn-ghost btn-xs"
-                                data-brand='{{ json_encode($brand->only(['id','name','category','description','sort_order','is_active','is_popular','thumbnail_url','carousel_bg_url','detail_bg_url','detail_bg_position'])) }}'
+                                data-brand='{{ json_encode($brand->only(['id','name','category','service_type','description','sort_order','is_active','is_popular','thumbnail_url','carousel_bg_url','detail_bg_url','detail_bg_position'])) }}'
                                 onclick="openEditModal(this)">
                                 <i class="fas fa-edit"></i>
                             </button>
@@ -114,6 +120,15 @@
                     <label class="block text-sm font-medium mb-1.5">Developer</label>
                     <input type="text" name="category" id="f_category" required class="input-field" placeholder="Contoh: Moonton">
                     <p class="text-red-400 text-xs mt-1 hidden" id="err_category"></p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1.5">Tipe Layanan</label>
+                    <select name="service_type" id="f_service_type" class="input-field">
+                        <option value="topup">Top Up</option>
+                        <option value="joki">Joki</option>
+                        <option value="both">Top Up & Joki</option>
+                    </select>
+                    <p class="text-red-400 text-xs mt-1 hidden" id="err_service_type"></p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-1.5">Urutan</label>
@@ -338,6 +353,7 @@ function openCreateModal() {
     document.getElementById('bgHint').textContent = 'Gambar latar di carousel. Maks 2MB.';
     initDetailBgFrame(null);
     document.getElementById('detailBgHint').textContent = 'Background header halaman detail game. Maks 2MB.';
+    document.getElementById('f_service_type').value = 'topup';
     document.getElementById('f_is_active').checked = true;
     document.getElementById('f_is_popular').checked = false;
     clearBrandErrors();
@@ -353,6 +369,7 @@ function openEditModal(btn) {
     document.getElementById('brandId').value = b.id;
     document.getElementById('f_name').value = b.name;
     document.getElementById('f_category').value = b.category || '';
+    document.getElementById('f_service_type').value = b.service_type || 'topup';
     document.getElementById('f_sort_order').value = b.sort_order;
     document.getElementById('f_description').value = b.description || '';
     document.getElementById('f_is_active').checked = b.is_active;

@@ -18,6 +18,11 @@ class MidtransService
         Config::$is3ds = config('midtrans.is_3ds');
     }
 
+    public function isConfigured(): bool
+    {
+        return !empty(config('midtrans.server_key')) && !empty(config('midtrans.client_key'));
+    }
+
     public function createSnapTransaction(array $params): array
     {
         try {

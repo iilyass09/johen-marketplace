@@ -237,6 +237,9 @@ function filterGames(filter) {
   cards.forEach(card => {
     if (filter === 'all') {
       card.style.display = '';
+    } else if (filter === 'moba') {
+      const st = card.dataset.serviceType || 'topup';
+      card.style.display = (st === 'joki' || st === 'both') ? '' : 'none';
     } else {
       const cat = card.dataset.category;
       card.style.display = cat === filter ? '' : 'none';

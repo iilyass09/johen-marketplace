@@ -16,6 +16,7 @@ class Order extends Model
         'brand',
         'category',
         'price',
+        'quantity',
         'status',
         'note',
     ];

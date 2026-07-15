@@ -33,12 +33,26 @@ class OrderController extends Controller
             'product_id' => 'required|exists:products,id',
             'customer_number' => 'required|string',
             'customer_name' => 'nullable|string',
+            'quantity' => 'nullable|integer|min:1|max:99',
         ]);
 
         $product = Product::findOrFail($request->product_id);
 
         if ($product->stock < 1) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Maaf, stok produk ini sedang kosong'], 422);
+            }
             return back()->with('error', 'Maaf, stok produk ini sedang kosong');
+        }
+
+        $quantity = (int) ($request->quantity ?? 1);
+        $subtotal = (int) $product->selling_price * $quantity;
+
+        if ($request->filled('promo_code')) {
+            $code = strtoupper(trim($request->promo_code));
+            if ($code === 'JOHENI10' || $code === 'JOHENGAMING10') {
+                $subtotal = (int) round($subtotal * 0.9);
+            }
         }
 
         $orderId = 'TUP-' . strtoupper(Str::random(10));
@@ -52,50 +66,57 @@ class OrderController extends Controller
             'product_name' => $product->product_name,
             'brand' => $product->brand,
             'category' => $product->category,
-            'price' => $product->selling_price,
+            'price' => $subtotal,
+            'quantity' => $quantity,
             'status' => 'pending',
         ]);
 
-        $params = [
-            'transaction_details' => [
-                'order_id' => $orderId,
-                'gross_amount' => (int) $product->selling_price,
-            ],
-            'customer_details' => [
-                'first_name' => Auth::user()->name,
-                'email' => Auth::user()->email,
-            ],
-            'item_details' => [
-                [
-                    'id' => $product->id,
-                    'price' => (int) $product->selling_price,
-                    'quantity' => 1,
-                    'name' => $product->product_name . ' - ' . $request->customer_number,
-                ],
-            ],
-        ];
+        $demo = true;
 
-        $snapResult = $this->midtrans->createSnapTransaction($params);
-
-        if (!$snapResult['success']) {
-            if ($request->wantsJson()) {
-                return response()->json(['success' => false, 'message' => $snapResult['message']], 500);
+        if ($this->midtrans->isConfigured()) {
+            $itemName = $product->product_name;
+            if ($quantity > 1) {
+                $itemName .= ' x' . $quantity;
             }
-            return back()->with('error', 'Gagal memproses pembayaran: ' . $snapResult['message']);
+
+            $params = [
+                'transaction_details' => [
+                    'order_id' => $orderId,
+                    'gross_amount' => $subtotal,
+                ],
+                'customer_details' => [
+                    'first_name' => Auth::user()->name,
+                    'email' => Auth::user()->email,
+                ],
+                'item_details' => [
+                    [
+                        'id' => $product->id,
+                        'price' => (int) $product->selling_price,
+                        'quantity' => $quantity,
+                        'name' => $itemName . ' - ' . $request->customer_number,
+                    ],
+                ],
+            ];
+
+            $snapResult = $this->midtrans->createSnapTransaction($params);
+
+            if ($snapResult['success']) {
+                $demo = false;
+                session(['snap_token' => $snapResult['token'], 'redirect_url' => null]);
+            }
         }
 
         Transaction::create([
             'order_id' => $order->id,
-            'gross_amount' => $product->selling_price,
+            'gross_amount' => $subtotal,
             'status' => 'pending',
         ]);
-
-        session(['snap_token' => $snapResult['token'], 'redirect_url' => null]);
 
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'redirect' => route('orders.show', $order),
+                'redirect' => route('payment.detail', $order),
+                'demo' => $demo,
             ]);
         }
 

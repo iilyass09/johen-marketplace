@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Brand;
 use App\Models\Order;
 use App\Models\Transaction;
 use App\Services\DigiflazzService;
@@ -18,6 +19,15 @@ class PaymentController extends Controller
     {
         $this->digiflazz = $digiflazz;
         $this->midtrans = $midtrans;
+    }
+
+    public function detail(Order $order)
+    {
+        $snapToken = session('snap_token');
+        $isDemo = !$this->midtrans->isConfigured();
+        $brand = Brand::where('name', $order->brand)->first();
+
+        return view('payment.detail', compact('order', 'snapToken', 'isDemo', 'brand'));
     }
 
     public function notificationHandler(Request $request)

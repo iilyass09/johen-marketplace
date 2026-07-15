@@ -23,6 +23,12 @@
     </div>
 </div>
 
+<div class="flex gap-2 mb-4" id="productFilterTabs">
+    <button class="btn btn-sm {{ !request('type') ? 'btn-primary' : 'btn-ghost' }}" data-type="">Semua</button>
+    <button class="btn btn-sm {{ request('type') === 'instant' ? 'btn-primary' : 'btn-ghost' }}" data-type="instant">Top Up</button>
+    <button class="btn btn-sm {{ request('type') === 'joki' ? 'btn-primary' : 'btn-ghost' }}" data-type="joki">Joki</button>
+</div>
+
 <div class="table-wrap">
     <div class="overflow-x-auto">
         <table class="w-full">
@@ -128,8 +134,11 @@
                     <p class="text-red-400 text-xs mt-1 hidden" id="err_category"></p>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium mb-1.5">Type</label>
-                    <input type="text" name="type" id="f_type" required class="input-field">
+                    <label class="block text-sm font-medium mb-1.5">Tipe Produk</label>
+                    <select name="type" id="f_type" required class="input-field">
+                        <option value="instant">Top Up (Instant)</option>
+                        <option value="joki">Joki</option>
+                    </select>
                     <p class="text-red-400 text-xs mt-1 hidden" id="err_type"></p>
                 </div>
                 <div>
@@ -191,6 +200,16 @@
 
 @push('scripts')
 <script>
+document.getElementById('productFilterTabs')?.addEventListener('click', function(e) {
+    const btn = e.target.closest('[data-type]');
+    if (!btn) return;
+    const type = btn.dataset.type;
+    const url = new URL(window.location.href);
+    if (type) url.searchParams.set('type', type);
+    else url.searchParams.delete('type');
+    window.location.href = url.toString();
+});
+
 let editProductId = null;
 const photoInput = document.getElementById('photoInput');
 const photoImage = document.getElementById('photoImage');

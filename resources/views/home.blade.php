@@ -111,8 +111,9 @@
             <div class="featured-card-wrap{{ $i === 0 ? ' active' : '' }}"
                  data-index="{{ $i }}"
                  data-brand="{{ $b->name }}"
-                 data-category="{{ $b->category ?? 'other' }}"
-                 data-thumb="{{ $b->thumbnail_url ?? '' }}"
+             data-category="{{ $b->category ?? 'other' }}"
+             data-service-type="{{ $b->service_type ?? 'topup' }}"
+             data-thumb="{{ $b->thumbnail_url ?? '' }}"
                  data-bg="{{ $b->carousel_bg_url ?? $b->thumbnail_url ?? '' }}"
                  data-desc="{{ $b->description ?? '' }}">
               <div class="featured-card-glow"></div>
@@ -174,6 +175,7 @@
       <a href="{{ route('games.show', $brand->name) }}" class="game-card"
          data-brand="{{ $brand->name }}"
          data-category="{{ $brand->category ?? 'other' }}"
+         data-service-type="{{ $brand->service_type ?? 'topup' }}"
          data-icon="{{ $icon }}"
          data-thumbnail="{{ $brand->thumbnail_url ?? '' }}"
          style="background:{{ $bg }};animation:cardIn .5s ease forwards;animation-delay:{{ $i * 0.04 }}s;opacity:0;transform:translateY(16px);">

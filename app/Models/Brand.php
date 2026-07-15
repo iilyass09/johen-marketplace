@@ -15,6 +15,7 @@ class Brand extends Model
         'detail_bg',
         'detail_bg_position',
         'category',
+        'service_type',
         'description',
         'is_active',
         'is_popular',

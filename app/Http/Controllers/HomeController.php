@@ -63,8 +63,15 @@ class HomeController extends Controller
         $products = Product::where('brand', $brand->name)
             ->where('is_active', true)
             ->orderBy('type')
-            ->orderBy('selling_price')
-            ->get();
+            ->orderBy('selling_price');
+
+        if ($brand->service_type === 'topup') {
+            $products->where('type', 'instant');
+        } elseif ($brand->service_type === 'joki') {
+            $products->where('type', 'joki');
+        }
+
+        $products = $products->get();
 
         $paymentMethods = PaymentMethod::where('is_active', true)->get();
 

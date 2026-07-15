@@ -1,6 +1,7 @@
 @extends('layouts.topup')
 
-@section('title', $brand->name . ' — Top Up ' . $brand->name)
+@php $pageType = $brand->service_type === 'joki' ? 'Joki' : 'Top Up'; @endphp
+@section('title', $brand->name . ' — ' . $pageType . ' ' . $brand->name)
 
 @php
   $grouped = $products->groupBy('type');
@@ -159,7 +160,8 @@
           @foreach($items as $p)
             <button type="button"
               class="gd-pkg-card{{ $loop->first && $loop->parent->first ? ' selected' : '' }}"
-              data-label="{{ $p->product_name }}"
+                data-id="{{ $p->id }}"
+                data-label="{{ $p->product_name }}"
               data-price="{{ $p->selling_price }}"
               @if($isInstant && $p->region) data-region="{{ $p->region }}"@endif
               @if($isInstant && !$p->region) data-region="ID"@endif>
@@ -310,6 +312,7 @@ const brandName = @json($brand->name);
 const paymentMethods = @json($payData);
 
 let selectedPkg = {
+    id: @json($firstProduct ? (int) $firstProduct->id : 0),
     label: @json($firstProduct ? $firstProduct->product_name : ''),
     price: {{ $firstProduct ? $firstProduct->selling_price : 0 }},
     region: null,
@@ -328,7 +331,7 @@ document.addEventListener('click', e => {
     }
     $$('.gd-pkg-card').forEach(c => c.classList.remove('selected'));
     card.classList.add('selected');
-    selectedPkg = { label: card.dataset.label, price: Number(card.dataset.price), region: card.dataset.region || null };
+    selectedPkg = { id: Number(card.dataset.id), label: card.dataset.label, price: Number(card.dataset.price), region: card.dataset.region || null };
     updateSummary();
 });
 
@@ -349,7 +352,7 @@ $$('.gd-region-tabs').forEach(tabs => {
         if (visible.length) {
             visible.forEach(c => c.classList.remove('selected'));
             visible[0].classList.add('selected');
-            selectedPkg = { label: visible[0].dataset.label, price: Number(visible[0].dataset.price), region: selectedRegion };
+            selectedPkg = { id: Number(visible[0].dataset.id), label: visible[0].dataset.label, price: Number(visible[0].dataset.price), region: selectedRegion };
             updateSummary();
         }
     });
@@ -521,9 +524,41 @@ $('#modalClose').addEventListener('click', closeModal);
 $('#modalCancel').addEventListener('click', closeModal);
 $('#checkoutModal').addEventListener('click', e => { if (e.target.id === 'checkoutModal') closeModal(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
-$('#modalConfirm').addEventListener('click', () => {
-    closeModal();
-    showToast('Pesanan berhasil dibuat! Cek email untuk instruksi pembayaran.');
+$('#modalConfirm').addEventListener('click', async function() {
+    const btn = this;
+    btn.disabled = true;
+    btn.textContent = 'Memproses...';
+
+    const formData = new FormData();
+    formData.append('_token', document.querySelector('meta[name="csrf-token"]').content);
+    formData.append('product_id', selectedPkg.id);
+    formData.append('customer_number', userIdInput.value.trim());
+    formData.append('customer_name', zoneIdInput.value.trim());
+    formData.append('quantity', qty);
+    formData.append('promo_code', promoInput.value.trim());
+    formData.append('email', emailInput.value.trim());
+    formData.append('phone', waInput.value.trim());
+
+    try {
+        const res = await fetch('{{ route('orders.store') }}', {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+            body: formData,
+        });
+        const data = await res.json();
+        if (data.success && data.redirect) {
+            closeModal();
+            window.location.href = data.redirect;
+        } else {
+            btn.disabled = false;
+            btn.textContent = 'Bayar Sekarang';
+            showToast(data.message || 'Gagal memproses pesanan', false);
+        }
+    } catch(e) {
+        btn.disabled = false;
+        btn.textContent = 'Bayar Sekarang';
+        showToast('Terjadi kesalahan, silakan coba lagi', false);
+    }
 });
 
 /* ---------- toast ---------- */

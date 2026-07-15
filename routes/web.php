@@ -35,6 +35,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
     Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
 
+    Route::get('/payment/detail/{order}', [PaymentController::class, 'detail'])->name('payment.detail');
     Route::get('/payment/success/{order}', [PaymentController::class, 'success'])->name('payment.success');
     Route::get('/payment/status/{order}', [PaymentController::class, 'status'])->name('payment.status');
 });

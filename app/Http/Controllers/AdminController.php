@@ -40,9 +40,16 @@ class AdminController extends Controller
     }
 
     // ---- PRODUCTS ----
-    public function products()
+    public function products(Request $request)
     {
-        $products = Product::orderBy('brand')->orderBy('product_name')->paginate(20);
+        $query = Product::orderBy('brand')->orderBy('product_name');
+
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+
+        $products = $query->paginate(20);
+
         return view('admin.products.index', compact('products'));
     }
 
@@ -213,6 +220,7 @@ class AdminController extends Controller
         $validator = validator($request->all(), [
             'name' => 'required|string|max:255|unique:brands',
             'category' => 'required|string|max:50',
+            'service_type' => 'required|string|in:topup,joki,both',
             'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'carousel_bg' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'detail_bg' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
@@ -233,6 +241,7 @@ class AdminController extends Controller
         $data = [
             'name' => $request->name,
             'category' => $request->category,
+            'service_type' => $request->input('service_type', 'topup'),
             'description' => $request->description,
             'is_active' => $request->boolean('is_active', true),
             'is_popular' => $request->boolean('is_popular', false),
@@ -271,6 +280,7 @@ class AdminController extends Controller
         $validator = validator($request->all(), [
             'name' => 'required|string|max:255|unique:brands,name,' . $brand->id,
             'category' => 'required|string|max:50',
+            'service_type' => 'required|string|in:topup,joki,both',
             'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'carousel_bg' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'detail_bg' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
@@ -291,6 +301,7 @@ class AdminController extends Controller
         $data = [
             'name' => $request->name,
             'category' => $request->category,
+            'service_type' => $request->input('service_type', 'topup'),
             'description' => $request->description,
             'is_active' => $request->boolean('is_active', true),
             'is_popular' => $request->boolean('is_popular', false),
