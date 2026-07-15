@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Johen Gaming — Top Up & Joki Termurah</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header class="site-header" id="siteHeader">
+  <div class="header-inner">
+    <a href="#" class="logo">
+      <span class="logo-badge">◈</span>
+      <span class="logo-text">JOHEN<span>GAMING</span></span>
+    </a>
+
+    <div class="search-wrap">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M20 20L16.5 16.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input type="text" id="searchInput" placeholder="Cari Game atau Voucher" autocomplete="off">
+      <div class="search-suggest" id="searchSuggest"></div>
+    </div>
+
+    <nav class="main-nav" id="mainNav">
+      <a href="#topup">Top Up</a>
+      <a href="#joki">Joki</a>
+      <a href="#" id="cekTransaksiLink">Cek Transaksi</a>
+      <a href="#" id="leaderboardLink">Leaderboard</a>
+    </nav>
+
+    <div class="auth-buttons">
+      <button class="btn btn-outline" data-open-modal="loginModal">Masuk</button>
+      <button class="btn btn-solid" data-open-modal="registerModal">Daftar</button>
+    </div>
+
+    <button class="hamburger" id="hamburgerBtn" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+
+  <!-- mobile menu -->
+  <div class="mobile-menu" id="mobileMenu">
+    <div class="mobile-search-wrap">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M20 20L16.5 16.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input type="text" placeholder="Cari Game atau Voucher" id="mobileSearchInput">
+    </div>
+    <a href="#topup">Top Up</a>
+    <a href="#joki">Joki</a>
+    <a href="#">Cek Transaksi</a>
+    <a href="#">Leaderboard</a>
+    <div class="mobile-auth">
+      <button class="btn btn-outline" data-open-modal="loginModal">Masuk</button>
+      <button class="btn btn-solid" data-open-modal="registerModal">Daftar</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- ===== HERO ===== -->
+  <section class="hero-section" id="joki">
+    <div class="hero-carousel">
+      <div class="hero-slide active" data-slide="0">
+        <div class="hero-tag">
+          <span class="hero-tag-icon">◈</span> JOHEN GAMING
+        </div>
+        <h1 class="hero-title">
+          JASA JOKI<br>
+          <span class="accent">RANK PROFESIONAL</span>
+        </h1>
+        <p class="hero-sub">Dikerjakan oleh player berpengalaman.<br>Aman, cepat, dan progress terjamin.</p>
+        <button class="btn btn-solid btn-lg" id="pesanJokiBtn">Pesan Joki Sekarang <span>›</span></button>
+        <div class="hero-badges">
+          <div class="hero-badge">
+            <span class="badge-icon">🏆</span>
+            <span>Joki<br>Berpengalaman</span>
+          </div>
+          <div class="hero-badge">
+            <span class="badge-icon">🛡️</span>
+            <span>Terpercaya<br>100%</span>
+          </div>
+          <div class="hero-badge">
+            <span class="badge-icon">🚀</span>
+            <span>Cepat &<br>Terjamin</span>
+          </div>
+        </div>
+      </div>
+      <div class="hero-slide" data-slide="1">
+        <div class="hero-tag"><span class="hero-tag-icon">◈</span> JOHEN GAMING</div>
+        <h1 class="hero-title">TOP UP DIAMOND<br><span class="accent">HARGA TERMURAH</span></h1>
+        <p class="hero-sub">Instan masuk ke akun kamu.<br>Ratusan game tersedia 24 jam.</p>
+        <button class="btn btn-solid btn-lg" onclick="document.getElementById('games').scrollIntoView({behavior:'smooth'})">Top Up Sekarang <span>›</span></button>
+        <div class="hero-badges">
+          <div class="hero-badge"><span class="badge-icon">⚡</span><span>Proses<br>Instan</span></div>
+          <div class="hero-badge"><span class="badge-icon">💳</span><span>Metode<br>Lengkap</span></div>
+          <div class="hero-badge"><span class="badge-icon">⭐</span><span>Rating<br>4.9/5</span></div>
+        </div>
+      </div>
+      <div class="hero-slide" data-slide="2">
+        <div class="hero-tag"><span class="hero-tag-icon">◈</span> JOHEN GAMING</div>
+        <h1 class="hero-title">EVENT SPESIAL<br><span class="accent">DISKON 20%</span></h1>
+        <p class="hero-sub">Khusus member baru minggu ini.<br>Jangan sampai kehabisan!</p>
+        <button class="btn btn-solid btn-lg" data-open-modal="registerModal">Daftar Sekarang <span>›</span></button>
+        <div class="hero-badges">
+          <div class="hero-badge"><span class="badge-icon">🎁</span><span>Bonus<br>Member</span></div>
+          <div class="hero-badge"><span class="badge-icon">🔥</span><span>Promo<br>Terbatas</span></div>
+          <div class="hero-badge"><span class="badge-icon">🕒</span><span>Buka<br>24 Jam</span></div>
+        </div>
+      </div>
+
+      <div class="hero-art" aria-hidden="true">
+        <div class="hero-art-glow"></div>
+        <div class="hero-rank-badge">
+          <div class="rank-shield">
+            <span class="rank-diamond">◆</span>
+          </div>
+          <div class="rank-stars">★ ★ ★</div>
+        </div>
+        <div class="hero-warrior">🛡️</div>
+        <div class="hero-help-card">
+          <p class="help-title">Susah Naik Rank?</p>
+          <p class="help-strong">SERAHKAN PADA KAMI!</p>
+          <p class="help-sub">Tinggal duduk, rank naik.</p>
+        </div>
+      </div>
+    </div>
+    <div class="hero-dots" id="heroDots"></div>
+  </section>
+
+  <!-- ===== CATEGORY TABS ===== -->
+  <section class="tabs-section">
+    <div class="tabs-wrap" id="tabsWrap">
+      <button class="tab-pill active" data-filter="all">Top Up Games</button>
+      <button class="tab-pill" data-filter="moba">Joki Mobile Legends</button>
+      <button class="tab-pill" data-filter="check" id="cekTransaksiTab">Cek Transaksi</button>
+    </div>
+  </section>
+
+  <!-- ===== SECTION HEADER ===== -->
+  <section class="section-heading">
+    <h2>🔥 PRODUK UNGGULAN</h2>
+    <p>Pilihan terbaik dengan transaksi terbanyak dan rating tertinggi dari pengguna.</p>
+  </section>
+
+  <!-- ===== FEATURED BANNER ===== -->
+  <section class="featured-banner" id="topup">
+    <div class="featured-bg">
+      <span class="parachute p1">🪂</span>
+      <span class="parachute p2">🪂</span>
+      <span class="parachute p3">🪂</span>
+      <span class="plane">✈️</span>
+    </div>
+    <div class="featured-content">
+      <p class="eyebrow">GAME POPULER</p>
+      <h3 class="featured-title">PUBG MOBILE</h3>
+      <p class="featured-desc">Isi ulang Diamond Mobile Legends dengan lebih praktis melalui layanan top up yang cepat dan terpercaya. Didukung berbagai metode pembayaran dan proses transaksi yang efisien, Diamond akan langsung masuk ke akunmu dalam waktu singkat sehingga kamu bisa kembali fokus memenangkan pertandingan.</p>
+      <button class="btn btn-solid" onclick="openTopupModal('PUBG Mobile','🎮','br')">Top Up Sekarang</button>
+    </div>
+    <div class="featured-card">
+      <div class="featured-card-visual">🪖</div>
+      <p class="featured-card-name">PLAYERUNKNOWN'S<br><span>BATTLEGROUNDS</span><br>MOBILE</p>
+    </div>
+  </section>
+
+  <!-- ===== GAMES GRID ===== -->
+  <section class="games-section" id="games">
+    <div class="games-grid" id="gamesGrid"></div>
+    <button class="btn btn-outline btn-more" id="loadMoreBtn">Tampilkan Lainnya...</button>
+  </section>
+
+  <!-- ===== TESTIMONIALS ===== -->
+  <section class="testi-section">
+    <h2>APA KATA MEREKA?</h2>
+    <p class="testi-sub">Ribuan orang telah mempercayai Top Up mereka di Johen Gaming</p>
+    <div class="testi-carousel">
+      <div class="testi-track" id="testiTrack"></div>
+    </div>
+    <div class="testi-dots" id="testiDots"></div>
+  </section>
+
+  <!-- ===== PAYMENT METHODS ===== -->
+  <section class="payment-section">
+    <h2>METODE PEMBAYARAN</h2>
+    <p>Kami mendukung berbagai metode pembayaran seperti QRIS, e-wallet, virtual account dan minimarket.</p>
+    <div class="payment-track-wrap">
+      <div class="payment-track" id="paymentTrack"></div>
+    </div>
+  </section>
+
+  <!-- ===== NEWSLETTER ===== -->
+  <section class="newsletter-section">
+    <h2>Level Up Bareng Kami!</h2>
+    <p>Claim kode diskon eksklusif, notifikasi flash sale, dan akses VIP ke promo terbaik.<br>Lebih cepat top up, lebih murah, lebih unggul.</p>
+    <form class="newsletter-form" id="newsletterForm">
+      <input type="email" placeholder="Masukan Email Kamu" id="newsletterEmail" required>
+      <button type="submit" class="btn btn-solid">Subscribe Now</button>
+    </form>
+    <p class="newsletter-feedback" id="newsletterFeedback"></p>
+  </section>
+</main>
+
+<!-- ===== FOOTER ===== -->
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="logo">
+        <span class="logo-badge">◈</span>
+        <span class="logo-text">JOHEN<span>GAMING</span></span>
+      </div>
+      <p>Top up game &amp; voucher terlaris, murah, aman legal 100% buka 24 jam dengan payment terlengkap Indonesia.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Peta Situs</h4>
+      <a href="#">Beranda</a>
+      <a href="#">Cek Transaksi</a>
+      <a href="#">Hubungi Kami</a>
+      <a href="#">Ulasan</a>
+    </div>
+    <div class="footer-col">
+      <h4>Dukungan</h4>
+      <a href="#">Contact Us</a>
+      <a href="#">Affiliate Program</a>
+      <a href="#">FAQ</a>
+    </div>
+    <div class="footer-col">
+      <h4>Legalitas</h4>
+      <a href="#">Kebijakan Privasi</a>
+      <a href="#">Syarat &amp; Ketentuan</a>
+    </div>
+  </div>
+  <div class="footer-bottom">© 2026 Johen Gaming. All Rights Reserved.</div>
+</footer>
+
+<!-- ===== MODALS ===== -->
+<div class="modal-overlay" id="loginModal">
+  <div class="modal-box">
+    <button class="modal-close" data-close-modal>&times;</button>
+    <h3>Masuk ke Akun</h3>
+    <p class="modal-sub">Masuk untuk melanjutkan top up dan joki kamu.</p>
+    <form class="modal-form" id="loginForm">
+      <label>Email atau No. HP
+        <input type="text" required placeholder="nama@email.com">
+      </label>
+      <label>Kata Sandi
+        <input type="password" required placeholder="••••••••">
+      </label>
+      <div class="form-row-between">
+        <label class="checkbox-label"><input type="checkbox"> Ingat saya</label>
+        <a href="#" class="link-small">Lupa kata sandi?</a>
+      </div>
+      <button type="submit" class="btn btn-solid btn-full">Masuk</button>
+    </form>
+    <p class="modal-switch">Belum punya akun? <a href="#" data-switch-modal="registerModal">Daftar sekarang</a></p>
+  </div>
+</div>
+
+<div class="modal-overlay" id="registerModal">
+  <div class="modal-box">
+    <button class="modal-close" data-close-modal>&times;</button>
+    <h3>Buat Akun Baru</h3>
+    <p class="modal-sub">Daftar gratis dan nikmati promo member baru.</p>
+    <form class="modal-form" id="registerForm">
+      <label>Nama Lengkap
+        <input type="text" required placeholder="Nama kamu">
+      </label>
+      <label>Email
+        <input type="email" required placeholder="nama@email.com">
+      </label>
+      <label>Kata Sandi
+        <input type="password" required placeholder="Minimal 8 karakter" minlength="8">
+      </label>
+      <label class="checkbox-label"><input type="checkbox" required> Saya setuju dengan Syarat &amp; Ketentuan</label>
+      <button type="submit" class="btn btn-solid btn-full">Daftar</button>
+    </form>
+    <p class="modal-switch">Sudah punya akun? <a href="#" data-switch-modal="loginModal">Masuk di sini</a></p>
+  </div>
+</div>
+
+<div class="modal-overlay" id="topupModal">
+  <div class="modal-box modal-box-wide">
+    <button class="modal-close" data-close-modal>&times;</button>
+    <div class="topup-header">
+      <div class="topup-icon" id="topupIcon">🎮</div>
+      <div>
+        <h3 id="topupGameName">Nama Game</h3>
+        <p class="modal-sub">Isi data akun dan pilih nominal top up.</p>
+      </div>
+    </div>
+    <form class="modal-form" id="topupForm">
+      <label>User ID
+        <input type="text" required placeholder="Masukkan User ID">
+      </label>
+      <label>Zone ID / Server (opsional)
+        <input type="text" placeholder="Contoh: 2001">
+      </label>
+      <p class="field-label">Pilih Nominal</p>
+      <div class="nominal-grid" id="nominalGrid"></div>
+      <p class="field-label">Metode Pembayaran</p>
+      <div class="pay-select-grid" id="paySelectGrid"></div>
+      <div class="topup-total">
+        <span>Total Pembayaran</span>
+        <strong id="topupTotal">Rp 0</strong>
+      </div>
+      <button type="submit" class="btn btn-solid btn-full">Bayar Sekarang</button>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="checkModal">
+  <div class="modal-box">
+    <button class="modal-close" data-close-modal>&times;</button>
+    <h3>Cek Transaksi</h3>
+    <p class="modal-sub">Masukkan ID Transaksi atau email kamu untuk melihat status pesanan.</p>
+    <form class="modal-form" id="checkForm">
+      <label>ID Transaksi / Email
+        <input type="text" required placeholder="TRX-XXXXXX atau email">
+      </label>
+      <button type="submit" class="btn btn-solid btn-full">Cek Status</button>
+    </form>
+    <div class="check-result" id="checkResult"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="leaderboardModal">
+  <div class="modal-box">
+    <button class="modal-close" data-close-modal>&times;</button>
+    <h3>🏆 Leaderboard Top Up</h3>
+    <p class="modal-sub">Pengguna dengan transaksi terbanyak bulan ini.</p>
+    <div class="leaderboard-list" id="leaderboardList"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script src="script.js"></script>
+</body>
+</html>

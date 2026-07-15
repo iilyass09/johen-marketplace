@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Johen Gaming — Top Up Mobile Legend: Bang Bang</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============ TOKENS ============ */
+:root{
+  --bg: #0a0512;
+  --bg-soft: #0f0819;
+  --card: #170e29;
+  --card-alt: #1c1233;
+  --card-border: rgba(154, 115, 255, .16);
+  --card-border-strong: rgba(154, 115, 255, .35);
+  --purple-300: #c4b1ff;
+  --purple-400: #a78bfa;
+  --purple-500: #8b5cf6;
+  --purple-600: #7c3aed;
+  --purple-700: #6224c9;
+  --gold-400: #f7c65b;
+  --gold-500: #f2b544;
+  --text: #f4f1fb;
+  --text-dim: #b6acd1;
+  --text-faint: #766a91;
+  --green: #33d17e;
+  --red: #ff6b6b;
+  --radius-s: 10px;
+  --radius-m: 14px;
+  --radius-l: 20px;
+  --shadow-glow: 0 0 0 1px var(--card-border), 0 10px 30px -12px rgba(124,58,237,.35);
+  --font-display: 'Sora', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+}
+
+*{box-sizing:border-box; margin:0; padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  background:
+    radial-gradient(1200px 600px at 15% -10%, rgba(124,58,237,.20), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(247,198,91,.08), transparent 55%),
+    var(--bg);
+  color:var(--text);
+  font-family:var(--font-body);
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+}
+img{max-width:100%; display:block;}
+button{font-family:inherit; cursor:pointer;}
+input{font-family:inherit;}
+a{color:inherit; text-decoration:none;}
+::selection{background:var(--purple-500); color:#fff;}
+:focus-visible{outline:2px solid var(--gold-400); outline-offset:2px; border-radius:6px;}
+
+.wrap{max-width:1180px; margin:0 auto; padding:0 24px;}
+
+/* ============ NAVBAR ============ */
+.navbar{
+  position:sticky; top:0; z-index:60;
+  background:rgba(10,5,18,.78);
+  backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--card-border);
+}
+.navbar-inner{
+  display:flex; align-items:center; gap:24px;
+  padding:14px 24px;
+}
+.brand{display:flex; align-items:center; gap:10px; flex-shrink:0;}
+.brand-mark{
+  width:38px; height:38px; border-radius:11px;
+  background:linear-gradient(145deg, var(--purple-400), var(--purple-700));
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 4px 14px -4px rgba(139,92,246,.7);
+}
+.brand-mark svg{width:20px; height:20px;}
+.brand-name{font-family:var(--font-display); font-weight:700; font-size:16px; letter-spacing:.2px; display:none;}
+
+.search-box{
+  flex:1; max-width:420px;
+  display:flex; align-items:center; gap:10px;
+  background:var(--card); border:1px solid var(--card-border);
+  border-radius:999px; padding:10px 16px;
+  transition:border-color .18s ease, box-shadow .18s ease;
+}
+.search-box:focus-within{border-color:var(--purple-400); box-shadow:0 0 0 3px rgba(139,92,246,.18);}
+.search-box svg{width:16px; height:16px; color:var(--text-faint); flex-shrink:0;}
+.search-box input{
+  background:none; border:none; color:var(--text); font-size:13.5px; width:100%;
+}
+.search-box input::placeholder{color:var(--text-faint);}
+.search-box input:focus{outline:none;}
+
+.nav-links{display:none; align-items:center; gap:28px; margin-left:6px;}
+.nav-links a{
+  font-size:13.5px; font-weight:600; color:var(--text-dim);
+  position:relative; padding:6px 0; transition:color .18s ease;
+}
+.nav-links a:hover{color:var(--text);}
+.nav-links a.active{color:var(--purple-300);}
+.nav-links a.active::after{
+  content:""; position:absolute; left:0; right:0; bottom:-14px; height:2px;
+  background:linear-gradient(90deg, var(--purple-400), var(--gold-400));
+  border-radius:2px;
+}
+
+.user-chip{
+  margin-left:auto; position:relative; flex-shrink:0;
+}
+.user-chip-btn{
+  display:flex; align-items:center; gap:8px;
+  background:var(--card); border:1px solid var(--card-border);
+  padding:6px 12px 6px 6px; border-radius:999px;
+  transition:border-color .18s ease, background .18s ease;
+}
+.user-chip-btn:hover{border-color:var(--card-border-strong); background:var(--card-alt);}
+.user-avatar{
+  width:28px; height:28px; border-radius:50%;
+  background:linear-gradient(140deg,#ffd36e,#f2884a);
+  display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:700; color:#3a1c00;
+}
+.user-name{font-size:13px; font-weight:600; display:none;}
+.chevron{width:12px; height:12px; color:var(--text-faint); transition:transform .18s ease;}
+.user-chip.open .chevron{transform:rotate(180deg);}
+.user-menu{
+  position:absolute; right:0; top:calc(100% + 10px); min-width:190px;
+  background:var(--card-alt); border:1px solid var(--card-border);
+  border-radius:var(--radius-m); padding:6px; box-shadow:0 20px 40px -14px rgba(0,0,0,.6);
+  opacity:0; visibility:hidden; transform:translateY(-6px);
+  transition:opacity .16s ease, transform .16s ease, visibility .16s ease;
+}
+.user-chip.open .user-menu{opacity:1; visibility:visible; transform:translateY(0);}
+.user-menu a{
+  display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:8px;
+  font-size:13px; color:var(--text-dim); font-weight:500;
+}
+.user-menu a:hover{background:rgba(139,92,246,.14); color:var(--text);}
+
+.burger{
+  display:flex; width:34px; height:34px; border-radius:9px; border:1px solid var(--card-border);
+  background:var(--card); align-items:center; justify-content:center; flex-shrink:0;
+}
+.burger svg{width:16px; height:16px;}
+.mobile-nav{
+  max-height:0; overflow:hidden; transition:max-height .25s ease;
+  border-top:1px solid transparent;
+}
+.mobile-nav.open{max-height:220px; border-top:1px solid var(--card-border);}
+.mobile-nav a{display:block; padding:13px 24px; font-size:14px; font-weight:600; color:var(--text-dim); border-bottom:1px solid rgba(255,255,255,.03);}
+.mobile-nav a.active{color:var(--purple-300);}
+
+/* ============ HERO ============ */
+.hero{
+  position:relative; overflow:hidden; margin-top:0;
+  height:220px;
+  background:
+    radial-gradient(600px 300px at 78% 30%, rgba(139,92,246,.5), transparent 65%),
+    radial-gradient(500px 260px at 30% 90%, rgba(247,198,91,.18), transparent 60%),
+    linear-gradient(120deg, #170a2c 0%, #0d0618 60%, #1a0d2c 100%);
+}
+.hero-glow{
+  position:absolute; inset:0;
+  background-image:
+    repeating-linear-gradient(115deg, rgba(255,255,255,.025) 0 2px, transparent 2px 34px);
+  mix-blend-mode:screen;
+}
+.hero-emblem{
+  position:absolute; right:6%; top:50%; transform:translateY(-50%);
+  width:150px; height:150px; opacity:.95;
+  filter:drop-shadow(0 10px 30px rgba(242,181,68,.35));
+}
+.hero-shard{
+  position:absolute; width:260px; height:260px; right:22%; top:-40px;
+  background:conic-gradient(from 120deg, var(--purple-400), var(--purple-700), var(--gold-500), var(--purple-400));
+  clip-path:polygon(50% 0%, 90% 30%, 78% 100%, 22% 100%, 10% 30%);
+  opacity:.35; filter:blur(1px);
+  animation:float 7s ease-in-out infinite;
+}
+@keyframes float{ 0%,100%{transform:translateY(0) rotate(0deg);} 50%{transform:translateY(-14px) rotate(3deg);} }
+.hero-title{
+  position:relative; z-index:2; height:100%;
+  display:flex; flex-direction:column; justify-content:center; gap:8px;
+  padding:0 24px; max-width:1180px; margin:0 auto;
+}
+.hero-eyebrow{
+  font-size:11.5px; font-weight:700; letter-spacing:1.6px; text-transform:uppercase;
+  color:var(--gold-400);
+}
+.hero-title h1{
+  font-family:var(--font-display); font-size:clamp(22px,4vw,32px); font-weight:800;
+  max-width:520px; line-height:1.15;
+}
+.hero-title p{color:var(--text-dim); font-size:13.5px; max-width:420px;}
+
+/* ============ GAME CARD ============ */
+.game-card{
+  position:relative; z-index:3;
+  margin:-46px auto 0; max-width:1180px; padding:0 24px;
+}
+.game-card-inner{
+  display:flex; align-items:flex-end; gap:20px; flex-wrap:wrap;
+  background:linear-gradient(180deg, rgba(23,14,41,.4), var(--bg-soft) 70%);
+  padding-bottom:18px;
+}
+.game-icon{
+  width:96px; height:96px; border-radius:20px; flex-shrink:0;
+  background:linear-gradient(150deg, var(--purple-400), var(--purple-700) 60%, var(--gold-500));
+  border:3px solid var(--bg-soft);
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 14px 30px -10px rgba(124,58,237,.55);
+}
+.game-icon svg{width:46px; height:46px;}
+.game-meta{padding-bottom:6px;}
+.game-meta h2{font-family:var(--font-display); font-size:21px; font-weight:700;}
+.game-meta .publisher{color:var(--text-faint); font-size:12.5px; margin-top:2px;}
+.game-badges{display:flex; gap:16px; margin-top:10px; flex-wrap:wrap;}
+.game-badge{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-dim); font-weight:500;}
+.game-badge svg{width:14px; height:14px; color:var(--purple-400);}
+
+/* ============ TABS ============ */
+.tabs{
+  display:flex; gap:8px; margin:26px 0 0; overflow-x:auto; padding-bottom:2px;
+  scrollbar-width:none;
+}
+.tabs::-webkit-scrollbar{display:none;}
+.tab-btn{
+  flex-shrink:0;
+  padding:11px 20px; border-radius:11px; border:1px solid var(--card-border);
+  background:var(--card); color:var(--text-dim); font-weight:700; font-size:12.5px;
+  letter-spacing:.4px; text-transform:uppercase;
+  transition:all .18s ease;
+}
+.tab-btn:hover{color:var(--text); border-color:var(--card-border-strong);}
+.tab-btn.active{
+  background:linear-gradient(135deg, var(--purple-500), var(--purple-700));
+  color:#fff; border-color:transparent;
+  box-shadow:0 10px 24px -10px rgba(139,92,246,.7);
+}
+
+.panel{display:none;}
+.panel.active{display:block;}
+.placeholder-panel{
+  margin-top:22px; padding:60px 24px; text-align:center;
+  background:var(--card); border:1px dashed var(--card-border-strong); border-radius:var(--radius-l);
+  color:var(--text-dim); font-size:13.5px;
+}
+.placeholder-panel strong{display:block; color:var(--text); font-family:var(--font-display); font-size:16px; margin-bottom:6px;}
+
+/* ============ STEP HEADERS ============ */
+.step{margin-top:34px;}
+.step-head{display:flex; align-items:center; gap:12px; margin-bottom:16px;}
+.step-num{
+  width:26px; height:26px; border-radius:8px; flex-shrink:0;
+  background:linear-gradient(135deg, var(--purple-400), var(--purple-700));
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-display); font-weight:700; font-size:13px; color:#fff;
+}
+.step-title{font-family:var(--font-display); font-weight:700; font-size:16.5px;}
+
+/* ============ STEP 1 GRID ============ */
+.step1-grid{display:grid; grid-template-columns:1fr; gap:18px;}
+.card{
+  background:var(--card); border:1px solid var(--card-border); border-radius:var(--radius-l);
+  padding:20px;
+}
+.field-row{display:grid; grid-template-columns:1fr; gap:14px;}
+.field label{display:block; font-size:12.5px; font-weight:600; color:var(--text-dim); margin-bottom:7px;}
+.field input{
+  width:100%; background:var(--bg-soft); border:1px solid var(--card-border);
+  border-radius:10px; padding:12px 14px; color:var(--text); font-size:13.5px;
+  transition:border-color .18s ease, box-shadow .18s ease;
+}
+.field input::placeholder{color:var(--text-faint);}
+.field input:hover{border-color:var(--card-border-strong);}
+.field input:focus{outline:none; border-color:var(--purple-400); box-shadow:0 0 0 3px rgba(139,92,246,.18);}
+.field input.error{border-color:var(--red); box-shadow:0 0 0 3px rgba(255,107,107,.15);}
+.field-hint{font-size:11.5px; color:var(--text-faint); margin-top:8px;}
+.field-error{font-size:11.5px; color:var(--red); margin-top:6px; display:none;}
+.field-error.show{display:block;}
+
+.rating-block{margin-top:20px; padding-top:18px; border-top:1px solid var(--card-border);}
+.rating-block .rlabel{font-size:12.5px; font-weight:600; color:var(--text-dim); margin-bottom:8px;}
+.rating-row{display:flex; align-items:baseline; gap:12px;}
+.rating-score{font-family:var(--font-display); font-size:34px; font-weight:800;}
+.stars{display:flex; gap:3px;}
+.stars svg{width:19px; height:19px; color:#3c3450;}
+.help-text{font-size:12px; color:var(--text-faint); margin-top:8px;}
+.help-text a{color:var(--purple-300); font-weight:600;}
+.help-text a:hover{text-decoration:underline;}
+
+.summary-card{position:relative;}
+.summary-head{display:flex; gap:12px; align-items:center; padding-bottom:16px; margin-bottom:16px; border-bottom:1px solid var(--card-border);}
+.summary-thumb{width:44px; height:44px; border-radius:10px; background:linear-gradient(150deg, var(--purple-400), var(--purple-700)); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+.summary-thumb svg{width:24px; height:24px;}
+.summary-head h4{font-size:13px; font-weight:600; color:var(--text-faint);}
+.summary-head p{font-size:14.5px; font-weight:700; font-family:var(--font-display);}
+.summary-line{display:flex; justify-content:space-between; font-size:13px; color:var(--text-dim); padding:7px 0;}
+.summary-line strong{color:var(--text); font-weight:600;}
+.summary-total{
+  display:flex; justify-content:space-between; align-items:center;
+  margin-top:8px; padding-top:14px; border-top:1px solid var(--card-border);
+}
+.summary-total span:first-child{font-weight:700; font-size:13.5px;}
+.summary-total span:last-child{font-family:var(--font-display); font-weight:800; font-size:19px; color:var(--gold-400);}
+.btn-primary{
+  width:100%; margin-top:16px; padding:14px; border:none; border-radius:12px;
+  background:linear-gradient(135deg, var(--purple-500), var(--purple-700));
+  color:#fff; font-weight:700; font-size:13.5px; letter-spacing:.2px;
+  box-shadow:0 12px 26px -12px rgba(139,92,246,.8);
+  transition:transform .15s ease, box-shadow .15s ease, filter .15s ease;
+}
+.btn-primary:hover{transform:translateY(-2px); filter:brightness(1.08);}
+.btn-primary:active{transform:translateY(0); filter:brightness(.95);}
+.btn-primary:disabled{opacity:.5; cursor:not-allowed; transform:none; filter:none;}
+
+/* ============ PACKAGE GROUPS ============ */
+.group{
+  background:var(--card); border:1px solid var(--card-border); border-radius:var(--radius-l);
+  padding:20px; margin-bottom:16px;
+}
+.group-head{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:16px;}
+.group-title{font-size:13.5px; font-weight:700;}
+.group-title .spark{color:var(--gold-400); margin-left:4px;}
+
+.region-tabs{display:flex; gap:6px; background:var(--bg-soft); padding:4px; border-radius:10px; border:1px solid var(--card-border);}
+.region-btn{
+  padding:8px 14px; border-radius:7px; border:none; background:none; color:var(--text-dim);
+  font-size:12px; font-weight:600; transition:all .16s ease;
+}
+.region-btn:hover{color:var(--text);}
+.region-btn.active{background:linear-gradient(135deg, var(--purple-500), var(--purple-700)); color:#fff;}
+
+.pkg-grid{display:grid; grid-template-columns:1fr; gap:10px;}
+.pkg-card{
+  display:flex; align-items:center; gap:10px; text-align:left;
+  background:var(--card-alt); border:1.5px solid var(--card-border);
+  border-radius:12px; padding:12px 13px;
+  transition:border-color .16s ease, background .16s ease, transform .12s ease;
+  position:relative;
+}
+.pkg-card:hover{border-color:var(--card-border-strong); transform:translateY(-1px);}
+.pkg-card.selected{
+  border-color:var(--purple-400);
+  background:linear-gradient(135deg, rgba(139,92,246,.18), rgba(124,58,237,.06));
+  box-shadow:0 0 0 1px var(--purple-400) inset;
+}
+.pkg-card .gem{width:30px; height:30px; flex-shrink:0;}
+.pkg-info{flex:1; min-width:0;}
+.pkg-info .amt{font-size:12.5px; font-weight:600; color:var(--text); line-height:1.3;}
+.pkg-info .price{font-size:12.5px; font-weight:700; color:var(--purple-300); margin-top:2px;}
+.pkg-check{
+  width:18px; height:18px; border-radius:50%; border:1.5px solid var(--card-border-strong);
+  flex-shrink:0; display:flex; align-items:center; justify-content:center;
+  transition:all .16s ease;
+}
+.pkg-card.selected .pkg-check{background:var(--purple-500); border-color:var(--purple-500);}
+.pkg-check svg{width:10px; height:10px; color:#fff; opacity:0; transition:opacity .16s ease;}
+.pkg-card.selected .pkg-check svg{opacity:1;}
+
+.special-grid{grid-template-columns:1fr;}
+.special-card .gem{background:linear-gradient(150deg,var(--gold-400),#c8811d); border-radius:8px; padding:5px;}
+
+@media(min-width:640px){
+  .pkg-grid{grid-template-columns:repeat(2,1fr);}
+}
+@media(min-width:860px){
+  .pkg-grid{grid-template-columns:repeat(3,1fr);}
+}
+
+/* ============ STEP 3 QTY ============ */
+.qty-row{display:flex; gap:10px; align-items:stretch;}
+.qty-row input{
+  flex:1; background:var(--card); border:1px solid var(--card-border); border-radius:12px;
+  padding:0 16px; color:var(--text); font-size:15px; font-weight:600; text-align:center;
+}
+.qty-row input:focus{outline:none; border-color:var(--purple-400); box-shadow:0 0 0 3px rgba(139,92,246,.18);}
+.qty-btn{
+  width:52px; border-radius:12px; border:1px solid var(--card-border); background:var(--card-alt);
+  color:var(--text); font-size:19px; font-weight:700; display:flex; align-items:center; justify-content:center;
+  transition:background .16s ease, border-color .16s ease;
+}
+.qty-btn:hover{background:rgba(139,92,246,.16); border-color:var(--card-border-strong);}
+.qty-btn.plus{background:linear-gradient(135deg, var(--purple-500), var(--purple-700)); border-color:transparent; color:#fff;}
+.qty-btn.plus:hover{filter:brightness(1.1);}
+.qty-btn:disabled{opacity:.4; cursor:not-allowed;}
+
+/* ============ STEP 4 PAYMENT ============ */
+.pay-group{background:var(--card); border:1px solid var(--card-border); border-radius:var(--radius-l); overflow:hidden;}
+.pay-row{border-bottom:1px solid var(--card-border);}
+.pay-row:last-child{border-bottom:none;}
+.pay-row-head{
+  width:100%; display:flex; align-items:center; gap:14px; padding:16px 18px;
+  background:none; border:none; color:var(--text); text-align:left;
+  transition:background .16s ease;
+}
+.pay-row-head:hover{background:rgba(139,92,246,.06);}
+.pay-icon{
+  width:34px; height:34px; border-radius:9px; background:var(--card-alt); border:1px solid var(--card-border);
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.pay-icon svg{width:17px; height:17px; color:var(--purple-300);}
+.pay-label{flex:1; min-width:0;}
+.pay-label .t{font-size:13.5px; font-weight:700;}
+.pay-label .s{font-size:11.5px; color:var(--text-faint); margin-top:1px;}
+.pay-fee{font-size:12.5px; font-weight:600; color:var(--text-dim); flex-shrink:0;}
+.pay-radio{
+  width:20px; height:20px; border-radius:50%; border:2px solid var(--card-border-strong); flex-shrink:0;
+  display:flex; align-items:center; justify-content:center; transition:all .16s ease;
+}
+.pay-row.selected .pay-radio{border-color:var(--purple-400); background:var(--purple-500);}
+.pay-radio svg{width:11px; height:11px; color:#fff; opacity:0; transition:opacity .16s ease;}
+.pay-row.selected .pay-radio svg{opacity:1;}
+.pay-caret{width:14px; height:14px; color:var(--text-faint); flex-shrink:0; transition:transform .18s ease;}
+.pay-row.expanded .pay-caret{transform:rotate(180deg);}
+
+.pay-sub{max-height:0; overflow:hidden; transition:max-height .22s ease;}
+.pay-row.expanded .pay-sub{max-height:240px;}
+.pay-sub-inner{padding:2px 18px 16px 66px; display:flex; flex-wrap:wrap; gap:9px;}
+.pay-option{
+  display:flex; align-items:center; gap:7px; padding:9px 13px; border-radius:9px;
+  border:1.5px solid var(--card-border); background:var(--card-alt); font-size:12px; font-weight:600; color:var(--text-dim);
+  transition:all .15s ease;
+}
+.pay-option:hover{border-color:var(--card-border-strong); color:var(--text);}
+.pay-option.selected{border-color:var(--purple-400); color:var(--text); background:rgba(139,92,246,.14);}
+.pay-option .dot{width:8px; height:8px; border-radius:50%; flex-shrink:0;}
+
+/* ============ STEP 5 PROMO ============ */
+.promo-row{display:flex; gap:10px; flex-wrap:wrap;}
+.promo-row input{flex:1; min-width:200px;}
+.btn-outline{
+  padding:0 22px; border-radius:12px; border:1.5px solid var(--purple-400); background:transparent;
+  color:var(--purple-300); font-weight:700; font-size:13px; transition:all .16s ease;
+}
+.btn-outline:hover{background:rgba(139,92,246,.14); color:#fff;}
+.promo-msg{font-size:12px; margin-top:10px; display:none;}
+.promo-msg.show{display:block;}
+.promo-msg.ok{color:var(--green);}
+.promo-msg.bad{color:var(--red);}
+
+/* ============ STEP 6 CONTACT ============ */
+.contact-grid{display:grid; grid-template-columns:1fr; gap:14px;}
+.wa-input{display:flex; align-items:center; gap:0; background:var(--bg-soft); border:1px solid var(--card-border); border-radius:10px; overflow:hidden; transition:border-color .18s ease, box-shadow .18s ease;}
+.wa-input:focus-within{border-color:var(--purple-400); box-shadow:0 0 0 3px rgba(139,92,246,.18);}
+.wa-prefix{padding:12px 12px; color:var(--text-dim); font-size:13.5px; font-weight:600; border-right:1px solid var(--card-border);}
+.wa-input input{border:none; background:none; flex:1; padding:12px 14px; color:var(--text); font-size:13.5px;}
+.wa-input input:focus{outline:none;}
+@media(min-width:640px){ .contact-grid{grid-template-columns:1fr 1fr;} }
+
+.checkout-btn{margin-top:18px;}
+
+/* ============ NEWSLETTER ============ */
+.newsletter{
+  margin:56px 0 0; padding:44px 28px; border-radius:var(--radius-l); text-align:center;
+  background:
+    radial-gradient(500px 260px at 20% 0%, rgba(242,181,68,.16), transparent 60%),
+    linear-gradient(135deg, #221240, #150a26);
+  border:1px solid var(--card-border);
+}
+.newsletter h3{font-family:var(--font-display); font-size:22px; font-weight:800;}
+.newsletter p{color:var(--text-dim); font-size:13px; max-width:440px; margin:10px auto 22px;}
+.newsletter-form{display:flex; gap:10px; max-width:420px; margin:0 auto; flex-wrap:wrap;}
+.newsletter-form input{
+  flex:1; min-width:180px; background:rgba(255,255,255,.05); border:1px solid var(--card-border);
+  border-radius:10px; padding:13px 16px; color:var(--text); font-size:13px;
+}
+.newsletter-form input::placeholder{color:var(--text-faint);}
+.newsletter-form input:focus{outline:none; border-color:var(--gold-400);}
+.btn-gold{
+  padding:0 22px; border:none; border-radius:10px; font-weight:700; font-size:12.5px;
+  background:linear-gradient(135deg, var(--gold-400), #c8811d); color:#2b1600;
+  letter-spacing:.3px; text-transform:uppercase; transition:filter .16s ease, transform .16s ease;
+}
+.btn-gold:hover{filter:brightness(1.08); transform:translateY(-1px);}
+
+/* ============ FOOTER ============ */
+footer{margin-top:56px; border-top:1px solid var(--card-border); padding:44px 0 26px;}
+.footer-grid{display:grid; grid-template-columns:1fr; gap:34px;}
+.footer-brand .brand{margin-bottom:10px;}
+.footer-brand p{font-size:12.5px; color:var(--text-faint); max-width:260px; line-height:1.6;}
+.footer-col h5{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--text-faint); margin-bottom:14px;}
+.footer-col a{display:block; font-size:13px; color:var(--text-dim); margin-bottom:10px; transition:color .16s ease;}
+.footer-col a:hover{color:var(--purple-300);}
+.footer-bottom{margin-top:36px; padding-top:20px; border-top:1px solid var(--card-border); font-size:12px; color:var(--text-faint); text-align:center;}
+@media(min-width:720px){ .footer-grid{grid-template-columns:1.4fr 1fr 1fr 1fr;} }
+
+/* ============ MODAL ============ */
+.modal-backdrop{
+  position:fixed; inset:0; background:rgba(6,3,12,.72); backdrop-filter:blur(4px);
+  display:flex; align-items:center; justify-content:center; padding:20px; z-index:200;
+  opacity:0; visibility:hidden; transition:opacity .2s ease, visibility .2s ease;
+}
+.modal-backdrop.open{opacity:1; visibility:visible;}
+.modal{
+  width:100%; max-width:420px; background:var(--card-alt); border:1px solid var(--card-border-strong);
+  border-radius:var(--radius-l); padding:26px; box-shadow:0 30px 70px -20px rgba(0,0,0,.7);
+  transform:translateY(16px) scale(.97); transition:transform .22s ease;
+}
+.modal-backdrop.open .modal{transform:translateY(0) scale(1);}
+.modal-icon{
+  width:52px; height:52px; border-radius:16px; margin-bottom:16px;
+  background:linear-gradient(135deg, var(--purple-500), var(--purple-700));
+  display:flex; align-items:center; justify-content:center;
+}
+.modal-icon svg{width:26px; height:26px; color:#fff;}
+.modal h3{font-family:var(--font-display); font-size:18px; font-weight:700; margin-bottom:6px;}
+.modal p.sub{color:var(--text-dim); font-size:13px; margin-bottom:18px;}
+.modal-lines{background:var(--bg-soft); border:1px solid var(--card-border); border-radius:12px; padding:14px 16px; margin-bottom:18px;}
+.modal-lines .l{display:flex; justify-content:space-between; font-size:12.5px; color:var(--text-dim); padding:5px 0;}
+.modal-lines .l strong{color:var(--text); font-weight:600;}
+.modal-lines .l.total{border-top:1px solid var(--card-border); margin-top:6px; padding-top:10px; font-size:14px;}
+.modal-lines .l.total strong{color:var(--gold-400); font-family:var(--font-display); font-size:16px;}
+.modal-actions{display:flex; gap:10px;}
+.modal-actions .btn-primary{margin-top:0;}
+.btn-ghost{
+  flex:1; padding:14px; border-radius:12px; border:1px solid var(--card-border-strong); background:none;
+  color:var(--text-dim); font-weight:700; font-size:13px; transition:all .16s ease;
+}
+.btn-ghost:hover{background:rgba(255,255,255,.05); color:var(--text);}
+.modal-close{
+  position:absolute; top:16px; right:16px; width:30px; height:30px; border-radius:9px; border:none;
+  background:var(--card); color:var(--text-dim); display:flex; align-items:center; justify-content:center;
+}
+.modal-close:hover{color:var(--text); background:var(--bg-soft);}
+.modal{position:relative;}
+
+/* ============ TOAST ============ */
+.toast-wrap{position:fixed; bottom:22px; left:50%; transform:translateX(-50%); z-index:300; display:flex; flex-direction:column; gap:8px; align-items:center;}
+.toast{
+  display:flex; align-items:center; gap:10px;
+  background:var(--card-alt); border:1px solid var(--card-border-strong); border-radius:12px;
+  padding:12px 18px; font-size:13px; font-weight:600; box-shadow:0 14px 30px -10px rgba(0,0,0,.6);
+  opacity:0; transform:translateY(10px); transition:opacity .2s ease, transform .2s ease;
+}
+.toast.show{opacity:1; transform:translateY(0);}
+.toast svg{width:16px; height:16px; color:var(--green); flex-shrink:0;}
+
+/* ============ RESPONSIVE HERO/DESKTOP GRID ============ */
+@media(min-width:860px){
+  .brand-name{display:block;}
+  .nav-links{display:flex;}
+  .user-name{display:block;}
+  .burger{display:none;}
+  .hero{height:270px;}
+  .hero-emblem{width:190px; height:190px;}
+  .step1-grid{grid-template-columns:1.5fr 1fr; align-items:start;}
+  .summary-card{position:sticky; top:88px;}
+  .special-grid{grid-template-columns:repeat(3,1fr);}
+}
+@media(max-width:859px){
+  .burger{display:flex;}
+}
+.spacer-bottom{height:20px;}
+</style>
+</head>
+<body>
+
+<!-- ============ SVG SPRITE ============ -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="gemGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#c4b1ff"/>
+      <stop offset="55%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#5b21b6"/>
+    </linearGradient>
+    <symbol id="icon-gem" viewBox="0 0 32 32">
+      <polygon points="16,2 27,11 22,30 10,30 5,11" fill="url(#gemGrad)"/>
+      <polygon points="16,2 27,11 16,14" fill="#e4d9ff" opacity=".55"/>
+      <polygon points="16,2 5,11 16,14" fill="#f4eeff" opacity=".8"/>
+      <polygon points="5,11 16,14 10,30" fill="#6d33d6" opacity=".7"/>
+      <polygon points="27,11 16,14 22,30" fill="#4c1d95" opacity=".75"/>
+    </symbol>
+  </defs>
+</svg>
+
+<!-- ============ NAVBAR ============ -->
+<header class="navbar">
+  <div class="navbar-inner">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 2 L20 5 V11 C20 16 16.5 20 12 22 C7.5 20 4 16 4 11 V5 Z" fill="#fff" opacity=".95"/><path d="M12 6 L16 8 V11.5 C16 14.5 14.2 17 12 18.2 C9.8 17 8 14.5 8 11.5 V8 Z" fill="#7c3aed"/></svg>
+      </div>
+      <span class="brand-name">Johen Gaming</span>
+    </div>
+
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input type="text" placeholder="Cari Game atau Voucher" id="searchInput">
+    </div>
+
+    <nav class="nav-links">
+      <a href="#" class="nav-link active" data-tab="topup">Top Up</a>
+      <a href="#" class="nav-link" data-tab="joki">Joki</a>
+      <a href="#" class="nav-link" data-tab="cek">Cek Transaksi</a>
+      <a href="#">Leaderboard</a>
+    </nav>
+
+    <div class="user-chip" id="userChip">
+      <button class="user-chip-btn" id="userChipBtn">
+        <span class="user-avatar">JG</span>
+        <span class="user-name">Johen Gaming</span>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="user-menu">
+        <a href="#">Profil Saya</a>
+        <a href="#">Riwayat Transaksi</a>
+        <a href="#">Pengaturan</a>
+        <a href="#">Keluar</a>
+      </div>
+    </div>
+
+    <button class="burger" id="burgerBtn" aria-label="Buka menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+  </div>
+  <div class="mobile-nav" id="mobileNav">
+    <a href="#" class="nav-link active" data-tab="topup">Top Up</a>
+    <a href="#" class="nav-link" data-tab="joki">Joki</a>
+    <a href="#" class="nav-link" data-tab="cek">Cek Transaksi</a>
+    <a href="#">Leaderboard</a>
+  </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-shard"></div>
+  <svg class="hero-emblem" viewBox="0 0 120 120" fill="none">
+    <circle cx="60" cy="46" r="30" fill="url(#gemGrad)" opacity=".18"/>
+    <path d="M60 20l7 14 15 2-11 10 3 15-14-7-14 7 3-15-11-10 15-2z" fill="#f2b544"/>
+    <path d="M60 24l5.2 10.6 11.6 1.6-8.4 7.6 2.2 11.6-10.6-5.4-10.6 5.4 2.2-11.6-8.4-7.6 11.6-1.6z" fill="#ffe08a"/>
+    <g fill="#f2b544">
+      <circle cx="30" cy="88" r="6"/><circle cx="60" cy="96" r="6"/><circle cx="90" cy="88" r="6"/>
+    </g>
+    <path d="M14 66c10 22 30 34 46 34s36-12 46-34" stroke="#a78bfa" stroke-width="3" fill="none" opacity=".55"/>
+  </svg>
+  <div class="hero-title">
+    <span class="hero-eyebrow">Top Up Instan · Aman · Termurah</span>
+    <h1>Mobile Legend: Bang Bang</h1>
+    <p>Isi ulang Diamonds favoritmu dalam hitungan detik, tanpa drama, tanpa antre.</p>
+  </div>
+</section>
+
+<!-- ============ GAME CARD ============ -->
+<div class="game-card">
+  <div class="game-card-inner">
+    <div class="game-icon">
+      <svg viewBox="0 0 32 32"><use href="#icon-gem"/></svg>
+    </div>
+    <div class="game-meta">
+      <h2>Mobile Legend: Bang Bang</h2>
+      <p class="publisher">Moonton</p>
+      <div class="game-badges">
+        <span class="game-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg>Proses Cepat</span>
+        <span class="game-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Layanan 24/7</span>
+        <span class="game-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 4 5v6c0 5 3.4 8.7 8 11 4.6-2.3 8-6 8-11V5z"/></svg>Transaksi Aman</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MAIN ============ -->
+<main class="wrap">
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="topup">Top Up Games</button>
+    <button class="tab-btn" data-tab="joki">Joki Mobile Legends</button>
+    <button class="tab-btn" data-tab="cek">Cek Transaksi</button>
+  </div>
+
+  <!-- ===== PANEL: TOP UP ===== -->
+  <div class="panel active" id="panel-topup">
+
+    <!-- STEP 1 -->
+    <div class="step">
+      <div class="step-head"><div class="step-num">1</div><div class="step-title">Masukan Data Akun</div></div>
+      <div class="step1-grid">
+        <div>
+          <div class="card">
+            <div class="field-row" style="grid-template-columns:1fr 1fr;">
+              <div class="field">
+                <label for="userId">Email atau User ID</label>
+                <input type="text" id="userId" placeholder="12345678">
+                <div class="field-error" id="userIdError">User ID wajib diisi.</div>
+              </div>
+              <div class="field">
+                <label for="zoneId">Zone ID</label>
+                <input type="text" id="zoneId" placeholder="(1234)">
+                <div class="field-error" id="zoneIdError">Zone ID wajib diisi.</div>
+              </div>
+            </div>
+            <p class="field-hint">To find your User ID, tap on your avatar in the top-left corner of the main game screen.</p>
+
+            <div class="rating-block">
+              <div class="rlabel">Ulasan dan Rating</div>
+              <div class="rating-row">
+                <span class="rating-score">0.0</span>
+                <span class="stars">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 6.5 7 .9-5.2 4.9 1.4 7-6.2-3.5L5.8 21l1.4-7L2 9.4l7-.9z"/></svg>
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 6.5 7 .9-5.2 4.9 1.4 7-6.2-3.5L5.8 21l1.4-7L2 9.4l7-.9z"/></svg>
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 6.5 7 .9-5.2 4.9 1.4 7-6.2-3.5L5.8 21l1.4-7L2 9.4l7-.9z"/></svg>
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 6.5 7 .9-5.2 4.9 1.4 7-6.2-3.5L5.8 21l1.4-7L2 9.4l7-.9z"/></svg>
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 6.5 7 .9-5.2 4.9 1.4 7-6.2-3.5L5.8 21l1.4-7L2 9.4l7-.9z"/></svg>
+                </span>
+              </div>
+              <p class="help-text">Butuh Bantuan? Kamu Bisa Hubungi Admin <a href="#" id="adminHelpLink">Disini</a></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card summary-card">
+          <div class="summary-head">
+            <div class="summary-thumb"><svg viewBox="0 0 32 32" width="24" height="24"><use href="#icon-gem"/></svg></div>
+            <div>
+              <h4>Mobile Legends</h4>
+              <p id="sumPkgName">875 (774+101) Diamonds</p>
+            </div>
+          </div>
+          <div class="summary-line"><span>Harga</span><strong id="sumHarga">Rp 230.710</strong></div>
+          <div class="summary-line"><span>Jumlah Pembelian</span><strong id="sumQty">1</strong></div>
+          <div class="summary-line"><span>Biaya Layanan</span><strong id="sumFee">Rp 0</strong></div>
+          <div class="summary-total"><span>Total Pembayaran</span><span id="sumTotal">Rp 230.710</span></div>
+          <button class="btn-primary" id="orderNowBtn">Pesan Sekarang</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step">
+      <div class="step-head"><div class="step-num">2</div><div class="step-title">Pilih Nominal</div></div>
+
+      <div class="group">
+        <div class="group-head"><div class="group-title">First Top Up (Double Diamonds) <span class="spark">✨</span></div></div>
+        <div class="pkg-grid" id="firstTopupGrid"></div>
+      </div>
+
+      <div class="group">
+        <div class="group-head"><div class="group-title">Special Items <span class="spark">✨</span></div></div>
+        <div class="pkg-grid special-grid" id="specialGrid"></div>
+      </div>
+
+      <div class="group">
+        <div class="group-head">
+          <div class="group-title">Top up Instant <span class="spark">✨</span></div>
+          <div class="region-tabs" id="regionTabs">
+            <button class="region-btn active" data-region="ID">Region Indonesia</button>
+            <button class="region-btn" data-region="MY">Region Malaysia</button>
+            <button class="region-btn" data-region="PH">Region Philipina</button>
+          </div>
+        </div>
+        <div class="pkg-grid" id="instantGrid"></div>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="step">
+      <div class="step-head"><div class="step-num">3</div><div class="step-title">Masukan Jumlah Pembelian</div></div>
+      <div class="qty-row">
+        <button class="qty-btn" id="qtyMinus" aria-label="Kurangi jumlah">–</button>
+        <input type="text" id="qtyInput" value="1" inputmode="numeric">
+        <button class="qty-btn plus" id="qtyPlus" aria-label="Tambah jumlah">+</button>
+      </div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="step">
+      <div class="step-head"><div class="step-num">4</div><div class="step-title">Pilih Pembayaran</div></div>
+      <div class="pay-group" id="payGroup"></div>
+    </div>
+
+    <!-- STEP 5 -->
+    <div class="step">
+      <div class="step-head"><div class="step-num">5</div><div class="step-title">Kode Promo</div></div>
+      <div class="card">
+        <label for="promoInput" style="display:block; font-size:12.5px; font-weight:600; color:var(--text-dim); margin-bottom:8px;">Masukan Kode Promo Kamu</label>
+        <div class="promo-row">
+          <input type="text" id="promoInput" placeholder="JOHIJOHENI">
+          <button class="btn-outline" id="promoBtn">Terapkan</button>
+        </div>
+        <p class="promo-msg" id="promoMsg"></p>
+      </div>
+    </div>
+
+    <!-- STEP 6 -->
+    <div class="step">
+      <div class="step-head"><div class="step-num">6</div><div class="step-title">Detail Kontak</div></div>
+      <div class="card">
+        <div class="contact-grid">
+          <div class="field">
+            <label for="emailInput">Email</label>
+            <input type="email" id="emailInput" placeholder="example@gmail.com">
+            <div class="field-error" id="emailError">Masukan email yang valid.</div>
+          </div>
+          <div class="field">
+            <label for="waInput">WhatsApp Number</label>
+            <div class="wa-input">
+              <span class="wa-prefix">+62</span>
+              <input type="tel" id="waInput" placeholder="812xxxxxxx">
+            </div>
+            <div class="field-error" id="waError">Nomor WhatsApp wajib diisi.</div>
+          </div>
+        </div>
+        <p class="field-hint">*Nomor ini akan dihubungi jika terjadi masalah.</p>
+        <button class="btn-primary checkout-btn" id="checkoutBtn">Lanjut ke Checkout</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PANEL: JOKI ===== -->
+  <div class="panel" id="panel-joki">
+    <div class="placeholder-panel">
+      <strong>Joki Mobile Legends</strong>
+      Layanan joki rank belum tersedia untuk game ini saat ini. Pantau terus, kami sedang menyiapkannya untukmu.
+    </div>
+  </div>
+
+  <!-- ===== PANEL: CEK ===== -->
+  <div class="panel" id="panel-cek">
+    <div class="placeholder-panel">
+      <strong>Cek Transaksi</strong>
+      Masukan Invoice ID dari email konfirmasi untuk melihat status pesananmu.
+      <div style="max-width:360px; margin:18px auto 0; display:flex; gap:8px;">
+        <input type="text" placeholder="Contoh: JG-2026-00123" style="flex:1; background:var(--bg-soft); border:1px solid var(--card-border); border-radius:10px; padding:12px 14px; color:var(--text); font-size:13px;">
+        <button class="btn-outline">Cek</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ NEWSLETTER ============ -->
+  <section class="newsletter">
+    <h3>Level Up Bareng Kami!</h3>
+    <p>Claim kode diskon eksklusif, notifikasi flash sale, dan akses VIP ke promo terbaik. Lebih cepat top up, lebih murah, lebih unggul.</p>
+    <form class="newsletter-form" id="newsletterForm">
+      <input type="email" placeholder="Masukan Email Kamu" id="newsletterEmail" required>
+      <button type="submit" class="btn-gold">Subscribe Now</button>
+    </form>
+  </section>
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+  <div class="wrap footer-grid">
+    <div class="footer-brand">
+      <div class="brand">
+        <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2 L20 5 V11 C20 16 16.5 20 12 22 C7.5 20 4 16 4 11 V5 Z" fill="#fff" opacity=".95"/><path d="M12 6 L16 8 V11.5 C16 14.5 14.2 17 12 18.2 C9.8 17 8 14.5 8 11.5 V8 Z" fill="#7c3aed"/></svg></div>
+        <span class="brand-name" style="display:block; font-size:16px;">Johen Gaming</span>
+      </div>
+      <p>Top up game &amp; voucher terlaris, aman legal 100% buka 24 jam dengan payment terlengkap se-Indonesia.</p>
+    </div>
+    <div class="footer-col">
+      <h5>Peta Situs</h5>
+      <a href="#">Beranda</a><a href="#">Cek Transaksi</a><a href="#">Hubungi Kami</a><a href="#">Ulasan</a>
+    </div>
+    <div class="footer-col">
+      <h5>Dukungan</h5>
+      <a href="#">Contact Us</a><a href="#">Affiliate Program</a><a href="#">FAQ</a>
+    </div>
+    <div class="footer-col">
+      <h5>Legalitas</h5>
+      <a href="#">Kebijakan Privasi</a><a href="#">Syarat &amp; Ketentuan</a>
+    </div>
+  </div>
+  <div class="footer-bottom">© 2026 Johen Gaming. All Rights Reserved.</div>
+</footer>
+
+<!-- ============ CHECKOUT MODAL ============ -->
+<div class="modal-backdrop" id="checkoutModal">
+  <div class="modal">
+    <button class="modal-close" id="modalClose" aria-label="Tutup">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+    <div class="modal-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg></div>
+    <h3>Konfirmasi Pesanan</h3>
+    <p class="sub">Periksa kembali detail pesananmu sebelum melanjutkan pembayaran.</p>
+    <div class="modal-lines" id="modalLines"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="modalCancel">Batal</button>
+      <button class="btn-primary" id="modalConfirm">Bayar Sekarang</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TOAST ============ -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- helpers ---------- */
+  const $ = (s, ctx) => (ctx||document).querySelector(s);
+  const $$ = (s, ctx) => Array.from((ctx||document).querySelectorAll(s));
+  const rupiah = n => "Rp " + Math.round(n).toLocaleString("id-ID");
+  const gemSVG = `<svg class="gem" viewBox="0 0 32 32"><use href="#icon-gem"/></svg>`;
+
+  function toast(msg, ok){
+    const wrap = $("#toastWrap");
+    const el = document.createElement("div");
+    el.className = "toast";
+    el.innerHTML = (ok!==false
+      ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>`
+      : `<svg viewBox="0 0 24 24" fill="none" stroke="#ff6b6b" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>`)
+      + `<span>${msg}</span>`;
+    wrap.appendChild(el);
+    requestAnimationFrame(()=> el.classList.add("show"));
+    setTimeout(()=>{
+      el.classList.remove("show");
+      setTimeout(()=> el.remove(), 250);
+    }, 2600);
+  }
+
+  /* ---------- nav: mobile burger ---------- */
+  const burgerBtn = $("#burgerBtn"), mobileNav = $("#mobileNav");
+  burgerBtn.addEventListener("click", ()=> mobileNav.classList.toggle("open"));
+
+  /* ---------- user dropdown ---------- */
+  const userChip = $("#userChip"), userChipBtn = $("#userChipBtn");
+  userChipBtn.addEventListener("click", (e)=>{ e.stopPropagation(); userChip.classList.toggle("open"); });
+  document.addEventListener("click", ()=> userChip.classList.remove("open"));
+
+  /* ---------- tabs (top nav + tab bar linked) ---------- */
+  function setTab(tab){
+    $$(".tab-btn").forEach(b=> b.classList.toggle("active", b.dataset.tab===tab));
+    $$(".nav-link").forEach(a=> a.classList.toggle("active", a.dataset.tab===tab));
+    $$(".panel").forEach(p=> p.classList.toggle("active", p.id === "panel-"+tab));
+    mobileNav.classList.remove("open");
+  }
+  $$(".tab-btn").forEach(b=> b.addEventListener("click", ()=> setTab(b.dataset.tab)));
+  $$(".nav-link").forEach(a=> a.addEventListener("click", (e)=>{ e.preventDefault(); setTab(a.dataset.tab); window.scrollTo({top:0,behavior:"smooth"}); }));
+
+  /* ---------- package data ---------- */
+  const firstTopup = [
+    {label:"55 (50+5) Diamonds", price:14115},
+    {label:"165 (150+15) Diamonds", price:42233},
+    {label:"275 (250+25) Diamonds", price:70197},
+    {label:"565 (500+65) Diamonds", price:142106},
+  ];
+  const specialItems = [
+    {label:"Weekly Diamond Pass", price:28251},
+    {label:"Weekly Diamond Pass MY", price:36185},
+    {label:"Twilight Pass", price:142678},
+  ];
+  const instantByRegion = {
+    ID: [
+      ["5 (5+0) Diamonds",1508],["10 (9+1) Diamonds",3059],["12 (11+1) Diamonds",3159],
+      ["14 (13+1) Diamonds",4078],["18 (17+1) Diamonds",5097],["19 (17+2) Diamonds",5530],
+      ["28 (25+3) Diamonds",8043],["36 (33+3) Diamonds",10193],["44 (40+4) Diamonds",12064],
+      ["59 (53+6) Diamonds",16085],["74 (67+7) Diamonds",20384],["85 (77+8) Diamonds",23124],
+      ["170 (154+16) Diamonds",46246],["222 (200+22) Diamonds",61151],["240 (217+23) Diamonds",65209],
+      ["296 (256+40) Diamonds",80239],["370 (333+37) Diamonds",101919],["408 (367+41) Diamonds",110352],
+      ["875 (774+101) Diamonds",230710],["966 (836+130) Diamonds",254796],
+      ["2010 (1708+302) Diamonds",501542],["4830 (4003+827) Diamonds",1203565],
+    ],
+    MY: [
+      ["5 (5+0) Diamonds",1650],["10 (9+1) Diamonds",3320],["18 (17+1) Diamonds",5540],
+      ["44 (40+4) Diamonds",13010],["85 (77+8) Diamonds",24960],["170 (154+16) Diamonds",49850],
+      ["408 (367+41) Diamonds",119200],["875 (774+101) Diamonds",248800],
+    ],
+    PH: [
+      ["5 (5+0) Diamonds",1580],["10 (9+1) Diamonds",3190],["18 (17+1) Diamonds",5310],
+      ["44 (40+4) Diamonds",12550],["85 (77+8) Diamonds",24010],["170 (154+16) Diamonds",47990],
+      ["408 (367+41) Diamonds",114800],["875 (774+101) Diamonds",239500],
+    ],
+  };
+
+  let selectedPackage = { label:"875 (774+101) Diamonds", price:230710 };
+  let selectedRegion = "ID";
+  let qty = 1;
+  let promoDiscount = 0;
+  let selectedPaymentFee = 0;
+  let selectedPaymentLabel = "";
+
+  function pkgCardHTML(label, price, extraClass){
+    return `<button type="button" class="pkg-card ${extraClass||""}" data-label="${label}" data-price="${price}">
+      ${gemSVG}
+      <span class="pkg-info"><span class="amt">${label}</span><span class="price">${rupiah(price)}</span></span>
+      <span class="pkg-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
+    </button>`;
+  }
+
+  function renderFirstTopup(){
+    $("#firstTopupGrid").innerHTML = firstTopup.map(p=> pkgCardHTML(p.label, p.price)).join("");
+  }
+  function renderSpecial(){
+    $("#specialGrid").innerHTML = specialItems.map(p=> pkgCardHTML(p.label, p.price, "special-card")).join("");
+  }
+  function renderInstant(){
+    const list = instantByRegion[selectedRegion];
+    $("#instantGrid").innerHTML = list.map(([label,price])=> pkgCardHTML(label, price)).join("");
+    syncSelectionHighlight();
+  }
+  function syncSelectionHighlight(){
+    $$(".pkg-card").forEach(c=>{
+      c.classList.toggle("selected", c.dataset.label === selectedPackage.label && Number(c.dataset.price) === selectedPackage.price);
+    });
+  }
+
+  document.addEventListener("click", (e)=>{
+    const card = e.target.closest(".pkg-card");
+    if(!card) return;
+    selectedPackage = { label: card.dataset.label, price: Number(card.dataset.price) };
+    syncSelectionHighlight();
+    updateSummary();
+    toast(`${selectedPackage.label} dipilih`);
+  });
+
+  $$(".region-btn").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      $$(".region-btn").forEach(b=> b.classList.remove("active"));
+      btn.classList.add("active");
+      selectedRegion = btn.dataset.region;
+      renderInstant();
+    });
+  });
+
+  renderFirstTopup();
+  renderSpecial();
+  renderInstant();
+
+  /* ---------- quantity ---------- */
+  const qtyInput = $("#qtyInput"), qtyMinus = $("#qtyMinus"), qtyPlus = $("#qtyPlus");
+  function setQty(v){
+    v = Math.max(1, Math.min(99, Math.round(v)||1));
+    qty = v;
+    qtyInput.value = v;
+    qtyMinus.disabled = v<=1;
+    updateSummary();
+  }
+  qtyMinus.addEventListener("click", ()=> setQty(qty-1));
+  qtyPlus.addEventListener("click", ()=> setQty(qty+1));
+  qtyInput.addEventListener("change", ()=> setQty(parseInt(qtyInput.value,10)));
+  qtyInput.addEventListener("input", ()=> { qtyInput.value = qtyInput.value.replace(/[^0-9]/g,""); });
+
+  /* ---------- payment methods ---------- */
+  const paymentMethods = [
+    { key:"qris", title:"QRIS", sub:"All E-Wallets & Banks", fee:3500,
+      icon:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v3M17 20h3"/></svg>`,
+      options:null },
+    { key:"ewallet", title:"E-Wallet", sub:"Direct Pay", fee:3650,
+      icon:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/></svg>`,
+      options:[["DANA","#118eea"],["GoPay","#00aa5b"],["ShopeePay","#ee4d2d"],["OVO","#4f2d7f"]] },
+    { key:"va", title:"Virtual Account", sub:"Direct Pay", fee:3650,
+      icon:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>`,
+      options:[["BCA","#0a5eb0"],["BRI","#00529c"],["BNI","#f37021"],["Mandiri","#003d79"]] },
+    { key:"cstore", title:"Convenience Store", sub:"", fee:3650,
+      icon:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l1-5h16l1 5M4 9v11h16V9M4 9h16"/></svg>`,
+      options:[["Alfamart","#e2211c"],["Indomaret","#005baa"]] },
+  ];
+
+  function payRowHTML(m){
+    const optHTML = m.options ? m.options.map(([name,color])=>
+      `<button type="button" class="pay-option" data-parent="${m.key}" data-name="${name}" data-fee="${m.fee}">
+        <span class="dot" style="background:${color}"></span>${name}
+      </button>`).join("") : "";
+    return `
+    <div class="pay-row" data-key="${m.key}">
+      <button type="button" class="pay-row-head" data-key="${m.key}">
+        <span class="pay-icon">${m.icon}</span>
+        <span class="pay-label"><span class="t">${m.title}</span>${m.sub?`<span class="s">${m.sub}</span>`:""}</span>
+        <span class="pay-fee">${rupiah(m.fee)}</span>
+        ${m.options
+          ? `<svg class="pay-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>`
+          : `<span class="pay-radio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>`}
+      </button>
+      ${m.options ? `<div class="pay-sub"><div class="pay-sub-inner">${optHTML}</div></div>` : ""}
+    </div>`;
+  }
+
+  $("#payGroup").innerHTML = paymentMethods.map(payRowHTML).join("");
+
+  // default select QRIS
+  selectedPaymentFee = 3500;
+  selectedPaymentLabel = "QRIS";
+  $('.pay-row[data-key="qris"]').classList.add("selected");
+
+  $("#payGroup").addEventListener("click", (e)=>{
+    const opt = e.target.closest(".pay-option");
+    if(opt){
+      const parentRow = $(`.pay-row[data-key="${opt.dataset.parent}"]`);
+      $$(".pay-option", parentRow).forEach(o=> o.classList.remove("selected"));
+      opt.classList.add("selected");
+      $$(".pay-row").forEach(r=> r.classList.remove("selected"));
+      parentRow.classList.add("selected");
+      selectedPaymentFee = Number(opt.dataset.fee);
+      selectedPaymentLabel = opt.dataset.name;
+      updateSummary();
+      return;
+    }
+    const head = e.target.closest(".pay-row-head");
+    if(!head) return;
+    const row = $(`.pay-row[data-key="${head.dataset.key}"]`);
+    const method = paymentMethods.find(m=> m.key===head.dataset.key);
+    if(method.options){
+      const wasExpanded = row.classList.contains("expanded");
+      $$(".pay-row").forEach(r=> r.classList.remove("expanded"));
+      if(!wasExpanded) row.classList.add("expanded");
+    } else {
+      $$(".pay-row").forEach(r=> r.classList.remove("selected"));
+      row.classList.add("selected");
+      selectedPaymentFee = method.fee;
+      selectedPaymentLabel = method.title;
+      updateSummary();
+    }
+  });
+
+  /* ---------- summary ---------- */
+  function updateSummary(){
+    const subtotal = selectedPackage.price * qty;
+    const total = Math.max(0, subtotal + selectedPaymentFee - promoDiscount);
+    $("#sumPkgName").textContent = selectedPackage.label;
+    $("#sumHarga").textContent = rupiah(selectedPackage.price);
+    $("#sumQty").textContent = qty;
+    $("#sumFee").textContent = rupiah(selectedPaymentFee);
+    $("#sumTotal").textContent = rupiah(total);
+  }
+  updateSummary();
+
+  $("#orderNowBtn").addEventListener("click", ()=>{
+    document.querySelector(".step:nth-of-type(5)")?.scrollIntoView({behavior:"smooth", block:"center"});
+    toast("Lengkapi data di bawah untuk melanjutkan");
+  });
+
+  $("#adminHelpLink").addEventListener("click", (e)=>{
+    e.preventDefault();
+    toast("Menghubungkan ke admin support…");
+  });
+
+  /* ---------- promo ---------- */
+  const promoInput = $("#promoInput"), promoMsg = $("#promoMsg");
+  $("#promoBtn").addEventListener("click", ()=>{
+    const code = promoInput.value.trim().toUpperCase();
+    if(!code){
+      promoMsg.textContent = "Masukan kode promo terlebih dahulu.";
+      promoMsg.className = "promo-msg show bad";
+      return;
+    }
+    if(code === "JOHIJOHENI" || code === "JOHENI10" || code === "JOHIJOHENI10"){
+      promoDiscount = Math.round(selectedPackage.price * qty * 0.10);
+      promoMsg.textContent = `Kode berhasil diterapkan! Diskon ${rupiah(promoDiscount)}.`;
+      promoMsg.className = "promo-msg show ok";
+    } else {
+      promoDiscount = 0;
+      promoMsg.textContent = "Kode promo tidak valid atau sudah kedaluwarsa.";
+      promoMsg.className = "promo-msg show bad";
+    }
+    updateSummary();
+  });
+
+  /* ---------- checkout validation + modal ---------- */
+  const userIdInput = $("#userId"), zoneIdInput = $("#zoneId");
+  const emailInput = $("#emailInput"), waInput = $("#waInput");
+
+  function validateField(input, errorEl, testFn){
+    const ok = testFn(input.value.trim());
+    input.classList.toggle("error", !ok);
+    errorEl.classList.toggle("show", !ok);
+    return ok;
+  }
+
+  $("#checkoutBtn").addEventListener("click", ()=>{
+    const okUserId = validateField(userIdInput, $("#userIdError"), v=> v.length>0);
+    const okZone = validateField(zoneIdInput, $("#zoneIdError"), v=> v.length>0);
+    const okEmail = validateField(emailInput, $("#emailError"), v=> /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v));
+    const okWa = validateField(waInput, $("#waError"), v=> v.length>=8);
+
+    if(!okUserId || !okZone){
+      $("#userId").scrollIntoView({behavior:"smooth", block:"center"});
+      toast("Lengkapi Data Akun terlebih dahulu", false);
+      return;
+    }
+    if(!okEmail || !okWa){
+      toast("Periksa kembali Detail Kontak kamu", false);
+      return;
+    }
+    openModal();
+  });
+
+  function openModal(){
+    const subtotal = selectedPackage.price * qty;
+    const total = Math.max(0, subtotal + selectedPaymentFee - promoDiscount);
+    $("#modalLines").innerHTML = `
+      <div class="l"><span>Item</span><strong>${selectedPackage.label}</strong></div>
+      <div class="l"><span>Akun</span><strong>${userIdInput.value.trim()} (${zoneIdInput.value.trim()})</strong></div>
+      <div class="l"><span>Jumlah</span><strong>${qty}x</strong></div>
+      <div class="l"><span>Metode Bayar</span><strong>${selectedPaymentLabel || "-"}</strong></div>
+      ${promoDiscount>0 ? `<div class="l"><span>Diskon Promo</span><strong>-${rupiah(promoDiscount)}</strong></div>` : ""}
+      <div class="l total"><span>Total</span><strong>${rupiah(total)}</strong></div>
+    `;
+    $("#checkoutModal").classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+  function closeModal(){
+    $("#checkoutModal").classList.remove("open");
+    document.body.style.overflow = "";
+  }
+  $("#modalClose").addEventListener("click", closeModal);
+  $("#modalCancel").addEventListener("click", closeModal);
+  $("#checkoutModal").addEventListener("click", (e)=>{ if(e.target.id==="checkoutModal") closeModal(); });
+  document.addEventListener("keydown", (e)=>{ if(e.key==="Escape") closeModal(); });
+  $("#modalConfirm").addEventListener("click", ()=>{
+    closeModal();
+    toast("Pesanan berhasil dibuat! Cek email untuk instruksi pembayaran.");
+  });
+
+  /* ---------- newsletter ---------- */
+  $("#newsletterForm").addEventListener("submit", (e)=>{
+    e.preventDefault();
+    const val = $("#newsletterEmail").value.trim();
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)){
+      toast("Masukan alamat email yang valid", false);
+      return;
+    }
+    toast("Terima kasih telah subscribe! 🎉");
+    $("#newsletterForm").reset();
+  });
+
+  /* live-clear field errors while typing */
+  [userIdInput, zoneIdInput, emailInput, waInput].forEach(inp=>{
+    inp.addEventListener("input", ()=> inp.classList.remove("error"));
+  });
+
+})();
+</script>
+</body>
+</html>
