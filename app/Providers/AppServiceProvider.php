@@ -16,10 +16,10 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         RedirectIfAuthenticated::redirectUsing(function () {
-            if (Auth::check() && Auth::user()->isAdmin()) {
+            if (Auth::guard('admin')->check()) {
                 return route('admin.dashboard');
             }
-            return route('dashboard');
+            return route('home');
         });
     }
 }

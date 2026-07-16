@@ -7,13 +7,14 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/products/by-brand', [HomeController::class, 'getProductsByBrand'])->name('products.by-brand');
 
 Route::get('/dashboard', [HomeController::class, 'dashboard'])
-    ->middleware(['auth'])
+    ->middleware(['auth:web,admin'])
     ->name('dashboard');
 
 Route::get('/api/products', [HomeController::class, 'getApiProducts'])->name('api.products');
@@ -21,11 +22,15 @@ Route::get('/api/brands/search', [HomeController::class, 'searchBrands'])->name(
 Route::get('/api/payment-methods', [HomeController::class, 'getPaymentMethods'])->name('api.payment-methods');
 Route::get('/api/orders/check', [HomeController::class, 'checkOrder'])->name('api.orders.check');
 Route::get('/games/{brand:name}', [HomeController::class, 'gameDetail'])->name('games.show');
+Route::get('/cek-transaksi', [HomeController::class, 'checkTransaction'])->name('check.transaction');
+Route::get('/leaderboard', [HomeController::class, 'leaderboard'])->name('leaderboard');
+Route::get('/leaderboard/{period}', [HomeController::class, 'leaderboardDetail'])->name('leaderboard.detail');
+Route::get('/api/leaderboard', [HomeController::class, 'leaderboardApi'])->name('api.leaderboard');
 
 Route::get('/products', [ProductController::class, 'index'])->name('products.index');
 Route::get('/products/sync', [ProductController::class, 'sync'])->name('products.sync');
 
-Route::middleware('auth')->group(function () {
+Route::middleware('auth:web,admin')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -42,7 +47,14 @@ Route::middleware('auth')->group(function () {
 
 Route::post('/payment/notification', [PaymentController::class, 'notificationHandler'])->name('payment.notification');
 
-Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::get('/admin', function () {
+    if (Auth::guard('admin')->check()) {
+        return redirect()->route('admin.dashboard');
+    }
+    return view('admin.auth.login');
+})->name('admin.index');
+
+Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
 
     Route::get('/products', [AdminController::class, 'products'])->name('products');
@@ -80,12 +92,17 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
     Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
     Route::post('/settings', [AdminController::class, 'settingsUpdate'])->name('settings.update');
+
+    Route::get('/digiflazz/test', [AdminController::class, 'digiflazzTest'])->name('digiflazz.test');
 });
 
 Route::get('/admin/login', [AdminAuthController::class, 'showLoginForm'])
-    ->middleware('guest')
+    ->middleware('guest:admin')
     ->name('admin.login');
 Route::post('/admin/login', [AdminAuthController::class, 'login'])
-    ->middleware('guest');
+    ->middleware('guest:admin');
+
+Route::post('/admin/logout', [AdminAuthController::class, 'logout'])
+    ->name('admin.logout');
 
 require __DIR__.'/auth.php';

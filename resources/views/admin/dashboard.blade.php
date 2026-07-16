@@ -72,6 +72,37 @@
             </div>
         </div>
     </div>
+
+    <div class="stat-card" style="--accent-color: #10b981">
+        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent-color),#34d399);border-radius:16px 16px 0 0"></div>
+        <div class="flex items-center justify-between">
+            <div>
+                <p style="color:var(--text-muted);font-size:0.78rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em">Digiflazz</p>
+                <p style="font-size:1.2rem;font-weight:800;margin-top:0.25rem">
+                    @if($stats['digiflazz_configured'])
+                        <span style="color:var(--success)">
+                            <i class="fas fa-check-circle" style="margin-right:0.3rem"></i> Terhubung
+                        </span>
+                    @else
+                        <span style="color:var(--error)">
+                            <i class="fas fa-times-circle" style="margin-right:0.3rem"></i> Belum config
+                        </span>
+                    @endif
+                </p>
+            </div>
+            <div class="stat-icon" style="background:rgba(16,185,129,0.12);color:#10b981">
+                <i class="fas fa-database"></i>
+            </div>
+        </div>
+        @if($stats['digiflazz_configured'])
+            <p style="color:var(--text-muted);font-size:0.78rem;margin-top:0.5rem">
+                {{ $stats['digiflazz_product_count'] }} produk
+                @if($stats['digiflazz_last_sync'])
+                    &middot; sinkron {{ \Carbon\Carbon::parse($stats['digiflazz_last_sync'])->diffForHumans() }}
+                @endif
+            </p>
+        @endif
+    </div>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">

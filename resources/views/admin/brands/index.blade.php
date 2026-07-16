@@ -64,7 +64,10 @@
                     <td>
                         <div class="flex items-center justify-center gap-1.5">
                             <button type="button" class="btn btn-ghost btn-xs"
-                                data-brand='{{ json_encode($brand->only(['id','name','category','service_type','description','sort_order','is_active','is_popular','thumbnail_url','carousel_bg_url','detail_bg_url','detail_bg_position'])) }}'
+                                data-brand='{{ json_encode(array_merge(
+                                    $brand->only(['id','name','category','service_type','description','sort_order','is_active','is_popular','thumbnail_url','featured_thumbnail_url','carousel_bg_url','detail_bg_url','detail_bg_position']),
+                                    ['featured_img_urls' => $brand->featured_img_urls]
+                                )) }}'
                                 onclick="openEditModal(this)">
                                 <i class="fas fa-edit"></i>
                             </button>
@@ -151,6 +154,43 @@
                         <p style="color:var(--text-dim);font-size:0.72rem;margin-top:0.25rem" id="thumbHint">Maksimal 2MB. Format: JPG atau PNG.</p>
                         <p class="text-red-400 text-xs mt-1 hidden" id="err_thumbnail"></p>
                     </div>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <label class="block text-sm font-medium mb-1.5">Thumbnail Produk Unggulan <span style="color:var(--text-dim);font-size:0.72rem">(opsional)</span></label>
+                <div class="flex items-center gap-4">
+                    <div id="featThumbPreview" style="width:80px;height:80px;border-radius:12px;background:var(--bg-input);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
+                        <span id="featThumbPlaceholder" style="font-size:0.72rem;color:var(--text-dim)">Preview</span>
+                        <img id="featThumbImage" class="hidden" style="width:100%;height:100%;object-fit:cover" src="" alt="preview">
+                    </div>
+                    <div class="flex-1">
+                        <input type="file" name="featured_thumbnail" id="featThumbInput" accept="image/jpeg,image/png,image/jpg,image/webp"
+                               class="w-full text-sm" style="color:var(--text-muted)">
+                        <p style="color:var(--text-dim);font-size:0.72rem;margin-top:0.25rem" id="featThumbHint">Thumbnail khusus untuk section produk unggulan. Maks 2MB.</p>
+                        <p class="text-red-400 text-xs mt-1 hidden" id="err_featured_thumbnail"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <label class="block text-sm font-medium mb-1.5">Gambar Carousel Produk Unggulan <span style="color:var(--text-dim);font-size:0.72rem">(maks 3, berganti tiap 3 detik)</span></label>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    @for($i = 1; $i <= 3; $i++)
+                    <div>
+                        <label style="display:block;font-size:0.72rem;color:var(--text-dim);margin-bottom:0.25rem">Gambar {{ $i }}</label>
+                        <div class="flex items-center gap-2">
+                            <div id="featImg{{ $i }}Preview" style="width:64px;height:64px;border-radius:10px;background:var(--bg-input);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
+                                <span id="featImg{{ $i }}Placeholder" style="font-size:0.6rem;color:var(--text-dim)">Preview</span>
+                                <img id="featImg{{ $i }}Image" class="hidden" style="width:100%;height:100%;object-fit:cover" src="" alt="">
+                            </div>
+                            <div class="flex-1">
+                                <input type="file" name="featured_img_{{ $i }}" id="featImg{{ $i }}Input" accept="image/jpeg,image/png,image/jpg,image/webp" class="w-full text-sm" style="color:var(--text-muted)">
+                                <p class="text-red-400 text-xs mt-1 hidden" id="err_featured_img_{{ $i }}"></p>
+                            </div>
+                        </div>
+                    </div>
+                    @endfor
                 </div>
             </div>
 
@@ -311,6 +351,36 @@ document.getElementById('thumbInput')?.addEventListener('change', function(e) {
     }
 });
 
+// Featured thumbnail preview
+document.getElementById('featThumbInput')?.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            document.getElementById('featThumbImage').src = ev.target.result;
+            document.getElementById('featThumbImage').classList.remove('hidden');
+            document.getElementById('featThumbPlaceholder').classList.add('hidden');
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+// Featured images 1-3 preview
+for (let i = 1; i <= 3; i++) {
+    document.getElementById('featImg' + i + 'Input')?.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                document.getElementById('featImg' + i + 'Image').src = ev.target.result;
+                document.getElementById('featImg' + i + 'Image').classList.remove('hidden');
+                document.getElementById('featImg' + i + 'Placeholder').classList.add('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+}
+
 // BG preview
 document.getElementById('bgInput')?.addEventListener('change', function(e) {
     const file = e.target.files[0];
@@ -347,9 +417,16 @@ function openCreateModal() {
     document.getElementById('brandForm').reset();
     document.getElementById('thumbImage').classList.add('hidden');
     document.getElementById('thumbPlaceholder').classList.remove('hidden');
+    document.getElementById('featThumbImage').classList.add('hidden');
+    document.getElementById('featThumbPlaceholder').classList.remove('hidden');
+    for (let i = 1; i <= 3; i++) {
+        document.getElementById('featImg' + i + 'Image').classList.add('hidden');
+        document.getElementById('featImg' + i + 'Placeholder').classList.remove('hidden');
+    }
     document.getElementById('bgImage').classList.add('hidden');
     document.getElementById('bgPlaceholder').classList.remove('hidden');
     document.getElementById('thumbHint').textContent = 'Maksimal 2MB. Format: JPG atau PNG.';
+    document.getElementById('featThumbHint').textContent = 'Thumbnail khusus untuk section produk unggulan. Maks 2MB.';
     document.getElementById('bgHint').textContent = 'Gambar latar di carousel. Maks 2MB.';
     initDetailBgFrame(null);
     document.getElementById('detailBgHint').textContent = 'Background header halaman detail game. Maks 2MB.';
@@ -376,9 +453,30 @@ function openEditModal(btn) {
     document.getElementById('f_is_popular').checked = b.is_popular;
     document.getElementById('thumbImage').classList.add('hidden');
     document.getElementById('thumbPlaceholder').classList.remove('hidden');
+    if (b.featured_thumbnail_url) {
+        document.getElementById('featThumbImage').src = b.featured_thumbnail_url;
+        document.getElementById('featThumbImage').classList.remove('hidden');
+        document.getElementById('featThumbPlaceholder').classList.add('hidden');
+    } else {
+        document.getElementById('featThumbImage').classList.add('hidden');
+        document.getElementById('featThumbPlaceholder').classList.remove('hidden');
+    }
+    const featImgUrls = b.featured_img_urls || [];
+    for (let i = 1; i <= 3; i++) {
+        const url = featImgUrls[i - 1];
+        if (url) {
+            document.getElementById('featImg' + i + 'Image').src = url;
+            document.getElementById('featImg' + i + 'Image').classList.remove('hidden');
+            document.getElementById('featImg' + i + 'Placeholder').classList.add('hidden');
+        } else {
+            document.getElementById('featImg' + i + 'Image').classList.add('hidden');
+            document.getElementById('featImg' + i + 'Placeholder').classList.remove('hidden');
+        }
+    }
     document.getElementById('bgImage').classList.add('hidden');
     document.getElementById('bgPlaceholder').classList.remove('hidden');
     document.getElementById('thumbHint').textContent = 'Kosongkan jika tidak ingin mengubah. Maks 2MB.';
+    document.getElementById('featThumbHint').textContent = 'Kosongkan jika tidak ingin mengubah. Maks 2MB.';
     document.getElementById('bgHint').textContent = 'Kosongkan jika tidak ingin mengubah. Maks 2MB.';
     initDetailBgFrame(b.detail_bg_url, b.detail_bg_position || 'center');
     if(b.detail_bg_url) setupDetailBgDrag();

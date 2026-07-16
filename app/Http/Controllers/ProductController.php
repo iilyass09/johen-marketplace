@@ -23,28 +23,12 @@ class ProductController extends Controller
 
     public function sync()
     {
-        $data = $this->digiflazz->getPriceList();
+        $result = $this->digiflazz->syncProducts();
 
-        if (empty($data)) {
-            return back()->with('error', 'Gagal mengambil data dari Digiflazz');
+        if ($result['success']) {
+            return redirect()->route('products.index')->with('success', $result['message']);
         }
 
-        foreach ($data as $item) {
-            Product::updateOrCreate(
-                ['buyer_sku_code' => $item['buyer_sku_code']],
-                [
-                    'brand' => $item['brand'],
-                    'category' => $item['category'],
-                    'product_name' => $item['product_name'],
-                    'price' => $item['price'],
-                    'selling_price' => $item['price'] + ($item['price'] * 0.05),
-                    'type' => $item['type'],
-                    'is_active' => $item['buyer_product_status'] === true,
-                    'stock' => 999,
-                ]
-            );
-        }
-
-        return redirect()->route('products.index')->with('success', 'Produk berhasil disinkronisasi');
+        return back()->with('error', $result['message']);
     }
 }

@@ -8,14 +8,6 @@ const TESTIMONIALS = [
   { name: 'User Genshin Impact', game: 'Top Up - Genshin Impact', avatar: '💎', quote: 'Genesis Crystal masuk kurang dari 5 menit. CS-nya responsif kalau ada kendala. Harga juga bersahabat buat dompet pelajar seperti saya.' },
 ];
 
-const LEADERBOARD = [
-  { name: 'Rizky_Ace', amount: 'Rp 4.850.000' },
-  { name: 'Dinda.ML', amount: 'Rp 3.920.000' },
-  { name: 'ProGamerID', amount: 'Rp 3.410.000' },
-  { name: 'FaizFF07', amount: 'Rp 2.980.000' },
-  { name: 'ValoQueen', amount: 'Rp 2.650.000' },
-];
-
 const GRADIENTS = [
   'linear-gradient(160deg,#1e3a5f,#0f1c2e)',
   'linear-gradient(160deg,#3b2465,#1a1030)',
@@ -63,188 +55,60 @@ document.addEventListener('click', () => {
   document.querySelectorAll('.auth-dropdown-menu').forEach(m => m.classList.remove('show'));
 });
 
-// ============ HERO CAROUSEL ============
-const heroSlides = document.querySelectorAll('.hero-slide');
-const heroDots = document.getElementById('heroDots');
-let heroIndex = 0;
-if (heroSlides.length && heroDots) {
-  heroSlides.forEach((_, i) => {
-    const dot = document.createElement('span');
-    dot.className = 'dot' + (i === 0 ? ' active' : '');
-    dot.addEventListener('click', () => setHeroSlide(i));
-    heroDots.appendChild(dot);
-  });
-}
-function setHeroSlide(i) {
-  if (!heroSlides[heroIndex] || !heroDots) return;
-  heroSlides[heroIndex].classList.remove('active');
-  heroDots.children[heroIndex].classList.remove('active');
-  heroIndex = i;
-  heroSlides[heroIndex].classList.add('active');
-  heroDots.children[heroIndex].classList.add('active');
-}
-let heroTimer;
-if (heroSlides.length) {
-  heroTimer = setInterval(() => setHeroSlide((heroIndex + 1) % heroSlides.length), 5500);
-  const carousel = document.querySelector('.hero-carousel');
-  if (carousel) {
-    carousel.addEventListener('mouseenter', () => clearInterval(heroTimer));
-    carousel.addEventListener('mouseleave', () => {
-      heroTimer = setInterval(() => setHeroSlide((heroIndex + 1) % heroSlides.length), 5500);
-    });
-  }
-}
-
-const pesanJokiBtn = document.getElementById('pesanJokiBtn');
-if (pesanJokiBtn) {
-  pesanJokiBtn.addEventListener('click', () => window.location.href = '/register');
-}
-
-// ============ FEATURED GAMES CAROUSEL ============
-const featTrack = document.getElementById('featuredTrack');
-const featWraps = featTrack ? featTrack.querySelectorAll('.featured-card-wrap') : [];
-const featDots = document.getElementById('featuredDots');
-const featBg = document.getElementById('featuredBg');
-const featTitle = document.getElementById('featTitle');
-const featDesc = document.getElementById('featDesc');
-const featCta = document.getElementById('featCta');
-let featIndex = 0;
-let featTimer = null;
-
-function getSlideWidth() {
-  const carousel = document.getElementById('featuredCarousel');
-  if (!carousel || !featWraps[0]) return 0;
-  const wrapStyle = getComputedStyle(featWraps[0]);
-  const pct = parseFloat(wrapStyle.flexBasis) || 60;
-  const trackStyle = featTrack ? getComputedStyle(featTrack) : null;
-  const gap = trackStyle ? parseFloat(trackStyle.columnGap || trackStyle.gap) || 0 : 0;
-  return carousel.offsetWidth * (pct / 100) + gap;
-}
-
-function updateFeatLeft(i) {
-  const wrap = featWraps[i];
-  if (!wrap) return;
-  if (featTitle) featTitle.textContent = wrap.dataset.brand || '';
-  if (featDesc) featDesc.textContent = wrap.dataset.desc || '';
-  if (featCta) {
-    featCta.dataset.brand = wrap.dataset.brand || '';
-    featCta.dataset.href = '/games/' + encodeURIComponent(wrap.dataset.brand || '');
-  }
-  const bg = wrap.dataset.bg || wrap.dataset.thumb;
-  if (featBg && bg) {
-    featBg.style.backgroundImage = `url('${bg}')`;
-  }
-}
-
-function setFeatSlide(i) {
-  if (!featWraps.length) return;
-  const total = featWraps.length;
-  featIndex = (i + total) % total;
-
-  const offset = featIndex * getSlideWidth();
-  if (featTrack) featTrack.style.transform = `translateX(-${offset}px)`;
-
-  featWraps.forEach((w, idx) => w.classList.toggle('active', idx === featIndex));
-
-  if (featDots) {
-    Array.from(featDots.children).forEach((d, idx) => d.classList.toggle('active', idx === featIndex));
-  }
-
-  updateFeatLeft(featIndex);
-}
-
-function startFeatTimer() {
-  stopFeatTimer();
-  if (featWraps.length > 1) {
-    featTimer = setInterval(() => setFeatSlide(featIndex + 1), 5000);
-  }
-}
-function stopFeatTimer() {
-  if (featTimer) { clearInterval(featTimer); featTimer = null; }
-}
-
-if (featWraps.length) {
-  setFeatSlide(0);
-
-  document.querySelector('.featured-prev')?.addEventListener('click', () => { stopFeatTimer(); setFeatSlide(featIndex - 1); startFeatTimer(); });
-  document.querySelector('.featured-next')?.addEventListener('click', () => { stopFeatTimer(); setFeatSlide(featIndex + 1); startFeatTimer(); });
-
-  if (featDots) {
-    Array.from(featDots.children).forEach((dot, i) => {
-      dot.addEventListener('click', () => { stopFeatTimer(); setFeatSlide(i); startFeatTimer(); });
-    });
-  }
-
-  featWraps.forEach((wrap, i) => {
-    wrap.addEventListener('click', () => {
-      if (i === featIndex) {
-        const brand = wrap.dataset.brand;
-        if (brand) window.location.href = '/games/' + encodeURIComponent(brand);
-        return;
-      }
-      stopFeatTimer();
-      setFeatSlide(i);
-      startFeatTimer();
-    });
-  });
-
-  const carouselEl = document.getElementById('featuredCarousel');
-  if (carouselEl) {
-    carouselEl.addEventListener('mouseenter', stopFeatTimer);
-    carouselEl.addEventListener('mouseleave', startFeatTimer);
-  }
-  startFeatTimer();
-
-  if (featCta) {
-    featCta.addEventListener('click', () => {
-      const brand = featCta.dataset.brand;
-      if (brand) window.location.href = '/games/' + encodeURIComponent(brand);
-    });
-  }
-
-  let startX = 0, endX = 0;
-  carouselEl?.addEventListener('touchstart', (e) => { startX = e.changedTouches[0].screenX; }, { passive: true });
-  carouselEl?.addEventListener('touchend', (e) => {
-    endX = e.changedTouches[0].screenX;
-    const diff = startX - endX;
-    if (Math.abs(diff) > 50) {
-      stopFeatTimer();
-      if (diff > 0) setFeatSlide(featIndex + 1);
-      else setFeatSlide(featIndex - 1);
-      startFeatTimer();
-    }
-  }, { passive: true });
-
-  window.addEventListener('resize', () => setFeatSlide(featIndex));
-}
-
 // ============ TABS ============
+const featuredGrid = document.querySelector('.featured-grid-section');
+const sectionHeading = document.querySelector('.section-heading');
+
 document.querySelectorAll('.tab-pill').forEach(tab => {
   tab.addEventListener('click', () => {
-    if (tab.id === 'cekTransaksiTab' || tab.dataset.filter === 'check') { openModal('checkModal'); return; }
+    const filter = tab.dataset.filter;
+
+    if (filter === 'check') {
+      window.location.href = '/cek-transaksi';
+      return;
+    }
+
     document.querySelectorAll('.tab-pill').forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
-    const filter = tab.dataset.filter;
     filterGames(filter);
   });
 });
-document.getElementById('cekTransaksiLink')?.addEventListener('click', (e) => { e.preventDefault(); openModal('checkModal'); });
-document.getElementById('leaderboardLink')?.addEventListener('click', (e) => { e.preventDefault(); openModal('leaderboardModal'); });
 
 // ============ FILTER GAMES ============
 function filterGames(filter) {
   const cards = document.querySelectorAll('.game-card');
-  cards.forEach(card => {
-    if (filter === 'all') {
-      card.style.display = '';
-    } else if (filter === 'moba') {
-      const st = card.dataset.serviceType || 'topup';
-      card.style.display = (st === 'joki' || st === 'both') ? '' : 'none';
-    } else {
-      const cat = card.dataset.category;
-      card.style.display = cat === filter ? '' : 'none';
+  const container = document.getElementById('gamesGrid');
+
+  if (filter === 'all') {
+    if (featuredGrid) featuredGrid.style.display = '';
+    if (sectionHeading) sectionHeading.style.display = '';
+    if (window.__loadMoreReset) window.__loadMoreReset();
+    if (container) container.style.justifyContent = '';
+    return;
+  }
+
+  if (filter === 'joki') {
+    if (featuredGrid) featuredGrid.style.display = 'none';
+    if (sectionHeading) sectionHeading.style.display = 'none';
+
+    let found = false;
+    cards.forEach(card => {
+      const brand = card.dataset.brand;
+      if (brand === 'Mobile Legends') {
+        card.style.display = '';
+        found = true;
+      } else {
+        card.style.display = 'none';
+      }
+    });
+
+    if (container) container.style.justifyContent = 'center';
+
+    if (found && cards.length) {
+      const mlCard = [...cards].find(c => c.dataset.brand === 'Mobile Legends');
+      if (mlCard) mlCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-  });
+  }
 }
 
 // ============ FETCH PRODUCTS ============
@@ -544,48 +408,7 @@ const paymentTrack = document.getElementById('paymentTrack');
   });
 })();
 
-// ============ LEADERBOARD ============
-const leaderboardList = document.getElementById('leaderboardList');
-if (leaderboardList) {
-  LEADERBOARD.forEach((u, i) => {
-    const item = document.createElement('div');
-    item.className = 'leaderboard-item';
-    item.innerHTML = `<div class="leaderboard-rank">${i + 1}</div><div class="leaderboard-name">${u.name}</div><div class="leaderboard-amount">${u.amount}</div>`;
-    leaderboardList.appendChild(item);
-  });
-}
 
-// ============ CHECK TRANSACTION ============
-document.getElementById('checkForm')?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const val = e.target.querySelector('input')?.value?.trim();
-  const result = document.getElementById('checkResult');
-  if (!val || !result) return;
-  result.innerHTML = '<div style="text-align:center;color:var(--text-mute);padding:1rem;">Memeriksa...</div>';
-  try {
-    const res = await fetch(`/api/orders/check?q=${encodeURIComponent(val)}`);
-    if (!res.ok) {
-      result.innerHTML = `<div class="status-box"><span class="status-pill failed">Tidak Ditemukan</span><p style="font-size:.85rem;color:var(--text-dim);margin-top:.5rem;">Transaksi <strong style="color:var(--text)">${val}</strong> tidak ditemukan. Periksa kembali ID transaksi atau email Anda.</p></div>`;
-      return;
-    }
-    const data = await res.json();
-    const statusClass = data.status === 'success' ? 'status-pill' : (data.status === 'pending' ? 'status-pill pending' : 'status-pill failed');
-    const statusLabel = data.status === 'success' ? 'Berhasil' : (data.status === 'pending' ? 'Pending' : 'Gagal');
-    result.innerHTML = `
-      <div class="status-box">
-        <span class="${statusClass}">${statusLabel}</span>
-        <p style="font-size:.85rem;color:var(--text-dim);margin-top:.5rem;">
-          Transaksi <strong style="color:var(--text)">${data.order_id || val}</strong><br>
-          ${data.product_name ? 'Produk: ' + data.product_name : ''}
-          ${data.customer_number ? '<br>ID: ' + data.customer_number : ''}
-          ${data.price ? '<br>Total: Rp ' + Number(data.price).toLocaleString('id-ID') : ''}
-          ${data.processed_at ? '<br>Diproses: ' + data.processed_at : ''}
-        </p>
-      </div>`;
-  } catch (err) {
-    result.innerHTML = '<div class="status-box"><span class="status-pill failed">Error</span><p style="font-size:.85rem;color:var(--text-dim);margin-top:.5rem;">Gagal memeriksa transaksi. Coba lagi nanti.</p></div>';
-  }
-});
 
 // ============ NEWSLETTER ============
 document.getElementById('newsletterForm')?.addEventListener('submit', (e) => {
@@ -623,3 +446,25 @@ function showToast(msg, isError = false) {
     flash.remove();
   }
 })();
+
+// ============ FEATURED IMAGE ROTATION ============
+document.querySelectorAll('.fg-card[data-featured-imgs]').forEach(card => {
+  const imgs = JSON.parse(card.dataset.featuredImgs || '[]').filter(Boolean);
+  if (imgs.length < 2) return;
+  const bg = card.querySelector('.fg-card-bg');
+  if (!bg) return;
+  const fade = document.createElement('div');
+  fade.className = 'fg-card-bg-fade';
+  card.insertBefore(fade, bg.nextSibling);
+  let idx = 0;
+  setInterval(() => {
+    const next = (idx + 1) % imgs.length;
+    fade.style.backgroundImage = `url('${imgs[next]}')`;
+    fade.classList.add('show');
+    setTimeout(() => {
+      bg.style.backgroundImage = `url('${imgs[next]}')`;
+      fade.classList.remove('show');
+      idx = next;
+    }, 600);
+  }, 3000);
+});

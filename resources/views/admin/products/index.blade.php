@@ -3,15 +3,32 @@
 @section('title', 'Manajemen Produk')
 
 @section('content')
+@php
+    $lastSync = \App\Models\SiteSetting::get('digiflazz_last_sync');
+    $productCount = \App\Models\SiteSetting::get('digiflazz_product_count');
+    $digiflazzReady = app(\App\Services\DigiflazzService::class)->isConfigured();
+@endphp
+
 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
     <div class="flex items-center space-x-3">
         <h2 class="text-lg font-semibold">Semua Produk</h2>
         <span class="badge badge-neutral">{{ $products->total() }} total</span>
+        @if($lastSync)
+            <span style="color:var(--text-dim);font-size:0.78rem">
+                <i class="fas fa-clock" style="margin-right:0.25rem"></i>
+                {{ \Carbon\Carbon::parse($lastSync)->diffForHumans() }}
+            </span>
+        @endif
     </div>
     <div class="flex items-center gap-3">
+        @if(!$digiflazzReady)
+            <span class="badge badge-error" style="font-size:0.75rem">
+                <i class="fas fa-exclamation-triangle"></i> Digiflazz belum config
+            </span>
+        @endif
         <form action="{{ route('admin.products.sync') }}" method="POST">
             @csrf
-            <button type="submit" class="btn btn-ghost">
+            <button type="submit" class="btn btn-ghost" {{ $digiflazzReady ? '' : 'disabled' }}>
                 <i class="fas fa-sync"></i>
                 <span>Sinkronisasi Digiflazz</span>
             </button>

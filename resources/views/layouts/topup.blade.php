@@ -19,7 +19,6 @@
   <div class="header-inner">
     <a href="{{ route('home') }}" class="logo">
       <img src="{{ asset('logo.png') }}" alt="Johen Gaming" class="logo-img">
-      <span class="logo-text">JOHEN<span>GAMING</span></span>
     </a>
 
     <div class="search-wrap">
@@ -29,18 +28,18 @@
     </div>
 
     <nav class="main-nav" id="mainNav">
-      <a href="{{ route('home') }}#topup">Top Up</a>
-      <a href="{{ route('home') }}#joki">Joki</a>
-      <a href="#" data-open-modal="checkModal">Cek Transaksi</a>
-      <a href="#" data-open-modal="leaderboardModal">Leaderboard</a>
+      <a href="{{ route('home') }}" class="{{ request()->routeIs('home') ? 'active' : '' }}">Top Up</a>
+      <a href="{{ route('check.transaction') }}" class="{{ request()->routeIs('check.transaction') ? 'active' : '' }}">Cek Transaksi</a>
+      <a href="{{ route('leaderboard') }}" class="{{ request()->routeIs('leaderboard') ? 'active' : '' }}">Leaderboard</a>
     </nav>
 
     @auth
       <div class="auth-user">
         <div class="auth-dropdown">
-          <button class="auth-dropdown-toggle" style="display:flex;align-items:center;gap:.6rem;background:none;border:none;cursor:pointer;color:inherit;padding:.3rem;border-radius:8px;">
+          <button class="auth-dropdown-toggle">
             <div class="auth-avatar">{{ strtoupper(substr(Auth::user()->name, 0, 1)) }}</div>
             <span class="auth-name">{{ Auth::user()->name }}</span>
+            <svg class="auth-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
           <div class="auth-dropdown-menu">
             <a href="{{ route('dashboard') }}" class="auth-dropdown-item">
@@ -84,10 +83,9 @@
       <svg class="search-icon" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M20 20L16.5 16.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       <input type="text" placeholder="Cari Game atau Voucher" id="mobileSearchInput">
     </div>
-    <a href="{{ route('home') }}#topup">Top Up</a>
-    <a href="{{ route('home') }}#joki">Joki</a>
-    <a href="#" data-open-modal="checkModal">Cek Transaksi</a>
-    <a href="#" data-open-modal="leaderboardModal">Leaderboard</a>
+    <a href="{{ route('home') }}#topup" class="{{ request()->routeIs('home') ? 'active' : '' }}">Top Up</a>
+    <a href="{{ route('check.transaction') }}" class="{{ request()->routeIs('check.transaction') ? 'active' : '' }}">Cek Transaksi</a>
+    <a href="{{ route('leaderboard') }}" class="{{ request()->routeIs('leaderboard') ? 'active' : '' }}">Leaderboard</a>
     @auth
       <a href="{{ route('dashboard') }}">Dashboard</a>
       <a href="{{ route('orders.my') }}">Pesanan Saya</a>
@@ -129,7 +127,7 @@
     <div class="footer-col">
       <h4>Peta Situs</h4>
       <a href="{{ route('home') }}">Beranda</a>
-      <a href="#" data-open-modal="checkModal">Cek Transaksi</a>
+      <a href="{{ route('check.transaction') }}">Cek Transaksi</a>
       <a href="#">Hubungi Kami</a>
       <a href="#">Ulasan</a>
     </div>
@@ -178,30 +176,6 @@
       </div>
       <button type="submit" class="btn btn-solid btn-full">Beli Sekarang</button>
     </form>
-  </div>
-</div>
-
-<div class="modal-overlay" id="checkModal">
-  <div class="modal-box">
-    <button class="modal-close" data-close-modal>&times;</button>
-    <h3>Cek Transaksi</h3>
-    <p class="modal-sub">Masukkan ID Transaksi atau email kamu untuk melihat status pesanan.</p>
-    <form class="modal-form" id="checkForm">
-      <label>ID Transaksi / Email
-        <input type="text" required placeholder="TRX-XXXXXX atau email">
-      </label>
-      <button type="submit" class="btn btn-solid btn-full">Cek Status</button>
-    </form>
-    <div class="check-result" id="checkResult"></div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="leaderboardModal">
-  <div class="modal-box">
-    <button class="modal-close" data-close-modal>&times;</button>
-    <h3>Leaderboard Top Up</h3>
-    <p class="modal-sub">Pengguna dengan transaksi terbanyak bulan ini.</p>
-    <div class="leaderboard-list" id="leaderboardList"></div>
   </div>
 </div>
 

@@ -50,9 +50,6 @@
       @if($brand->category)
         <span class="gd-header-cat">{{ ucfirst($brand->category) }}</span>
       @endif
-      @if($brand->description)
-        <p class="gd-header-desc">{{ $brand->description }}</p>
-      @endif
       <div class="gd-header-badges">
         <span class="gd-header-badge">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h7l-1 8 10-12h-7z"/></svg>

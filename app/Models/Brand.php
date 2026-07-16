@@ -11,6 +11,10 @@ class Brand extends Model
         'name',
         'icon',
         'thumbnail',
+        'featured_thumbnail',
+        'featured_img_1',
+        'featured_img_2',
+        'featured_img_3',
         'carousel_bg',
         'detail_bg',
         'detail_bg_position',
@@ -28,7 +32,7 @@ class Brand extends Model
         'sort_order' => 'integer',
     ];
 
-    protected $appends = ['thumbnail_url', 'carousel_bg_url', 'detail_bg_url'];
+    protected $appends = ['thumbnail_url', 'featured_thumbnail_url', 'featured_img_urls', 'carousel_bg_url', 'detail_bg_url'];
 
     public function getThumbnailUrlAttribute(): ?string
     {
@@ -36,6 +40,25 @@ class Brand extends Model
             return Storage::url($this->thumbnail);
         }
         return null;
+    }
+
+    public function getFeaturedThumbnailUrlAttribute(): ?string
+    {
+        if ($this->featured_thumbnail) {
+            return Storage::url($this->featured_thumbnail);
+        }
+        return null;
+    }
+
+    public function getFeaturedImgUrlsAttribute(): array
+    {
+        $urls = [];
+        foreach (['featured_img_1', 'featured_img_2', 'featured_img_3'] as $col) {
+            if ($this->$col) {
+                $urls[] = Storage::url($this->$col);
+            }
+        }
+        return $urls;
     }
 
     public function getCarouselBgUrlAttribute(): ?string

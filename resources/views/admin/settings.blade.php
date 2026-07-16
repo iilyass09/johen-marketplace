@@ -7,6 +7,63 @@
         Pengaturan Situs
     </h2>
 
+    @php
+        $digiflazzConfigured = app(\App\Services\DigiflazzService::class)->isConfigured();
+        $lastSync = $settings['digiflazz_last_sync'] ?? null;
+        $productCount = $settings['digiflazz_product_count'] ?? '0';
+    @endphp
+
+    <!-- DIGIFLAZZ -->
+    <div class="card-glass p-6 mb-6">
+        <h3 class="font-semibold mb-4 flex items-center gap-2" style="font-size:0.95rem">
+            <i class="fas fa-database" style="color:#10b981"></i>
+            <span>Digiflazz API</span>
+        </h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium mb-1.5">Username API</label>
+                <input type="text" name="digiflazz_username" value="{{ old('digiflazz_username', env('DIGIFLAZZ_USERNAME')) }}" class="input-field" placeholder="username digiflazz">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1.5">Key API</label>
+                <input type="password" name="digiflazz_key" value="{{ old('digiflazz_key', env('DIGIFLAZZ_KEY')) }}" class="input-field" placeholder="key digiflazz">
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3 mb-4">
+            <div>
+                <label class="block text-sm font-medium mb-1.5">Mode</label>
+                <select name="digiflazz_production" class="input-field">
+                    <option value="0" {{ env('DIGIFLAZZ_PRODUCTION') ? '' : 'selected' }}>Sandbox / Development</option>
+                    <option value="1" {{ env('DIGIFLAZZ_PRODUCTION') ? 'selected' : '' }}>Production</option>
+                </select>
+            </div>
+            <div style="padding-top:1.25rem">
+                <span class="badge {{ $digiflazzConfigured ? 'badge-success' : 'badge-error' }}">
+                    {{ $digiflazzConfigured ? 'Terkonfigurasi' : 'Belum dikonfigurasi' }}
+                </span>
+            </div>
+        </div>
+
+        @if($digiflazzConfigured)
+            <div class="flex items-center gap-3 flex-wrap">
+                <button type="button" class="btn btn-ghost btn-sm" id="testDigiflazzBtn" onclick="testDigiflazz()">
+                    <i class="fas fa-plug"></i> Uji Koneksi
+                </button>
+                <span style="color:var(--text-dim);font-size:0.82rem">
+                    @if($lastSync)
+                        Terakhir sinkron: {{ \Carbon\Carbon::parse($lastSync)->diffForHumans() }}
+                    @else
+                        Belum pernah sinkron
+                    @endif
+                    &middot; {{ $productCount }} produk
+                </span>
+            </div>
+            <div id="digiflazzTestResult" style="display:none;margin-top:0.75rem" class="alert"></div>
+        @endif
+    </div>
+
     <form action="{{ route('admin.settings.update') }}" method="POST" enctype="multipart/form-data">
         @csrf
 
@@ -34,7 +91,7 @@
                 <div class="flex items-center gap-4">
                     <div style="width:64px;height:64px;border-radius:12px;background:var(--bg-input);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
                         @if(!empty($settings['site_logo']))
-                            <img src="{{ Storage::disk('public')->url($settings['site_logo']) }}" alt="Logo" style="width:100%;height:100%;object-fit:contain">
+                            <img src="{{ asset('storage/'.$settings['site_logo']) }}" alt="Logo" style="width:100%;height:100%;object-fit:contain">
                         @else
                             <span style="font-size:0.72rem;color:var(--text-dim)">Logo</span>
                         @endif
@@ -71,6 +128,30 @@
 
         <div class="card-glass p-6 mb-6">
             <h3 class="font-semibold mb-4 flex items-center gap-2" style="font-size:0.95rem">
+                <i class="fas fa-image" style="color:#f59e0b"></i>
+                <span>Hero Banner</span>
+            </h3>
+            <div>
+                <label class="block text-sm font-medium mb-1.5">Gambar Banner Halaman Utama</label>
+                <div class="flex items-start gap-4">
+                    <div style="width:200px;height:112px;border-radius:12px;background:var(--bg-input);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
+                        @if(!empty($settings['site_hero_banner']))
+                            <img src="{{ asset('storage/'.$settings['site_hero_banner']) }}" alt="Hero Banner" style="width:100%;height:100%;object-fit:cover">
+                        @else
+                            <span style="font-size:0.72rem;color:var(--text-dim);text-align:center;padding:.5rem">Belum ada banner</span>
+                        @endif
+                    </div>
+                    <div class="flex-1">
+                        <input type="file" name="site_hero_banner" accept="image/jpeg,image/png,image/webp"
+                               class="w-full text-sm" style="color:var(--text-muted)">
+                        <p style="color:var(--text-dim);font-size:0.72rem;margin-top:0.25rem">Format: JPG, PNG, WebP. Maks 2MB. Ukuran ideal: 1920x480px.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-glass p-6 mb-6">
+            <h3 class="font-semibold mb-4 flex items-center gap-2" style="font-size:0.95rem">
                 <i class="fas fa-palette" style="color:#f59e0b"></i>
                 <span>Tampilan</span>
             </h3>
@@ -87,4 +168,33 @@
         </div>
     </form>
 </div>
+
+@push('scripts')
+<script>
+async function testDigiflazz() {
+    const btn = document.getElementById('testDigiflazzBtn');
+    const result = document.getElementById('digiflazzTestResult');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menguji...';
+    result.style.display = 'none';
+
+    try {
+        const res = await fetch('{{ route('admin.digiflazz.test') }}', {
+            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }
+        });
+        const data = await res.json();
+        result.style.display = 'flex';
+        result.className = data.success ? 'alert alert-success' : 'alert alert-error';
+        result.innerHTML = `<i class="fas ${data.success ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${data.message}`;
+    } catch (e) {
+        result.style.display = 'flex';
+        result.className = 'alert alert-error';
+        result.innerHTML = '<i class="fas fa-exclamation-circle"></i> Gagal menguji koneksi.';
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-plug"></i> Uji Koneksi';
+}
+</script>
+@endpush
 @endsection

@@ -25,7 +25,7 @@
   </div>
 
   <div style="display:flex;gap:.7rem;margin-bottom:2rem;flex-wrap:wrap;">
-    <a href="{{ route('products.index') }}" class="btn btn-solid btn-lg">Top Up Sekarang <span>›</span></a>
+    <a href="{{ route('home') }}" class="btn btn-solid btn-lg">Top Up Sekarang <span>›</span></a>
     <a href="{{ route('orders.my') }}" class="btn btn-outline btn-lg">Pesanan Saya <span>›</span></a>
   </div>
 
@@ -35,7 +35,7 @@
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:2rem;text-align:center;">
         <p style="font-size:3rem;margin-bottom:.5rem;">📦</p>
         <p style="color:var(--text-dim);font-size:.88rem;">Belum ada pesanan. Yuk top up sekarang!</p>
-        <a href="{{ route('products.index') }}" class="btn btn-solid" style="margin-top:1rem;">Mulai Top Up</a>
+        <a href="{{ route('home') }}" class="btn btn-solid" style="margin-top:1rem;">Mulai Top Up</a>
       </div>
     @else
       @foreach($recentOrders as $order)

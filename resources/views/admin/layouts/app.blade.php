@@ -549,7 +549,7 @@
                 <a href="{{ route('home') }}">
                     <i class="fas fa-arrow-left"></i> Kembali ke Toko
                 </a>
-                <form method="POST" action="{{ route('logout') }}">
+                <form method="POST" action="{{ route('admin.logout') }}">
                     @csrf
                     <button type="submit">
                         <i class="fas fa-sign-out-alt"></i> Logout
@@ -577,7 +577,7 @@
                         <div class="user-dropdown" id="userDropdown">
                             <a href="{{ route('home') }}"><i class="fas fa-store"></i> Lihat Toko</a>
                             <hr class="dropdown-divider">
-                            <form method="POST" action="{{ route('logout') }}">
+                            <form method="POST" action="{{ route('admin.logout') }}">
                                 @csrf
                                 <button type="submit"><i class="fas fa-sign-out-alt"></i> Logout</button>
                             </form>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Brand;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Transaction;
@@ -135,6 +136,13 @@ class OrderController extends Controller
     public function myOrders()
     {
         $orders = Order::where('user_id', Auth::id())->latest()->get();
-        return view('orders.index', compact('orders'));
+
+        $brandNames = $orders->pluck('brand')->unique()->filter();
+        $brands = Brand::whereIn('name', $brandNames)->get()->keyBy('name');
+
+        $skuCodes = $orders->pluck('buyer_sku_code')->unique()->filter();
+        $products = Product::whereIn('buyer_sku_code', $skuCodes)->get()->keyBy('buyer_sku_code');
+
+        return view('orders.index', compact('orders', 'brands', 'products'));
     }
 }

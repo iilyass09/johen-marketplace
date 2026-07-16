@@ -32,6 +32,9 @@ class AdminController extends Controller
             'success_orders' => Order::where('status', 'success')->count(),
             'total_users' => User::count(),
             'total_revenue' => Order::where('status', 'success')->sum('price'),
+            'digiflazz_configured' => $this->digiflazz->isConfigured(),
+            'digiflazz_last_sync' => \App\Models\SiteSetting::get('digiflazz_last_sync'),
+            'digiflazz_product_count' => \App\Models\SiteSetting::get('digiflazz_product_count', '0'),
         ];
 
         $recentOrders = Order::with('user')->latest()->take(10)->get();
@@ -177,30 +180,13 @@ class AdminController extends Controller
 
     public function productsSync()
     {
-        $data = $this->digiflazz->getPriceList();
+        $result = $this->digiflazz->syncProducts();
 
-        if (empty($data)) {
-            return back()->with('error', 'Gagal mengambil data dari Digiflazz');
+        if ($result['success']) {
+            return redirect()->route('admin.products')->with('success', $result['message']);
         }
 
-        $count = 0;
-        foreach ($data as $item) {
-            Product::updateOrCreate(
-                ['buyer_sku_code' => $item['buyer_sku_code']],
-                [
-                    'brand' => $item['brand'],
-                    'category' => $item['category'],
-                    'product_name' => $item['product_name'],
-                    'price' => $item['price'],
-                    'selling_price' => $item['price'] + ($item['price'] * 0.05),
-                    'type' => $item['type'],
-                    'is_active' => $item['buyer_product_status'] === true,
-                ]
-            );
-            $count++;
-        }
-
-        return redirect()->route('admin.products')->with('success', "$count produk berhasil disinkronisasi dari Digiflazz");
+        return redirect()->route('admin.products')->with('error', $result['message']);
     }
 
     // ---- BRANDS ----
@@ -222,6 +208,10 @@ class AdminController extends Controller
             'category' => 'required|string|max:50',
             'service_type' => 'required|string|in:topup,joki,both',
             'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'featured_thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'featured_img_1' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'featured_img_2' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'featured_img_3' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'carousel_bg' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'detail_bg' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'detail_bg_position' => 'nullable|string|max:50',
@@ -253,6 +243,12 @@ class AdminController extends Controller
             $data['thumbnail'] = $request->file('thumbnail')->store('brands', 'public');
         }
 
+        if ($request->hasFile('featured_thumbnail') && $request->file('featured_thumbnail')->isValid()) {
+            $data['featured_thumbnail'] = $request->file('featured_thumbnail')->store('brands', 'public');
+        }
+
+        $data = array_merge($data, $this->handleFeaturedImages($request));
+
         if ($request->hasFile('carousel_bg') && $request->file('carousel_bg')->isValid()) {
             $data['carousel_bg'] = $request->file('carousel_bg')->store('brands/bg', 'public');
         }
@@ -282,6 +278,10 @@ class AdminController extends Controller
             'category' => 'required|string|max:50',
             'service_type' => 'required|string|in:topup,joki,both',
             'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'featured_thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'featured_img_1' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'featured_img_2' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'featured_img_3' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'carousel_bg' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'detail_bg' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'detail_bg_position' => 'nullable|string|max:50',
@@ -314,6 +314,15 @@ class AdminController extends Controller
             }
             $data['thumbnail'] = $request->file('thumbnail')->store('brands', 'public');
         }
+
+        if ($request->hasFile('featured_thumbnail') && $request->file('featured_thumbnail')->isValid()) {
+            if ($brand->featured_thumbnail) {
+                Storage::disk('public')->delete($brand->featured_thumbnail);
+            }
+            $data['featured_thumbnail'] = $request->file('featured_thumbnail')->store('brands', 'public');
+        }
+
+        $data = array_merge($data, $this->handleFeaturedImages($request, $brand));
 
         if ($request->hasFile('carousel_bg') && $request->file('carousel_bg')->isValid()) {
             if ($brand->carousel_bg) {
@@ -350,6 +359,14 @@ class AdminController extends Controller
     {
         if ($brand->thumbnail) {
             Storage::disk('public')->delete($brand->thumbnail);
+        }
+        if ($brand->featured_thumbnail) {
+            Storage::disk('public')->delete($brand->featured_thumbnail);
+        }
+        foreach (['featured_img_1', 'featured_img_2', 'featured_img_3'] as $f) {
+            if ($brand->$f) {
+                Storage::disk('public')->delete($brand->$f);
+            }
         }
         if ($brand->detail_bg) {
             Storage::disk('public')->delete($brand->detail_bg);
@@ -552,6 +569,35 @@ class AdminController extends Controller
             \App\Models\SiteSetting::set('site_logo', $path, 'image');
         }
 
+        if ($request->hasFile('site_hero_banner') && $request->file('site_hero_banner')->isValid()) {
+            $oldBanner = \App\Models\SiteSetting::get('site_hero_banner');
+            if ($oldBanner && Storage::disk('public')->exists($oldBanner)) {
+                Storage::disk('public')->delete($oldBanner);
+            }
+            $path = $request->file('site_hero_banner')->store('settings', 'public');
+            \App\Models\SiteSetting::set('site_hero_banner', $path, 'image');
+        }
+
         return redirect()->route('admin.settings')->with('success', 'Pengaturan berhasil disimpan');
+    }
+
+    public function digiflazzTest()
+    {
+        $result = $this->digiflazz->testConnection();
+        return response()->json($result);
+    }
+
+    private function handleFeaturedImages(Request $request, ?Brand $brand = null): array
+    {
+        $data = [];
+        foreach (['featured_img_1', 'featured_img_2', 'featured_img_3'] as $field) {
+            if ($request->hasFile($field) && $request->file($field)->isValid()) {
+                if ($brand && $brand->$field) {
+                    Storage::disk('public')->delete($brand->$field);
+                }
+                $data[$field] = $request->file($field)->store('brands', 'public');
+            }
+        }
+        return $data;
     }
 }

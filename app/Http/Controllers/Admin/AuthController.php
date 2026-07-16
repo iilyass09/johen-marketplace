@@ -22,15 +22,15 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        if (Auth::attempt($request->only('username', 'password'), $request->boolean('remember'))) {
-            $user = Auth::user();
+        if (Auth::guard('admin')->attempt($request->only('username', 'password'), $request->boolean('remember'))) {
+            $user = Auth::guard('admin')->user();
 
             if ($user->isAdmin()) {
                 $request->session()->regenerate();
                 return redirect()->intended(route('admin.dashboard'));
             }
 
-            Auth::logout();
+            Auth::guard('admin')->logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
@@ -42,5 +42,13 @@ class AuthController extends Controller
         return back()->withErrors([
             'username' => 'Username atau password salah.',
         ])->onlyInput('username');
+    }
+
+    public function logout(Request $request): RedirectResponse
+    {
+        Auth::guard('admin')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+        return redirect()->route('admin.index');
     }
 }
