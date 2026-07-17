@@ -28,7 +28,7 @@
     </div>
 
     <nav class="main-nav" id="mainNav">
-      <a href="{{ route('home') }}" class="{{ request()->routeIs('home') ? 'active' : '' }}">Top Up</a>
+      <a href="{{ route('home') }}" class="{{ request()->routeIs('home') || request()->routeIs('games.show') ? 'active' : '' }}">Top Up</a>
       <a href="{{ route('check.transaction') }}" class="{{ request()->routeIs('check.transaction') ? 'active' : '' }}">Cek Transaksi</a>
       <a href="{{ route('leaderboard') }}" class="{{ request()->routeIs('leaderboard') ? 'active' : '' }}">Leaderboard</a>
     </nav>
@@ -83,7 +83,7 @@
       <svg class="search-icon" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M20 20L16.5 16.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       <input type="text" placeholder="Cari Game atau Voucher" id="mobileSearchInput">
     </div>
-    <a href="{{ route('home') }}#topup" class="{{ request()->routeIs('home') ? 'active' : '' }}">Top Up</a>
+    <a href="{{ route('home') }}#topup" class="{{ request()->routeIs('home') || request()->routeIs('games.show') ? 'active' : '' }}">Top Up</a>
     <a href="{{ route('check.transaction') }}" class="{{ request()->routeIs('check.transaction') ? 'active' : '' }}">Cek Transaksi</a>
     <a href="{{ route('leaderboard') }}" class="{{ request()->routeIs('leaderboard') ? 'active' : '' }}">Leaderboard</a>
     @auth

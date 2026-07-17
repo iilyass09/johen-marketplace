@@ -43,6 +43,8 @@
                             class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-purple-500">
                         <option value="instant" {{ old('type', $product->type) === 'instant' ? 'selected' : '' }}>Top Up (Instant)</option>
                         <option value="joki" {{ old('type', $product->type) === 'joki' ? 'selected' : '' }}>Joki</option>
+                        <option value="Special Items" {{ old('type', $product->type) === 'Special Items' ? 'selected' : '' }}>Special Items</option>
+                        <option value="First Topup (Double Diamonds)" {{ old('type', $product->type) === 'First Topup (Double Diamonds)' ? 'selected' : '' }}>First Topup (Double Diamonds)</option>
                     </select>
                     @error('type') <p class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
                 </div>

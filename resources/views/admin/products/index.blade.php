@@ -155,6 +155,8 @@
                     <select name="type" id="f_type" required class="input-field">
                         <option value="instant">Top Up (Instant)</option>
                         <option value="joki">Joki</option>
+                        <option value="Special Items">Special Items</option>
+                        <option value="First Topup (Double Diamonds)">First Topup (Double Diamonds)</option>
                     </select>
                     <p class="text-red-400 text-xs mt-1 hidden" id="err_type"></p>
                 </div>
