@@ -29,6 +29,7 @@
 
     <nav class="main-nav" id="mainNav">
       <a href="{{ route('home') }}" class="{{ request()->routeIs('home') || request()->routeIs('games.show') ? 'active' : '' }}">Top Up</a>
+      <a href="{{ route('jual-beli-akun') }}" class="{{ request()->routeIs('jual-beli-akun*') ? 'active' : '' }}">Jual Beli Akun</a>
       <a href="{{ route('check.transaction') }}" class="{{ request()->routeIs('check.transaction') ? 'active' : '' }}">Cek Transaksi</a>
       <a href="{{ route('leaderboard') }}" class="{{ request()->routeIs('leaderboard') ? 'active' : '' }}">Leaderboard</a>
     </nav>
@@ -84,6 +85,7 @@
       <input type="text" placeholder="Cari Game atau Voucher" id="mobileSearchInput">
     </div>
     <a href="{{ route('home') }}#topup" class="{{ request()->routeIs('home') || request()->routeIs('games.show') ? 'active' : '' }}">Top Up</a>
+    <a href="{{ route('jual-beli-akun') }}" class="{{ request()->routeIs('jual-beli-akun*') ? 'active' : '' }}">Jual Beli Akun</a>
     <a href="{{ route('check.transaction') }}" class="{{ request()->routeIs('check.transaction') ? 'active' : '' }}">Cek Transaksi</a>
     <a href="{{ route('leaderboard') }}" class="{{ request()->routeIs('leaderboard') ? 'active' : '' }}">Leaderboard</a>
     @auth

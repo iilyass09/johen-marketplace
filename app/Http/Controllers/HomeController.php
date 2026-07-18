@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AccountListing;
 use App\Models\Brand;
 use App\Models\Order;
 use App\Models\PaymentMethod;
@@ -266,5 +267,42 @@ class HomeController extends Controller
             'last_page' => (int) ceil($total / $perPage),
             'data' => $items,
         ]);
+    }
+
+    public function jualBeliAkun()
+    {
+        $listings = AccountListing::where(function($q) {
+                $q->where('is_active', true)->orWhere('is_sold', true);
+            })
+            ->orderBy('is_sold', 'asc')
+            ->orderBy('game')
+            ->orderBy('product_name')
+            ->get()
+            ->groupBy('game');
+
+        $popularGames = Brand::where('is_popular', true)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        return view('pages.jual-beli-akun', compact('popularGames', 'listings'));
+    }
+
+    public function jualBeliAkunDetail(AccountListing $listing)
+    {
+        if (!$listing->is_active && !$listing->is_sold) {
+            abort(404);
+        }
+
+        $related = AccountListing::where(function($q) {
+                $q->where('is_active', true)->orWhere('is_sold', true);
+            })
+            ->where('game', $listing->game)
+            ->where('id', '!=', $listing->id)
+            ->orderBy('is_sold', 'asc')
+            ->orderBy('product_name')
+            ->get();
+
+        return view('pages.jual-beli-akun-detail', compact('listing', 'related'));
     }
 }

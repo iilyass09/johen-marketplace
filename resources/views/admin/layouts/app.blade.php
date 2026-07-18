@@ -533,6 +533,9 @@
                 <a href="{{ route('admin.brands') }}" class="{{ request()->routeIs('admin.brands*') ? 'active' : '' }}">
                     <i class="fas fa-gamepad"></i> Daftar Game
                 </a>
+                <a href="{{ route('admin.account-listings') }}" class="{{ request()->routeIs('admin.account-listings*') ? 'active' : '' }}">
+                    <i class="fas fa-store"></i> Jual Beli Akun
+                </a>
                 <a href="{{ route('admin.payment-methods') }}" class="{{ request()->routeIs('admin.payment-methods*') ? 'active' : '' }}">
                     <i class="fas fa-credit-card"></i> Pembayaran
                 </a>

@@ -23,6 +23,8 @@ Route::get('/api/payment-methods', [HomeController::class, 'getPaymentMethods'])
 Route::get('/api/orders/check', [HomeController::class, 'checkOrder'])->name('api.orders.check');
 Route::get('/games/{brand:name}', [HomeController::class, 'gameDetail'])->name('games.show');
 Route::get('/cek-transaksi', [HomeController::class, 'checkTransaction'])->name('check.transaction');
+Route::get('/jual-beli-akun', [App\Http\Controllers\HomeController::class, 'jualBeliAkun'])->name('jual-beli-akun');
+Route::get('/jual-beli-akun/{listing}', [App\Http\Controllers\HomeController::class, 'jualBeliAkunDetail'])->name('jual-beli-akun.detail');
 Route::get('/leaderboard', [HomeController::class, 'leaderboard'])->name('leaderboard');
 Route::get('/leaderboard/{period}', [HomeController::class, 'leaderboardDetail'])->name('leaderboard.detail');
 Route::get('/api/leaderboard', [HomeController::class, 'leaderboardApi'])->name('api.leaderboard');
@@ -65,6 +67,14 @@ Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->gro
     Route::patch('/products/{product}/toggle', [AdminController::class, 'productsToggle'])->name('products.toggle');
     Route::delete('/products/{product}', [AdminController::class, 'productsDestroy'])->name('products.destroy');
     Route::post('/products/sync', [AdminController::class, 'productsSync'])->name('products.sync');
+
+    Route::get('/account-listings', [App\Http\Controllers\AdminAccountListingController::class, 'index'])->name('account-listings');
+    Route::get('/account-listings/create', [App\Http\Controllers\AdminAccountListingController::class, 'create'])->name('account-listings.create');
+    Route::post('/account-listings', [App\Http\Controllers\AdminAccountListingController::class, 'store'])->name('account-listings.store');
+    Route::get('/account-listings/{accountListing}/edit', [App\Http\Controllers\AdminAccountListingController::class, 'edit'])->name('account-listings.edit');
+    Route::put('/account-listings/{accountListing}', [App\Http\Controllers\AdminAccountListingController::class, 'update'])->name('account-listings.update');
+    Route::patch('/account-listings/{accountListing}/toggle', [App\Http\Controllers\AdminAccountListingController::class, 'toggle'])->name('account-listings.toggle');
+    Route::delete('/account-listings/{accountListing}', [App\Http\Controllers\AdminAccountListingController::class, 'destroy'])->name('account-listings.destroy');
 
     Route::get('/brands', [AdminController::class, 'brands'])->name('brands');
     Route::get('/brands/create', [AdminController::class, 'brandsCreate'])->name('brands.create');

@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
 
 class PaymentMethod extends Model
 {
@@ -25,7 +24,7 @@ class PaymentMethod extends Model
     public function getPhotoUrlAttribute(): ?string
     {
         if ($this->photo) {
-            return Storage::url($this->photo);
+            return asset('storage/' . $this->photo);
         }
         return null;
     }
