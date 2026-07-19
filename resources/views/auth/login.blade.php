@@ -1,6 +1,46 @@
 <x-guest-layout>
 @section('title', 'Masuk — ' . config('app.name'))
 
+@if (session('register_success'))
+<div id="successModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-icon">✓</div>
+        <h2>Registrasi Berhasil!</h2>
+        <p>Akun Anda telah berhasil dibuat. Silakan masuk menggunakan kredensial yang telah didaftarkan.</p>
+        <button type="button" class="btn-primary" onclick="closeModal()" style="width:100%;">Masuk Sekarang</button>
+    </div>
+</div>
+<style>
+.modal-overlay {
+    position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,.7);backdrop-filter:blur(8px);animation:fadeIn .3s ease;
+}
+.modal-content {
+    background:#1c1730;border:1px solid rgba(255,255,255,.08);border-radius:24px;padding:2.5rem 2rem;
+    max-width:420px;width:90%;text-align:center;animation:slideUp .4s ease;
+}
+.modal-icon {
+    width:68px;height:68px;margin:0 auto 1.2rem;border-radius:50%;
+    background:linear-gradient(135deg,#7c3aed,#a855f7);display:flex;align-items:center;justify-content:center;
+    font-size:2rem;color:#fff;font-weight:700;
+}
+.modal-content h2 { font-size:1.4rem;margin-bottom:.5rem;color:#f5f3fb; }
+.modal-content p { font-size:.9rem;color:#9b8db5;margin-bottom:1.8rem;line-height:1.6; }
+@keyframes fadeIn { from{opacity:0}to{opacity:1} }
+@keyframes slideUp { from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)} }
+</style>
+<script>
+function closeModal() {
+    const modal = document.getElementById('successModal');
+    modal.style.opacity = '0';
+    setTimeout(() => modal.style.display = 'none', 300);
+}
+document.getElementById('successModal')?.addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+});
+</script>
+@endif
+
 <div class="auth-header">
     <h1>Selamat Datang Kembali</h1>
     <p>Masuk untuk melanjutkan top up dan joki game favoritmu.</p>

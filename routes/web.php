@@ -25,6 +25,9 @@ Route::get('/games/{brand:name}', [HomeController::class, 'gameDetail'])->name('
 Route::get('/cek-transaksi', [HomeController::class, 'checkTransaction'])->name('check.transaction');
 Route::get('/jual-beli-akun', [App\Http\Controllers\HomeController::class, 'jualBeliAkun'])->name('jual-beli-akun');
 Route::get('/jual-beli-akun/{listing}', [App\Http\Controllers\HomeController::class, 'jualBeliAkunDetail'])->name('jual-beli-akun.detail');
+Route::get('/jual-beli-akun/{listing}/checkout', [App\Http\Controllers\HomeController::class, 'jualBeliAkunCheckout'])->name('jual-beli-akun.checkout');
+Route::post('/jual-beli-akun/{listing}/checkout', [App\Http\Controllers\HomeController::class, 'jualBeliAkunCheckoutStore'])->name('jual-beli-akun.checkout.store');
+Route::get('/jual-beli-akun/order/{accountOrder}/payment', [App\Http\Controllers\HomeController::class, 'jualBeliAkunPayment'])->name('jual-beli-akun.payment');
 Route::get('/leaderboard', [HomeController::class, 'leaderboard'])->name('leaderboard');
 Route::get('/leaderboard/{period}', [HomeController::class, 'leaderboardDetail'])->name('leaderboard.detail');
 Route::get('/api/leaderboard', [HomeController::class, 'leaderboardApi'])->name('api.leaderboard');

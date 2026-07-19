@@ -3,10 +3,10 @@
 
 <div class="auth-header">
     <h1>Lupa Kata Sandi</h1>
-    <p>Masukkan email kamu dan kami akan mengirimkan link reset password.</p>
+    <p>Masukkan email kamu untuk menerima kode OTP reset password.</p>
 </div>
 
-<form method="POST" action="{{ route('password.email') }}" class="auth-form" id="forgotForm">
+<form method="POST" action="{{ route('password.email.otp') }}" class="auth-form" id="forgotForm">
     @csrf
 
     <div class="form-group">
@@ -22,7 +22,7 @@
 
     <button type="submit" class="btn-primary" id="sendBtn">
         <span class="spinner"></span>
-        <span class="btn-text"><i class="fas fa-paper-plane"></i> Kirim Link Reset</span>
+        <span class="btn-text"><i class="fas fa-paper-plane"></i> Kirim Kode OTP</span>
     </button>
 </form>
 

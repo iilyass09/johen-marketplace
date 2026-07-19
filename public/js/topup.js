@@ -448,13 +448,13 @@ function showToast(msg, isError = false) {
 })();
 
 // ============ FEATURED IMAGE ROTATION ============
-document.querySelectorAll('.fg-card[data-featured-imgs]').forEach(card => {
+document.querySelectorAll('.bento-card[data-featured-imgs]').forEach(card => {
   const imgs = JSON.parse(card.dataset.featuredImgs || '[]').filter(Boolean);
   if (imgs.length < 2) return;
-  const bg = card.querySelector('.fg-card-bg');
+  const bg = card.querySelector('.bento-card-bg');
   if (!bg) return;
   const fade = document.createElement('div');
-  fade.className = 'fg-card-bg-fade';
+  fade.className = 'bento-card-bg-fade';
   card.insertBefore(fade, bg.nextSibling);
   let idx = 0;
   setInterval(() => {

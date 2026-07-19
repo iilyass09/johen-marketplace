@@ -3,31 +3,23 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Mail\SendOtpMail;
+use App\Models\OtpCode;
 use App\Models\User;
-use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class RegisteredUserController extends Controller
 {
-    /**
-     * Display the registration view.
-     */
     public function create(): View
     {
         return view('auth.register');
     }
 
-    /**
-     * Handle an incoming registration request.
-     *
-     * @throws ValidationException
-     */
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
@@ -37,17 +29,21 @@ class RegisteredUserController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'username' => $request->username,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
+        $data = $request->only('name', 'username', 'email', 'password');
+
+        $otp = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+        OtpCode::create([
+            'email' => $data['email'],
+            'otp' => $otp,
+            'type' => 'register',
+            'expires_at' => now()->addMinutes(5),
         ]);
 
-        event(new Registered($user));
+        session(['register_data' => $data, 'register_email' => $data['email']]);
 
-        Auth::login($user);
+        Mail::to($data['email'])->send(new SendOtpMail($otp, $data['name']));
 
-        return redirect(route('dashboard', absolute: false));
+        return redirect()->route('verify-otp');
     }
 }

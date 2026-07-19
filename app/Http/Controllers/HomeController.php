@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AccountListing;
+use App\Models\AccountOrder;
 use App\Models\Brand;
 use App\Models\Order;
 use App\Models\PaymentMethod;
@@ -304,5 +305,59 @@ class HomeController extends Controller
             ->get();
 
         return view('pages.jual-beli-akun-detail', compact('listing', 'related'));
+    }
+
+    public function jualBeliAkunCheckout(AccountListing $listing)
+    {
+        if ($listing->is_sold || !$listing->is_active) {
+            return redirect()->route('jual-beli-akun.detail', $listing)
+                ->with('error', 'Produk ini sudah tidak tersedia.');
+        }
+
+        $paymentMethods = PaymentMethod::where('is_active', true)->get();
+
+        return view('pages.jual-beli-akun-checkout', compact('listing', 'paymentMethods'));
+    }
+
+    public function jualBeliAkunCheckoutStore(Request $request, AccountListing $listing)
+    {
+        if ($listing->is_sold || !$listing->is_active) {
+            return redirect()->route('jual-beli-akun.detail', $listing)
+                ->with('error', 'Produk ini sudah tidak tersedia.');
+        }
+
+        $validated = $request->validate([
+            'customer_name' => 'required|string|max:255',
+            'customer_email' => 'required|email|max:255',
+            'customer_phone' => 'required|string|max:20',
+            'payment_method' => 'required|string|max:100',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        $order = AccountOrder::create([
+            'account_listing_id' => $listing->id,
+            'user_id' => auth()->id(),
+            'customer_name' => $validated['customer_name'],
+            'customer_email' => $validated['customer_email'],
+            'customer_phone' => $validated['customer_phone'],
+            'payment_method' => $validated['payment_method'],
+            'status' => 'pending',
+            'total_price' => $listing->price,
+            'notes' => $validated['notes'] ?? null,
+        ]);
+
+        return redirect()->route('jual-beli-akun.payment', $order)
+            ->with('success', 'Pesanan berhasil dibuat! Silakan lakukan pembayaran.');
+    }
+
+    public function jualBeliAkunPayment(AccountOrder $accountOrder)
+    {
+        $listing = $accountOrder->listing;
+
+        if (!$listing) {
+            abort(404);
+        }
+
+        return view('pages.jual-beli-akun-payment', compact('accountOrder', 'listing'));
     }
 }

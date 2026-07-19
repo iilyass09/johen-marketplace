@@ -20,54 +20,58 @@
         @enderror
     </div>
 
-    <div class="form-group">
-        <label for="username">Username</label>
-        <div class="input-wrap">
-            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
-            <input id="username" type="text" name="username" value="{{ old('username') }}" required autocomplete="username" placeholder="Pilih username" onfocus="this.closest('.input-wrap').classList.add('focused')" onblur="if(!this.value)this.closest('.input-wrap').classList.remove('focused')">
+    <div class="form-row">
+        <div class="form-group">
+            <label for="username">Username</label>
+            <div class="input-wrap">
+                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
+                <input id="username" type="text" name="username" value="{{ old('username') }}" required autocomplete="username" placeholder="Username" onfocus="this.closest('.input-wrap').classList.add('focused')" onblur="if(!this.value)this.closest('.input-wrap').classList.remove('focused')">
+            </div>
+            @error('username')
+                <div class="error-text"><i class="fas fa-exclamation-circle"></i> {{ $message }}</div>
+            @enderror
         </div>
-        @error('username')
-            <div class="error-text"><i class="fas fa-exclamation-circle"></i> {{ $message }}</div>
-        @enderror
-    </div>
 
-    <div class="form-group">
-        <label for="email">Email</label>
-        <div class="input-wrap">
-            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-            <input id="email" type="email" name="email" value="{{ old('email') }}" required autocomplete="email" placeholder="nama@email.com" onfocus="this.closest('.input-wrap').classList.add('focused')" onblur="if(!this.value)this.closest('.input-wrap').classList.remove('focused')">
-        </div>
-        @error('email')
-            <div class="error-text"><i class="fas fa-exclamation-circle"></i> {{ $message }}</div>
-        @enderror
-    </div>
-
-    <div class="form-group">
-        <label for="password">Kata Sandi</label>
-        <div class="input-wrap">
-            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            <input id="password" type="password" name="password" required autocomplete="new-password" placeholder="Minimal 8 karakter" onfocus="this.closest('.input-wrap').classList.add('focused')" onblur="if(!this.value)this.closest('.input-wrap').classList.remove('focused')">
-            <button type="button" class="toggle-pass" onclick="togglePass(this)" tabindex="-1" aria-label="Tampilkan sandi">
-                <i class="fas fa-eye"></i>
-            </button>
-        </div>
-        @error('password')
-            <div class="error-text"><i class="fas fa-exclamation-circle"></i> {{ $message }}</div>
-        @enderror
-    </div>
-
-    <div class="form-group">
-        <label for="password_confirmation">Konfirmasi Kata Sandi</label>
-        <div class="input-wrap">
-            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            <input id="password_confirmation" type="password" name="password_confirmation" required autocomplete="new-password" placeholder="Ulangi kata sandi" onfocus="this.closest('.input-wrap').classList.add('focused')" onblur="if(!this.value)this.closest('.input-wrap').classList.remove('focused')">
-            <button type="button" class="toggle-pass" onclick="togglePass(this)" tabindex="-1" aria-label="Tampilkan sandi">
-                <i class="fas fa-eye"></i>
-            </button>
+        <div class="form-group">
+            <label for="email">Email</label>
+            <div class="input-wrap">
+                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                <input id="email" type="email" name="email" value="{{ old('email') }}" required autocomplete="email" placeholder="nama@email.com" onfocus="this.closest('.input-wrap').classList.add('focused')" onblur="if(!this.value)this.closest('.input-wrap').classList.remove('focused')">
+            </div>
+            @error('email')
+                <div class="error-text"><i class="fas fa-exclamation-circle"></i> {{ $message }}</div>
+            @enderror
         </div>
     </div>
 
-    <button type="submit" class="btn-primary" id="registerBtn" style="margin-top:0.3rem;">
+    <div class="form-row">
+        <div class="form-group">
+            <label for="password">Kata Sandi</label>
+            <div class="input-wrap">
+                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <input id="password" type="password" name="password" required autocomplete="new-password" placeholder="Minimal 8 karakter" onfocus="this.closest('.input-wrap').classList.add('focused')" onblur="if(!this.value)this.closest('.input-wrap').classList.remove('focused')">
+                <button type="button" class="toggle-pass" onclick="togglePass(this)" tabindex="-1" aria-label="Tampilkan sandi">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </div>
+            @error('password')
+                <div class="error-text"><i class="fas fa-exclamation-circle"></i> {{ $message }}</div>
+            @enderror
+        </div>
+
+        <div class="form-group">
+            <label for="password_confirmation">Konfirmasi Sandi</label>
+            <div class="input-wrap">
+                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <input id="password_confirmation" type="password" name="password_confirmation" required autocomplete="new-password" placeholder="Ulangi sandi" onfocus="this.closest('.input-wrap').classList.add('focused')" onblur="if(!this.value)this.closest('.input-wrap').classList.remove('focused')">
+                <button type="button" class="toggle-pass" onclick="togglePass(this)" tabindex="-1" aria-label="Tampilkan sandi">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <button type="submit" class="btn-primary" id="registerBtn">
         <span class="spinner"></span>
         <span class="btn-text"><i class="fas fa-user-plus"></i> Daftar</span>
     </button>
