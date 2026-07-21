@@ -28,6 +28,12 @@ Route::get('/jual-beli-akun/{listing}', [App\Http\Controllers\HomeController::cl
 Route::get('/jual-beli-akun/{listing}/checkout', [App\Http\Controllers\HomeController::class, 'jualBeliAkunCheckout'])->name('jual-beli-akun.checkout');
 Route::post('/jual-beli-akun/{listing}/checkout', [App\Http\Controllers\HomeController::class, 'jualBeliAkunCheckoutStore'])->name('jual-beli-akun.checkout.store');
 Route::get('/jual-beli-akun/order/{accountOrder}/payment', [App\Http\Controllers\HomeController::class, 'jualBeliAkunPayment'])->name('jual-beli-akun.payment');
+Route::get('/testimoni', [HomeController::class, 'testimoni'])->name('testimoni');
+Route::get('/faq', [HomeController::class, 'faq'])->name('faq');
+Route::get('/kebijakan-privasi', [HomeController::class, 'privacy'])->name('privacy');
+Route::get('/syarat-ketentuan', [HomeController::class, 'terms'])->name('terms');
+Route::get('/hubungi-kami', [HomeController::class, 'kontak'])->name('kontak');
+Route::post('/hubungi-kami', [HomeController::class, 'kontakStore']);
 Route::get('/leaderboard', [HomeController::class, 'leaderboard'])->name('leaderboard');
 Route::get('/leaderboard/{period}', [HomeController::class, 'leaderboardDetail'])->name('leaderboard.detail');
 Route::get('/api/leaderboard', [HomeController::class, 'leaderboardApi'])->name('api.leaderboard');
@@ -105,6 +111,12 @@ Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->gro
 
     Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
     Route::post('/settings', [AdminController::class, 'settingsUpdate'])->name('settings.update');
+
+    Route::get('/contact-inquiries', [AdminController::class, 'contactInquiries'])->name('contact-inquiries');
+    Route::get('/contact-inquiries/{contactInquiry}', [AdminController::class, 'contactInquiriesShow'])->name('contact-inquiries.show');
+    Route::patch('/contact-inquiries/{contactInquiry}/mark-read', [AdminController::class, 'contactInquiriesMarkRead'])->name('contact-inquiries.mark-read');
+    Route::post('/contact-inquiries/{contactInquiry}/reply', [AdminController::class, 'contactInquiriesReply'])->name('contact-inquiries.reply');
+    Route::delete('/contact-inquiries/{contactInquiry}', [AdminController::class, 'contactInquiriesDestroy'])->name('contact-inquiries.destroy');
 
     Route::get('/digiflazz/test', [AdminController::class, 'digiflazzTest'])->name('digiflazz.test');
 });

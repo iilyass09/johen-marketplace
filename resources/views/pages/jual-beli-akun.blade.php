@@ -3,31 +3,54 @@
 @section('title', 'Jual Beli Akun - Johen Gaming')
 
 @section('content')
+@php
+  $jbaBanner  = \App\Models\SiteSetting::get('jba_hero_banner');
+  $jbaBanner2 = \App\Models\SiteSetting::get('jba_hero_banner_2');
+  $jbaBanner3 = \App\Models\SiteSetting::get('jba_hero_banner_3');
+  $jbaBanners = array_filter([$jbaBanner, $jbaBanner2, $jbaBanner3]);
+@endphp
+
 <div class="jba-page">
+  <section class="hero-section" id="jba-hero" style="position:relative;overflow:hidden;border-radius:20px;display:flex;align-items:center;justify-content:center;background:var(--bg-soft)">
+    @if(count($jbaBanners))
+      <div class="hero-banner-track">
+        <img src="{{ asset('storage/'.$jbaBanners[0]) }}" alt="Hero Banner"
+             data-banners='{{ json_encode(array_map(fn($b) => asset('storage/'.$b), $jbaBanners)) }}'
+             class="hero-banner-img hero-banner-img-a"
+             style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center">
+        <img src="" alt="Hero Banner"
+             class="hero-banner-img hero-banner-img-b"
+             style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center">
+      </div>
+    @else
+      <div style="position:absolute;inset:0;background:var(--bg-soft)"></div>
+      <div style="position:relative;z-index:1;text-align:center;padding:2rem">
+        <p style="color:var(--text-mute);font-size:.82rem">Tambahkan banner di Pengaturan → Hero Banner (Jual Beli Akun)</p>
+      </div>
+    @endif
+
+    <button class="hero-arrow hero-arrow-left" data-banner-prev aria-label="Sebelumnya">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <button class="hero-arrow hero-arrow-right" data-banner-next aria-label="Selanjutnya">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+  </section>
+
   <div class="jba-hero">
     <h1>Jual Beli Akun Game</h1>
     <p>Temukan akun game terbaik dengan harga terbaik. Semua akun sudah diverifikasi.</p>
   </div>
 
   <div class="games-grid" id="jba-game-grid">
-    @php
-      $jbaGradients = [
-        'linear-gradient(160deg,#1e3a5f,#0f1c2e)',
-        'linear-gradient(160deg,#3b2465,#1a1030)',
-        'linear-gradient(160deg,#5c1f2e,#240d13)',
-        'linear-gradient(160deg,#1f4d2e,#0d1f13)',
-        'linear-gradient(160deg,#4a1f5c,#1a0d24)',
-      ];
-    @endphp
     @foreach($popularGames as $i => $brand)
       @php
         $count = $listings->get($brand->name)?->count() ?? 0;
-        $bg = $jbaGradients[$i % count($jbaGradients)];
       @endphp
-      <div class="jba-game-btn" data-game="{{ $brand->name }}" style="background:{{ $bg }}">
+      <div class="jba-game-btn" data-game="{{ $brand->name }}">
         <div class="jba-game-btn-icon">
           @if($brand->thumbnail_url)
-            <img src="{{ $brand->thumbnail_url }}" alt="{{ $brand->name }}" style="width:100%;height:100%;object-fit:contain;padding:1.5rem;">
+            <img src="{{ $brand->thumbnail_url }}" alt="{{ $brand->name }}">
           @else
             <span style="font-size:2.4rem">🎮</span>
           @endif
@@ -65,18 +88,19 @@
   padding: 2rem 1.5rem 4rem;
 }
 .jba-hero {
-  text-align: center;
-  margin-bottom: 2.5rem;
+  text-align: left;
+  margin: 1.2rem 0 1.5rem;
 }
 .jba-hero h1 {
-  font-size: 1.8rem;
-  font-weight: 800;
-  margin-bottom: .4rem;
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: .15rem;
   color: var(--text);
 }
 .jba-hero p {
   color: var(--text-dim);
-  font-size: .92rem;
+  font-size: .82rem;
+  margin: 0;
 }
 
 .jba-game-btn {
@@ -88,24 +112,37 @@
   transition: transform .25s ease, box-shadow .25s ease;
   display: flex;
   align-items: flex-end;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
 }
 .jba-game-btn:hover {
   transform: translateY(-6px) scale(1.02);
   box-shadow: 0 20px 40px -14px rgba(0,0,0,.65);
+  border-color: var(--purple-light);
 }
 .jba-game-btn-icon {
   position: absolute; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 3.6rem;
-  filter: drop-shadow(0 8px 14px rgba(0,0,0,.4));
+  overflow: hidden;
+}
+.jba-game-btn-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
   transition: transform .3s ease;
 }
-.jba-game-btn:hover .jba-game-btn-icon {
-  transform: scale(1.1) translateY(-4px);
+.jba-game-btn:hover .jba-game-btn-icon img {
+  transform: scale(1.08);
+}
+.jba-game-btn-icon span {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 3.6rem;
 }
 .jba-game-btn-overlay {
   position: absolute; inset: 0;
-  background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,.85));
+  background: linear-gradient(180deg, transparent 35%, rgba(0,0,0,.85) 80%);
+  pointer-events: none;
 }
 .jba-game-btn-info {
   position: relative; z-index: 2;
@@ -117,6 +154,7 @@
   font-weight: 700;
   font-size: .88rem;
   line-height: 1.15;
+  color: var(--text);
 }
 .jba-game-btn-cat {
   font-size: .66rem;
@@ -169,45 +207,40 @@
   gap: 1rem;
 }
 .jba-card {
-  background: var(--bg-card);
-  border: 1.5px solid rgba(157, 92, 245, .25);
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
-  transition: transform .2s, box-shadow .2s, border-color .2s;
+  transition: transform .25s ease, box-shadow .25s ease;
   text-decoration: none;
   color: inherit;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+  border: 1.5px solid rgba(157, 92, 245, .2);
 }
 .jba-card:hover {
-  transform: translateY(-3px);
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px -14px rgba(0,0,0,.65);
   border-color: var(--jba-accent);
-  box-shadow: 0 0 20px -4px rgba(157, 92, 245, .5), 0 8px 24px -6px rgba(0,0,0,.35);
 }
-.jba-card-thumb {
+.jba-card-img {
   width: 100%;
   aspect-ratio: 4/3;
   overflow: hidden;
   background: var(--bg-soft);
   position: relative;
 }
-.jba-card-thumb::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,.2);
-  z-index: 1;
-  pointer-events: none;
-}
-.jba-card-thumb img {
+.jba-card-img img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-.jba-card-thumb-fallback {
+.jba-card-img-fallback {
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: var(--bg-soft);
   color: #555;
 }
 .jba-ribbon {
@@ -219,7 +252,7 @@
   font-size: 0.68rem;
   font-weight: 800;
   padding: 2px 36px;
-  z-index: 2;
+  z-index: 3;
   text-align: center;
   text-transform: uppercase;
   white-space: nowrap;
@@ -227,7 +260,6 @@
   line-height: 1.6;
   transform: rotate(-45deg);
   box-shadow: 0 3px 10px rgba(0,0,0,0.3);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
   pointer-events: none;
 }
 .jba-card:hover .jba-ribbon {
@@ -256,7 +288,6 @@
   pointer-events: none;
   cursor: default;
   opacity: .75;
-  position: relative;
 }
 .jba-card--sold .jba-card-game,
 .jba-card--sold .jba-card-title,
@@ -268,7 +299,7 @@
   filter: grayscale(1);
   opacity: .4;
 }
-.jba-card--sold .jba-card-thumb::after {
+.jba-card--sold .jba-card-img::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -300,19 +331,21 @@
   opacity: .7;
 }
 .jba-card-title {
-  font-size: .92rem;
+  font-size: .88rem;
   font-weight: 600;
-  margin-bottom: .2rem;
+  margin-bottom: .15rem;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  line-height: 1.3;
+  color: var(--text);
 }
 .jba-card-owner {
-  font-size: .78rem;
+  font-size: .75rem;
   color: var(--text-dim);
   font-weight: 400;
-  margin-bottom: .25rem;
+  margin-bottom: .35rem;
 }
 .jba-card-prices {
   display: flex;
@@ -321,13 +354,13 @@
   flex-wrap: wrap;
 }
 .jba-card-original {
-  font-size: .82rem;
+  font-size: .78rem;
   color: #ef4444;
   text-decoration: line-through;
   opacity: .7;
 }
 .jba-card-price {
-  font-size: 1rem;
+  font-size: .95rem;
   font-weight: 700;
   color: var(--jba-accent);
 }
@@ -357,6 +390,13 @@
 
   const allListings = @json($listings);
 
+  // auto-open game from hash
+  const hash = location.hash.replace(/^#game=/,'').replace(/\+/g,' ');
+  const gameName = decodeURIComponent(hash);
+  if (gameName && allListings[gameName]) {
+    showGame(gameName);
+  }
+
   function renderCards(listings) {
     grid.innerHTML = '';
     let visible = 0;
@@ -385,7 +425,7 @@
 
       const thumbHtml = l.photo_url
         ? '<img src="' + l.photo_url + '" alt="' + l.product_name + '" class="' + (isSold ? 'jba-img-sold' : '') + '">'
-        : '<div class="jba-card-thumb-fallback"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>';
+        : '<div class="jba-card-img-fallback"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>';
 
       const href = isSold ? '#' : '/jual-beli-akun/' + l.id;
 
@@ -393,7 +433,7 @@
       card.href = href;
       card.className = 'jba-card' + (isSold ? ' jba-card--sold' : '');
       if (isSold) { card.setAttribute('tabindex', '-1'); card.setAttribute('aria-disabled', 'true'); }
-      card.innerHTML = '<div class="jba-card-thumb">' + thumbHtml + badgeHtml + '</div>' +
+      card.innerHTML = '<div class="jba-card-img">' + thumbHtml + badgeHtml + '</div>' +
         '<div class="jba-card-body">' +
         '<div class="jba-card-game">' + l.game + '</div>' +
         '<h3 class="jba-card-title">' + l.product_name + '</h3>' +
@@ -410,9 +450,14 @@
     }
   }
 
+  const jbaHero = document.querySelector('.jba-hero');
+  const jbaBanner = document.getElementById('jba-hero');
+
   function showGame(game) {
     gameGrid.style.display = 'none';
     gameSection.style.display = '';
+    if (jbaHero) jbaHero.style.display = 'none';
+    if (jbaBanner) jbaBanner.style.display = 'none';
     gameTitle.textContent = game;
     renderCards(allListings[game] || []);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -427,8 +472,26 @@
   backBtn?.addEventListener('click', function() {
     gameSection.style.display = 'none';
     gameGrid.style.display = '';
+    if (jbaHero) jbaHero.style.display = '';
+    if (jbaBanner) jbaBanner.style.display = '';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 })();
 </script>
+
+<!-- ===== CTA ===== -->
+<section class="cta-section">
+  <div class="cta-card">
+    <span class="cta-glow-2"></span>
+    <a href="https://www.johengaming.id" target="_blank" rel="noopener noreferrer" class="cta-logo-link">
+      <img src="{{ asset('logo.png') }}" alt="Johen Gaming" class="cta-logo">
+    </a>
+    <h2>Kunjungi Website Profile Kami</h2>
+    <p>Dapatkan informasi lengkap tentang layanan, promo terbaru, dan update seputar Johen Gaming.</p>
+    <a href="https://www.johengaming.id" target="_blank" rel="noopener noreferrer" class="cta-btn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      Kunjungi johengaming.id
+    </a>
+  </div>
+</section>
 @endsection

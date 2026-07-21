@@ -131,23 +131,61 @@
                 <i class="fas fa-image" style="color:#f59e0b"></i>
                 <span>Hero Banner</span>
             </h3>
-            <div>
-                <label class="block text-sm font-medium mb-1.5">Gambar Banner Halaman Utama</label>
+            <p style="color:var(--text-dim);font-size:0.78rem;margin-bottom:1rem">Banner akan ditampilkan sebagai slider. Upload minimal 1 banner, maksimal 3 banner.</p>
+            @php
+                $bannerLabels = ['Banner 1 (Utama)', 'Banner 2', 'Banner 3'];
+                $bannerKeys = ['site_hero_banner', 'site_hero_banner_2', 'site_hero_banner_3'];
+            @endphp
+            @foreach($bannerLabels as $i => $label)
+            <div class="mb-4 {{ $i === 0 ? '' : 'pt-3 border-t' }}" style="border-color:var(--border)">
+                <label class="block text-sm font-medium mb-1.5">{{ $label }}</label>
                 <div class="flex items-start gap-4">
                     <div style="width:200px;height:112px;border-radius:12px;background:var(--bg-input);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
-                        @if(!empty($settings['site_hero_banner']))
-                            <img src="{{ asset('storage/'.$settings['site_hero_banner']) }}" alt="Hero Banner" style="width:100%;height:100%;object-fit:cover">
+                        @if(!empty($settings[$bannerKeys[$i]]))
+                            <img src="{{ asset('storage/'.$settings[$bannerKeys[$i]]) }}" alt="{{ $label }}" style="width:100%;height:100%;object-fit:cover">
                         @else
                             <span style="font-size:0.72rem;color:var(--text-dim);text-align:center;padding:.5rem">Belum ada banner</span>
                         @endif
                     </div>
                     <div class="flex-1">
-                        <input type="file" name="site_hero_banner" accept="image/jpeg,image/png,image/webp"
+                        <input type="file" name="{{ $bannerKeys[$i] }}" accept="image/jpeg,image/png,image/webp"
                                class="w-full text-sm" style="color:var(--text-muted)">
                         <p style="color:var(--text-dim);font-size:0.72rem;margin-top:0.25rem">Format: JPG, PNG, WebP. Maks 2MB. Ukuran ideal: 1920x480px.</p>
                     </div>
                 </div>
             </div>
+            @endforeach
+        </div>
+
+        <div class="card-glass p-6 mb-6">
+            <h3 class="font-semibold mb-4 flex items-center gap-2" style="font-size:0.95rem">
+                <i class="fas fa-image" style="color:#f59e0b"></i>
+                <span>Hero Banner (Jual Beli Akun)</span>
+            </h3>
+            <p style="color:var(--text-dim);font-size:0.78rem;margin-bottom:1rem">Banner akan ditampilkan sebagai slider di halaman Jual Beli Akun. Upload minimal 1 banner, maksimal 3 banner.</p>
+            @php
+                $jbaBannerLabels = ['Banner 1 (Utama)', 'Banner 2', 'Banner 3'];
+                $jbaBannerKeys = ['jba_hero_banner', 'jba_hero_banner_2', 'jba_hero_banner_3'];
+            @endphp
+            @foreach($jbaBannerLabels as $i => $label)
+            <div class="mb-4 {{ $i === 0 ? '' : 'pt-3 border-t' }}" style="border-color:var(--border)">
+                <label class="block text-sm font-medium mb-1.5">{{ $label }}</label>
+                <div class="flex items-start gap-4">
+                    <div style="width:200px;height:112px;border-radius:12px;background:var(--bg-input);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
+                        @if(!empty($settings[$jbaBannerKeys[$i]]))
+                            <img src="{{ asset('storage/'.$settings[$jbaBannerKeys[$i]]) }}" alt="{{ $label }}" style="width:100%;height:100%;object-fit:cover">
+                        @else
+                            <span style="font-size:0.72rem;color:var(--text-dim);text-align:center;padding:.5rem">Belum ada banner</span>
+                        @endif
+                    </div>
+                    <div class="flex-1">
+                        <input type="file" name="{{ $jbaBannerKeys[$i] }}" accept="image/jpeg,image/png,image/webp"
+                               class="w-full text-sm" style="color:var(--text-muted)">
+                        <p style="color:var(--text-dim);font-size:0.72rem;margin-top:0.25rem">Format: JPG, PNG, WebP. Maks 2MB. Ukuran ideal: 1920x480px.</p>
+                    </div>
+                </div>
+            </div>
+            @endforeach
         </div>
 
         <div class="card-glass p-6 mb-6">

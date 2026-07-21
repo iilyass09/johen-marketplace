@@ -48,7 +48,7 @@
                     <td>
                         <div class="flex items-center justify-center gap-1.5">
                             <button type="button" class="btn btn-ghost btn-xs"
-                                data-pm='{{ json_encode($pm->only(['id','name','code','category','is_active','photo_url'])) }}'
+                                data-pm='{{ json_encode($pm->only(['id','name','code','category','is_active','photo_url','photo_light_url'])) }}'
                                 onclick="openEditModal(this)">
                                 <i class="fas fa-edit"></i>
                             </button>
@@ -126,7 +126,7 @@
             </div>
 
             <div class="mt-4">
-                <label class="block text-sm font-medium mb-1.5">Foto (JPG / PNG / WebP)</label>
+                <label class="block text-sm font-medium mb-1.5">Foto (JPG / PNG / WebP) — Dark Theme</label>
                 <div class="flex items-center gap-3">
                     <div id="pmPhotoPreview" style="width:64px;height:64px;border-radius:12px;background:var(--bg-input);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
                         <span id="pmPhotoPlaceholder" style="font-size:0.7rem;color:var(--text-dim)">Preview</span>
@@ -137,6 +137,22 @@
                                class="w-full text-sm" style="color:var(--text-muted)">
                         <p style="color:var(--text-dim);font-size:0.72rem;margin-top:0.25rem" id="pmPhotoHint">Maksimal 2MB.</p>
                         <p class="text-red-400 text-xs mt-1 hidden" id="err_photo"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <label class="block text-sm font-medium mb-1.5">Foto — Light Theme <span style="color:var(--text-dim);font-weight:400">(opsional, untuk logo hitam)</span></label>
+                <div class="flex items-center gap-3">
+                    <div id="pmPhotoLightPreview" style="width:64px;height:64px;border-radius:12px;background:var(--bg-input);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
+                        <span id="pmPhotoLightPlaceholder" style="font-size:0.7rem;color:var(--text-dim)">Preview</span>
+                        <img id="pmPhotoLightImage" class="hidden" style="width:100%;height:100%;object-fit:cover" src="" alt="preview light">
+                    </div>
+                    <div class="flex-1">
+                        <input type="file" name="photo_light" id="pmPhotoLightInput" accept="image/jpeg,image/png,image/jpg,image/webp"
+                               class="w-full text-sm" style="color:var(--text-muted)">
+                        <p style="color:var(--text-dim);font-size:0.72rem;margin-top:0.25rem" id="pmPhotoLightHint">Maksimal 2MB. Kosongkan jika tidak ada.</p>
+                        <p class="text-red-400 text-xs mt-1 hidden" id="err_photo_light"></p>
                     </div>
                 </div>
             </div>
@@ -166,6 +182,19 @@ document.getElementById('pmPhotoInput')?.addEventListener('change', function(e) 
     }
 });
 
+document.getElementById('pmPhotoLightInput')?.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            document.getElementById('pmPhotoLightImage').src = ev.target.result;
+            document.getElementById('pmPhotoLightImage').classList.remove('hidden');
+            document.getElementById('pmPhotoLightPlaceholder').classList.add('hidden');
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
 function openCreateModal() {
     editPmId = null;
     document.getElementById('pmModalTitle').textContent = 'Tambah Metode Pembayaran';
@@ -176,6 +205,9 @@ function openCreateModal() {
     document.getElementById('pmPhotoImage').classList.add('hidden');
     document.getElementById('pmPhotoPlaceholder').classList.remove('hidden');
     document.getElementById('pmPhotoHint').textContent = 'Maksimal 2MB.';
+    document.getElementById('pmPhotoLightImage').classList.add('hidden');
+    document.getElementById('pmPhotoLightPlaceholder').classList.remove('hidden');
+    document.getElementById('pmPhotoLightHint').textContent = 'Maksimal 2MB.';
     document.getElementById('f_pm_is_active').checked = true;
     clearPmErrors();
     document.getElementById('pmModal').style.display = 'flex';
@@ -195,6 +227,14 @@ function openEditModal(btn) {
     document.getElementById('pmPhotoImage').classList.add('hidden');
     document.getElementById('pmPhotoPlaceholder').classList.remove('hidden');
     document.getElementById('pmPhotoHint').textContent = 'Kosongkan jika tidak ingin mengubah. Maks 2MB.';
+    document.getElementById('pmPhotoLightImage').classList.add('hidden');
+    document.getElementById('pmPhotoLightPlaceholder').classList.remove('hidden');
+    if (p.photo_light_url) {
+        document.getElementById('pmPhotoLightImage').src = p.photo_light_url;
+        document.getElementById('pmPhotoLightImage').classList.remove('hidden');
+        document.getElementById('pmPhotoLightPlaceholder').classList.add('hidden');
+    }
+    document.getElementById('pmPhotoLightHint').textContent = 'Kosongkan jika tidak ingin mengubah. Maks 2MB.';
     clearPmErrors();
     document.getElementById('pmModal').style.display = 'flex';
 }

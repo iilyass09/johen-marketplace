@@ -2,14 +2,24 @@
 
 @section('content')
 @php
-  $banner = \App\Models\SiteSetting::get('site_hero_banner');
+  $banner  = \App\Models\SiteSetting::get('site_hero_banner');
+  $banner2 = \App\Models\SiteSetting::get('site_hero_banner_2');
+  $banner3 = \App\Models\SiteSetting::get('site_hero_banner_3');
+  $banners = array_filter([$banner, $banner2, $banner3]);
 @endphp
 
 <!-- ===== HERO BANNER ===== -->
-<section class="hero-section" id="joki" style="position:relative;overflow:hidden;height:500px;border-radius:20px;display:flex;align-items:center;justify-content:center;background:var(--bg-soft)">
-  @if($banner)
-    <img src="{{ asset('storage/'.$banner) }}" alt="Hero Banner"
-         style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center">
+<section class="hero-section" id="joki" style="position:relative;overflow:hidden;border-radius:20px;display:flex;align-items:center;justify-content:center;background:var(--bg-soft)">
+  @if(count($banners))
+    <div class="hero-banner-track">
+      <img src="{{ asset('storage/'.$banners[0]) }}" alt="Hero Banner"
+           data-banners='{{ json_encode(array_map(fn($b) => asset('storage/'.$b), $banners)) }}'
+           class="hero-banner-img hero-banner-img-a"
+           style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center">
+      <img src="" alt="Hero Banner"
+           class="hero-banner-img hero-banner-img-b"
+           style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center">
+    </div>
   @else
     <div style="position:absolute;inset:0;background:var(--bg-soft)"></div>
     <div style="position:relative;z-index:1;text-align:center;padding:2rem">
@@ -18,6 +28,13 @@
       <p style="color:var(--text-mute);font-size:.82rem;margin-top:1rem">Tambahkan banner di Pengaturan → Hero Banner</p>
     </div>
   @endif
+
+  <button class="hero-arrow hero-arrow-left" data-banner-prev aria-label="Sebelumnya">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+  </button>
+  <button class="hero-arrow hero-arrow-right" data-banner-next aria-label="Selanjutnya">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+  </button>
 </section>
 
 <!-- ===== CATEGORY TABS ===== -->
@@ -25,7 +42,6 @@
   <div class="tabs-wrap" id="tabsWrap">
     <button class="tab-pill active" data-filter="all">Top Up Games</button>
     <button class="tab-pill" data-filter="joki" id="jokiTab">Joki Mobile Legends</button>
-    <button class="tab-pill" data-filter="check" id="cekTransaksiTab">Cek Transaksi</button>
   </div>
 </section>
 
@@ -193,17 +209,38 @@ const allCards = Array.from(document.querySelectorAll('.game-card'));
 const loadMoreBtn = document.getElementById('loadMoreBtn');
 const loadMoreWrap = document.getElementById('loadMoreWrap');
 
+function updateLoadMoreBtn() {
+  const totalInFilter = allCards.filter(c => {
+    const tab = document.querySelector('.tab-btn.active')?.dataset?.tab || 'all';
+    if (tab === 'all') return true;
+    if (tab === 'joki') return c.dataset.brand === 'Mobile Legends';
+    return c.dataset.brand === tab;
+  }).length;
+  const visibleCount = allCards.filter(c => c.style.display !== 'none' && c.style.display !== 'display:none').length;
+  if (visibleCount >= totalInFilter) {
+    loadMoreBtn.textContent = 'Sembunyikan Lainnya';
+  } else {
+    loadMoreBtn.textContent = 'Tampilkan Lainnya';
+  }
+}
+
 if (loadMoreBtn) {
   loadMoreBtn.addEventListener('click', function() {
     const currentFilter = document.querySelector('.tab-btn.active')?.dataset?.tab || 'all';
-    let shown = 0;
-    let hidden = [];
 
+    if (loadMoreBtn.textContent === 'Sembunyikan Lainnya') {
+      allCards.forEach((card, i) => {
+        if (i >= 10) card.style.display = 'none';
+      });
+      loadMoreIndex = 10;
+      loadMoreBtn.textContent = 'Tampilkan Lainnya';
+      return;
+    }
+
+    let hidden = [];
     allCards.forEach(card => {
       if (currentFilter === 'all' || card.dataset.brand === 'Mobile Legends' && currentFilter === 'joki') {
-        if (card.style.display !== 'none') {
-          shown++;
-        } else if (parseInt(card.dataset.index) >= loadMoreIndex) {
+        if (parseInt(card.dataset.index) >= loadMoreIndex && (card.style.display === 'none' || card.style.display === 'display:none')) {
           hidden.push(card);
         }
       }
@@ -213,17 +250,7 @@ if (loadMoreBtn) {
     toShow.forEach(card => { card.style.display = ''; });
     loadMoreIndex += toShow.length;
 
-    const totalInFilter = allCards.filter(c => {
-      if (currentFilter === 'all') return true;
-      if (currentFilter === 'joki') return c.dataset.brand === 'Mobile Legends';
-      return c.dataset.brand === currentFilter;
-    }).length;
-
-    const visibleCount = allCards.filter(c => c.style.display !== 'none' && c.style.display !== 'display:none').length;
-
-    if (visibleCount >= totalInFilter) {
-      loadMoreWrap.style.display = 'none';
-    }
+    updateLoadMoreBtn();
   });
 }
 
@@ -237,6 +264,7 @@ window.__loadMoreReset = function() {
   });
   loadMoreIndex = 10;
   loadMoreWrap.style.display = '';
+  loadMoreBtn.textContent = 'Tampilkan Lainnya';
 };
 </script>
 @endpush
@@ -246,9 +274,18 @@ window.__loadMoreReset = function() {
   <h2>APA KATA MEREKA?</h2>
   <p class="testi-sub">Ribuan orang telah mempercayai Top Up mereka di Johen Gaming</p>
   <div class="testi-carousel">
+    <button class="testi-arrow testi-arrow-left" onclick="prevTesti()" aria-label="Sebelumnya">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
     <div class="testi-track" id="testiTrack"></div>
+    <button class="testi-arrow testi-arrow-right" onclick="nextTesti()" aria-label="Selanjutnya">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
   </div>
   <div class="testi-dots" id="testiDots"></div>
+  <div class="load-more-wrap" style="margin-top:1.2rem">
+    <a href="{{ route('testimoni') }}" class="btn btn-outline btn-load-more">Lihat Selengkapnya</a>
+  </div>
 </section>
 
 <!-- ===== PAYMENT METHODS ===== -->
@@ -260,14 +297,20 @@ window.__loadMoreReset = function() {
   </div>
 </section>
 
-<!-- ===== NEWSLETTER ===== -->
-<section class="newsletter-section">
-  <h2>Level Up Bareng Kami!</h2>
-  <p>Claim kode diskon eksklusif, notifikasi flash sale, dan akses VIP ke promo terbaik.<br>Lebih cepat top up, lebih murah, lebih unggul.</p>
-  <form class="newsletter-form" id="newsletterForm">
-    <input type="email" placeholder="Masukan Email Kamu" id="newsletterEmail" required>
-    <button type="submit" class="btn btn-solid">Subscribe Now</button>
-  </form>
-  <p class="newsletter-feedback" id="newsletterFeedback"></p>
+<!-- ===== CTA ===== -->
+<section class="cta-section">
+  <div class="cta-card">
+    <span class="cta-glow-2"></span>
+    <a href="https://www.johengaming.id" target="_blank" rel="noopener noreferrer" class="cta-logo-link">
+      <img src="{{ asset('logo.png') }}" alt="Johen Gaming" class="cta-logo">
+    </a>
+    <h2>Kunjungi Website Profile Kami</h2>
+    <p>Dapatkan informasi lengkap tentang layanan, promo terbaru, dan update seputar Johen Gaming.</p>
+    <a href="https://www.johengaming.id" target="_blank" rel="noopener noreferrer" class="cta-btn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      Kunjungi johengaming.id
+    </a>
+  </div>
 </section>
+
 @endsection

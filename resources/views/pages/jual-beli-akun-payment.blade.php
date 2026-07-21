@@ -632,7 +632,7 @@
 }
 .jpay-total-price {
   font-family: var(--font-display);
-  color: var(--gold);
+  color: var(--purple-light);
   font-size: 1.15rem;
 }
 .jpay-next-btn {

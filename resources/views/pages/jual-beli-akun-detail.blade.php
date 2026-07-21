@@ -4,6 +4,10 @@
 
 @section('content')
 <div class="jba-detail-page">
+  <a href="{{ route('jual-beli-akun') }}#game={{ rawurlencode($listing->game) }}" class="jba-detail-back">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    Kembali
+  </a>
   <div class="jba-detail-wrap">
     <div class="jba-detail-gallery {{ $listing->is_sold ? 'jba-detail-gallery--sold' : '' }}">
       <div class="jba-detail-main-photo" id="jbaZoomContainer">
@@ -18,19 +22,34 @@
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
           </div>
         @endif
+        @if($listing->youtube_video_id)
+        <div class="jba-detail-video" id="jbaVideoContainer" style="display:none">
+          <div class="jba-detail-video-wrap">
+            <iframe src="https://www.youtube.com/embed/{{ $listing->youtube_video_id }}" frameborder="0" allowfullscreen></iframe>
+          </div>
+        </div>
+        @endif
         @if($listing->is_sold)
           <div class="jba-ribbon jba-ribbon--sold" style="font-size:.85rem;padding:4px 44px;top:20px;left:-36px">SOLD</div>
         @endif
       </div>
-      @if(count($listing->detail_photo_urls) > 0)
+      @if($listing->photo_url || count($listing->detail_photo_urls) > 0 || $listing->youtube_video_id)
       <div class="jba-detail-thumbs">
+        @if($listing->youtube_video_id)
+          <button class="jba-thumb jba-thumb--video active-video" onclick="showVideo(this)" title="Video preview">
+            <img src="https://img.youtube.com/vi/{{ $listing->youtube_video_id }}/hqdefault.jpg" alt="Video">
+            <span class="jba-thumb-play">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            </span>
+          </button>
+        @endif
         @if($listing->photo_url)
-          <button class="jba-thumb active" onclick="changeMainPhoto(this, '{{ $listing->photo_url }}')">
+          <button class="jba-thumb{{ $listing->youtube_video_id ? '' : ' active' }}" onclick="changeMainPhoto(this, '{{ $listing->photo_url }}')" title="Foto utama">
             <img src="{{ $listing->photo_url }}" alt="main">
           </button>
         @endif
         @foreach($listing->detail_photo_urls as $i => $url)
-          <button class="jba-thumb" onclick="changeMainPhoto(this, '{{ $url }}')">
+          <button class="jba-thumb" onclick="changeMainPhoto(this, '{{ $url }}')" title="Foto {{ $i+1 }}">
             <img src="{{ $url }}" alt="detail {{ $i+1 }}">
           </button>
         @endforeach
@@ -158,18 +177,30 @@
   margin: 0 auto;
   padding: 2rem 1.5rem 4rem;
 }
+.jba-detail-back {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: .82rem;
+  color: var(--text-dim);
+  margin-bottom: 1.2rem;
+  transition: color .2s;
+  text-decoration: none;
+}
+.jba-detail-back:hover { color: var(--purple-light); }
 .jba-detail-wrap {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 2rem;
   align-items: start;
 }
-@media (max-width: 768px) {
-  .jba-detail-wrap { grid-template-columns: 1fr; }
-}
 .jba-detail-gallery {
   position: sticky;
   top: 2rem;
+}
+@media (max-width: 768px) {
+  .jba-detail-wrap { grid-template-columns: 1fr; }
+  .jba-detail-gallery { position: static; }
 }
 .jba-detail-main-photo {
   width: 100%;
@@ -270,6 +301,66 @@
   border-radius: 20px;
   backdrop-filter: blur(4px);
   pointer-events: none;
+}
+.jba-thumb--video {
+  position: relative;
+  background: #111;
+}
+.jba-thumb--video img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: .75;
+}
+.jba-thumb--video.active-video {
+  border-color: #ff0000;
+}
+.jba-thumb--video.active-video img {
+  opacity: 1;
+}
+.jba-thumb-play {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.jba-thumb-play svg {
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,.5));
+}
+.jba-thumb--video::after {
+  content: 'VIDEO';
+  position: absolute;
+  bottom: 3px;
+  right: 3px;
+  background: rgba(0,0,0,.75);
+  color: #fff;
+  font-size: .55rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  letter-spacing: .04em;
+  pointer-events: none;
+}
+.jba-detail-video {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+.jba-detail-video-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #000;
+}
+.jba-detail-video-wrap iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 .jba-detail-photo-fallback {
   width: 100%;
@@ -572,6 +663,7 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  color: var(--text);
 }
 .jba-card-owner {
   font-size: .75rem;
@@ -601,9 +693,25 @@
 @push('scripts')
 <script>
 function changeMainPhoto(btn, url) {
-  document.querySelectorAll('.jba-thumb').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.jba-thumb').forEach(t => t.classList.remove('active', 'active-video'));
   btn.classList.add('active');
   document.getElementById('jbaMainPhoto').src = url;
+  document.getElementById('jbaMainPhoto').style.display = '';
+  document.getElementById('jbaZoomContainer').style.display = '';
+  const video = document.getElementById('jbaVideoContainer');
+  if (video) video.style.display = 'none';
+  const hint = document.querySelector('.jba-zoom-hint');
+  if (hint) hint.style.display = '';
+}
+
+function showVideo(btn) {
+  document.querySelectorAll('.jba-thumb').forEach(t => t.classList.remove('active', 'active-video'));
+  btn.classList.add('active-video');
+  document.getElementById('jbaMainPhoto').style.display = 'none';
+  const video = document.getElementById('jbaVideoContainer');
+  if (video) video.style.display = '';
+  const hint = document.querySelector('.jba-zoom-hint');
+  if (hint) hint.style.display = 'none';
 }
 
 (function(){
@@ -621,7 +729,7 @@ function changeMainPhoto(btn, url) {
   let isOpen = false;
 
   container.addEventListener('click', function() {
-    if (!mainImg.src) return;
+    if (!mainImg.src || mainImg.style.display === 'none') return;
     lbImg.src = mainImg.src;
     zoomIndex = 0;
     lbImg.style.transform = 'scale(1)';
@@ -658,6 +766,10 @@ function changeMainPhoto(btn, url) {
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape' && isOpen) closeLightbox();
   });
+
+  /* auto-show video if it's the first/primary media */
+  var firstThumb = document.querySelector('.jba-thumb--video.active-video');
+  if (firstThumb) showVideo(firstThumb);
 })();
 </script>
 @endpush

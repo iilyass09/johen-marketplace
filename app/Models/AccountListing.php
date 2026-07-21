@@ -14,7 +14,7 @@ class AccountListing extends Model
         'detail_photo_2',
         'detail_photo_3',
         'detail_photo_4',
-        'detail_photo_5',
+        'video_url',
         'product_name',
         'specifications',
         'owner_name',
@@ -39,6 +39,7 @@ class AccountListing extends Model
         'thumbnail_url',
         'photo_url',
         'detail_photo_urls',
+        'youtube_video_id',
     ];
 
     public function getThumbnailUrlAttribute(): ?string
@@ -60,12 +61,31 @@ class AccountListing extends Model
     public function getDetailPhotoUrlsAttribute(): array
     {
         $urls = [];
-        for ($i = 1; $i <= 5; $i++) {
+        for ($i = 1; $i <= 4; $i++) {
             $col = "detail_photo_{$i}";
             if ($this->$col) {
                 $urls[] = asset('storage/' . $this->$col);
             }
         }
         return $urls;
+    }
+
+    public function getYoutubeVideoIdAttribute(): ?string
+    {
+        if (!$this->video_url) return null;
+
+        $patterns = [
+            '/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/',
+            '/youtu\.be\/([a-zA-Z0-9_-]+)/',
+            '/youtube\.com\/embed\/([a-zA-Z0-9_-]+)/',
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $this->video_url, $matches)) {
+                return $matches[1];
+            }
+        }
+
+        return null;
     }
 }

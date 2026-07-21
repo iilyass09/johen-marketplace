@@ -72,7 +72,7 @@
                 <input type="radio" name="payment_method" value="{{ $pm->name }}" {{ old('payment_method') === $pm->name ? 'checked' : ($loop->first ? 'checked' : '') }} required>
                 <div class="jba-pay-opt-content">
                   @if($pm->photo_url)
-                    <img src="{{ $pm->photo_url }}" alt="{{ $pm->name }}" class="jba-pay-img">
+                    <img data-src-dark="{{ $pm->photo_url }}" data-src-light="{{ $pm->photo_light_url ?? $pm->photo_url }}" alt="{{ $pm->name }}" class="jba-pay-img jba-pay-themeable">
                   @elseif($pm->icon)
                     <span class="jba-pay-icon">{{ $pm->icon }}</span>
                   @else
@@ -366,4 +366,24 @@
   margin-top: 2px;
 }
 </style>
+
+@push('scripts')
+<script>
+(function() {
+  function applyThemeToPaymentImgs() {
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    document.querySelectorAll('.jba-pay-themeable').forEach(function(img) {
+      const darkSrc = img.getAttribute('data-src-dark');
+      const lightSrc = img.getAttribute('data-src-light');
+      img.src = isLight ? lightSrc : darkSrc;
+    });
+  }
+
+  applyThemeToPaymentImgs();
+  document.addEventListener('themeChanged', function() {
+    setTimeout(applyThemeToPaymentImgs, 50);
+  });
+})();
+</script>
+@endpush
 @endsection

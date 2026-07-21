@@ -12,6 +12,7 @@ class PaymentMethod extends Model
         'category',
         'icon',
         'photo',
+        'photo_light',
         'is_active',
     ];
 
@@ -19,12 +20,20 @@ class PaymentMethod extends Model
         'is_active' => 'boolean',
     ];
 
-    protected $appends = ['photo_url'];
+    protected $appends = ['photo_url', 'photo_light_url'];
 
     public function getPhotoUrlAttribute(): ?string
     {
         if ($this->photo) {
             return asset('storage/' . $this->photo);
+        }
+        return null;
+    }
+
+    public function getPhotoLightUrlAttribute(): ?string
+    {
+        if ($this->photo_light) {
+            return asset('storage/' . $this->photo_light);
         }
         return null;
     }

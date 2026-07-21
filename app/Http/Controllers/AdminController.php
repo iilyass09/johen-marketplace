@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\ContactReplyMail;
 use App\Models\Brand;
+use App\Models\ContactInquiry;
 use App\Models\Order;
 use App\Models\PaymentMethod;
 use App\Models\Product;
@@ -11,6 +13,7 @@ use App\Models\User;
 use App\Services\DigiflazzService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 
 class AdminController extends Controller
@@ -447,6 +450,7 @@ class AdminController extends Controller
             'code' => 'required|string|max:50|unique:payment_methods',
             'category' => 'required|string|in:qris,ewallet,va,convenience_store',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'photo_light' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'is_active' => 'boolean',
         ]);
 
@@ -466,6 +470,10 @@ class AdminController extends Controller
 
         if ($request->hasFile('photo') && $request->file('photo')->isValid()) {
             $data['photo'] = $request->file('photo')->store('payments', 'public');
+        }
+
+        if ($request->hasFile('photo_light') && $request->file('photo_light')->isValid()) {
+            $data['photo_light'] = $request->file('photo_light')->store('payments', 'public');
         }
 
         PaymentMethod::create($data);
@@ -489,6 +497,7 @@ class AdminController extends Controller
             'code' => 'required|string|max:50|unique:payment_methods,code,' . $paymentMethod->id,
             'category' => 'required|string|in:qris,ewallet,va,convenience_store',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'photo_light' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'is_active' => 'boolean',
         ]);
 
@@ -513,6 +522,13 @@ class AdminController extends Controller
             $data['photo'] = $request->file('photo')->store('payments', 'public');
         }
 
+        if ($request->hasFile('photo_light') && $request->file('photo_light')->isValid()) {
+            if ($paymentMethod->photo_light) {
+                Storage::disk('public')->delete($paymentMethod->photo_light);
+            }
+            $data['photo_light'] = $request->file('photo_light')->store('payments', 'public');
+        }
+
         $paymentMethod->update($data);
 
         if ($request->expectsJson()) {
@@ -534,9 +550,48 @@ class AdminController extends Controller
         return redirect()->route('admin.payment-methods')->with('success', 'Metode pembayaran berhasil dihapus');
     }
 
+    // ---- CONTACT INQUIRIES ----
+    public function contactInquiries()
+    {
+        $inquiries = ContactInquiry::latest()->paginate(20);
+        return view('admin.contact-inquiries.index', compact('inquiries'));
+    }
+
+    public function contactInquiriesShow(ContactInquiry $contactInquiry)
+    {
+        return view('admin.contact-inquiries.show', ['inquiry' => $contactInquiry]);
+    }
+
+    public function contactInquiriesMarkRead(ContactInquiry $contactInquiry)
+    {
+        $contactInquiry->update(['is_read' => true]);
+        return back()->with('success', 'Pesan ditandai sudah dibaca.');
+    }
+
+    public function contactInquiriesDestroy(ContactInquiry $contactInquiry)
+    {
+        $contactInquiry->delete();
+        return redirect()->route('admin.contact-inquiries')->with('success', 'Pesan berhasil dihapus.');
+    }
+
+    public function contactInquiriesReply(Request $request, ContactInquiry $contactInquiry)
+    {
+        $validated = $request->validate([
+            'reply' => 'required|string|max:10000',
+        ]);
+
+        Mail::to($contactInquiry->email)->send(new ContactReplyMail($contactInquiry, $validated['reply']));
+
+        if (!$contactInquiry->is_read) {
+            $contactInquiry->update(['is_read' => true]);
+        }
+
+        return back()->with('success', 'Balasan berhasil dikirim ke ' . $contactInquiry->email);
+    }
+
     public function settings()
     {
-        $settings = \App\Models\SiteSetting::allKeyValue();
+        $settings = SiteSetting::allKeyValue();
         return view('admin.settings', compact('settings'));
     }
 
@@ -569,13 +624,28 @@ class AdminController extends Controller
             \App\Models\SiteSetting::set('site_logo', $path, 'image');
         }
 
-        if ($request->hasFile('site_hero_banner') && $request->file('site_hero_banner')->isValid()) {
-            $oldBanner = \App\Models\SiteSetting::get('site_hero_banner');
-            if ($oldBanner && Storage::disk('public')->exists($oldBanner)) {
-                Storage::disk('public')->delete($oldBanner);
+        $bannerKeys = ['site_hero_banner', 'site_hero_banner_2', 'site_hero_banner_3'];
+        foreach ($bannerKeys as $key) {
+            if ($request->hasFile($key) && $request->file($key)->isValid()) {
+                $oldBanner = \App\Models\SiteSetting::get($key);
+                if ($oldBanner && Storage::disk('public')->exists($oldBanner)) {
+                    Storage::disk('public')->delete($oldBanner);
+                }
+                $path = $request->file($key)->store('settings', 'public');
+                \App\Models\SiteSetting::set($key, $path, 'image');
             }
-            $path = $request->file('site_hero_banner')->store('settings', 'public');
-            \App\Models\SiteSetting::set('site_hero_banner', $path, 'image');
+        }
+
+        $jbaBannerKeys = ['jba_hero_banner', 'jba_hero_banner_2', 'jba_hero_banner_3'];
+        foreach ($jbaBannerKeys as $key) {
+            if ($request->hasFile($key) && $request->file($key)->isValid()) {
+                $oldBanner = \App\Models\SiteSetting::get($key);
+                if ($oldBanner && Storage::disk('public')->exists($oldBanner)) {
+                    Storage::disk('public')->delete($oldBanner);
+                }
+                $path = $request->file($key)->store('settings', 'public');
+                \App\Models\SiteSetting::set($key, $path, 'image');
+            }
         }
 
         return redirect()->route('admin.settings')->with('success', 'Pengaturan berhasil disimpan');

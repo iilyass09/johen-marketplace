@@ -221,28 +221,27 @@
     <div class="gd-pay-group" id="payGroup">
       @foreach($categories as $catKey => $catLabel)
         @php $catMethods = $groupedPay->get($catKey, collect()); @endphp
-        @if($catMethods->count() > 1)
         <div class="gd-pay-category" data-category="{{ $catKey }}">
           <button type="button" class="gd-pay-cat-head">
             <span class="gd-pay-cat-label">{{ $catLabel }}</span>
+            <span class="gd-pay-cat-logos">
+              @foreach($catMethods as $pm)
+                <span class="gd-pay-cat-logo">
+                  @if($pm->photo_url)
+                    <img src="{{ $pm->photo_url }}" alt="{{ $pm->name }}"@if($pm->photo_light_url) data-light="{{ $pm->photo_light_url }}"@endif>
+                  @endif
+                </span>
+              @endforeach
+            </span>
             <svg class="gd-pay-cat-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
           </button>
-          <div class="gd-pay-cat-preview">
-            @foreach($catMethods as $pm)
-              <span class="gd-pay-preview-logo">
-                @if($pm->photo_url)
-                  <img src="{{ $pm->photo_url }}" alt="{{ $pm->name }}">
-                @endif
-              </span>
-            @endforeach
-          </div>
           <div class="gd-pay-cat-body">
             @foreach($catMethods as $pm)
               <div class="gd-pay-row" data-key="{{ $pm->code }}" data-category="{{ $catKey }}">
                 <button type="button" class="gd-pay-row-head">
                   <span class="gd-pay-icon">
                     @if($pm->photo_url)
-                      <img src="{{ $pm->photo_url }}" alt="{{ $pm->name }}" class="pay-badge-img">
+                      <img src="{{ $pm->photo_url }}" alt="{{ $pm->name }}" class="pay-badge-img"@if($pm->photo_light_url) data-light="{{ $pm->photo_light_url }}"@endif>
                     @else
                       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
                     @endif
@@ -254,27 +253,6 @@
             @endforeach
           </div>
         </div>
-        @else
-        @php $pm = $catMethods->first(); @endphp
-        <div class="gd-pay-flat" data-category="{{ $catKey }}">
-          <div class="gd-pay-flat-label">
-            {{ $catLabel }}
-          </div>
-          <div class="gd-pay-row" data-key="{{ $pm->code }}" data-category="{{ $catKey }}">
-            <button type="button" class="gd-pay-row-head">
-              <span class="gd-pay-icon">
-                @if($pm->photo_url)
-                  <img src="{{ $pm->photo_url }}" alt="{{ $pm->name }}" class="pay-badge-img">
-                @else
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
-                @endif
-              </span>
-              <span class="gd-pay-label"><span class="gd-pay-t">{{ $pm->name }}</span></span>
-              <span class="gd-pay-radio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
-            </button>
-          </div>
-        </div>
-        @endif
       @endforeach
     </div>
   </div>
@@ -615,6 +593,21 @@ function showToast(msg, ok) {
 [userIdInput, zoneIdInput, emailInput, waInput].forEach(inp => {
     inp.addEventListener('input', () => inp.classList.remove('error'));
 });
+
+/* theme-aware payment images */
+function swapPayImages() {
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    document.querySelectorAll('.gd-pay-icon img[data-light], .gd-pay-cat-logo img[data-light]').forEach(img => {
+        if (isLight) {
+            img.dataset.dark = img.src;
+            img.src = img.dataset.light;
+        } else if (img.dataset.dark) {
+            img.src = img.dataset.dark;
+        }
+    });
+}
+swapPayImages();
+document.addEventListener('themeChanged', swapPayImages);
 
 })();
 </script>

@@ -143,9 +143,9 @@
             </div>
 
             <div class="mb-6">
-                <label class="block text-sm font-medium mb-3">Foto Detail Produk (maksimal 5)</label>
+                <label class="block text-sm font-medium mb-3">Foto Detail Produk (maksimal 4)</label>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    @for($i = 1; $i <= 5; $i++)
+                    @for($i = 1; $i <= 4; $i++)
                     @php $col = 'detail_photo_'.$i; $url = $accountListing->detail_photo_urls[$i-1] ?? null; @endphp
                     <div>
                         <label class="block text-xs font-medium mb-1 text-gray-400">Foto Detail {{ $i }}</label>
@@ -160,6 +160,15 @@
                     </div>
                     @endfor
                 </div>
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-sm font-medium mb-2">Video YouTube (opsional)</label>
+                <input type="url" name="video_url" value="{{ old('video_url', $accountListing->video_url) }}"
+                       class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-purple-500"
+                       placeholder="https://www.youtube.com/watch?v=...">
+                <p class="text-gray-500 text-xs mt-1">Link YouTube untuk preview produk (tampil setelah foto produk)</p>
+                @error('video_url') <p class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
             </div>
 
             <div class="mb-6">

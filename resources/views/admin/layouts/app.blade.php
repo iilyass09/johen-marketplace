@@ -545,6 +545,9 @@
                 <a href="{{ route('admin.users') }}" class="{{ request()->routeIs('admin.users*') ? 'active' : '' }}">
                     <i class="fas fa-users"></i> Pengguna
                 </a>
+                <a href="{{ route('admin.contact-inquiries') }}" class="{{ request()->routeIs('admin.contact-inquiries*') ? 'active' : '' }}">
+                    <i class="fas fa-inbox"></i> Pesan Masuk
+                </a>
                 <a href="{{ route('admin.settings') }}" class="{{ request()->routeIs('admin.settings*') ? 'active' : '' }}">
                     <i class="fas fa-cog"></i> Pengaturan
                 </a>

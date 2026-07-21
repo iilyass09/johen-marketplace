@@ -26,21 +26,29 @@
 
         <div class="lb-filter-card lb-filter-card--wide">
             <div class="lb-filter-label">Pilih Game</div>
-            <div class="lb-game-pills" id="lbGamePills">
-                <button class="lb-pill lb-pill--active" data-game="all">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h.01M10 12h.01M14 12h.01M18 12h.01"/></svg>
-                    Semua Game
+            <div class="lb-pills-scroll-wrap">
+                <button class="lb-scroll-btn lb-scroll-left" id="lbScrollLeft" aria-label="Scroll left">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                 </button>
-                @foreach($popularBrands as $b)
-                    <button class="lb-pill" data-game="{{ $b->name }}">
-                        @if($b->thumbnail_url)
-                            <img src="{{ $b->thumbnail_url }}" alt="" class="lb-pill-img">
-                        @else
-                            <span class="lb-pill-dot"></span>
-                        @endif
-                        {{ $b->name }}
+                <div class="lb-game-pills" id="lbGamePills">
+                    <button class="lb-pill lb-pill--active" data-game="all">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h.01M10 12h.01M14 12h.01M18 12h.01"/></svg>
+                        Semua Game
                     </button>
-                @endforeach
+                    @foreach($popularBrands as $b)
+                        <button class="lb-pill" data-game="{{ $b->name }}">
+                            @if($b->thumbnail_url)
+                                <img src="{{ $b->thumbnail_url }}" alt="" class="lb-pill-img">
+                            @else
+                                <span class="lb-pill-dot"></span>
+                            @endif
+                            {{ $b->name }}
+                        </button>
+                    @endforeach
+                </div>
+                <button class="lb-scroll-btn lb-scroll-right" id="lbScrollRight" aria-label="Scroll right">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
             </div>
         </div>
     </div>
@@ -145,6 +153,33 @@ document.addEventListener('DOMContentLoaded', function() {
             fetchLeaderboard();
         });
     });
+
+    // ---- HORIZONTAL SCROLL PILLS ----
+    const pillsWrap = document.getElementById('lbGamePills');
+    const scrollLeft = document.getElementById('lbScrollLeft');
+    const scrollRight = document.getElementById('lbScrollRight');
+
+    function updateScrollBtns() {
+        const atStart = pillsWrap.scrollLeft <= 4;
+        const atEnd = pillsWrap.scrollLeft + pillsWrap.clientWidth >= pillsWrap.scrollWidth - 4;
+        scrollLeft.classList.toggle('disabled', atStart);
+        scrollRight.classList.toggle('disabled', atEnd);
+    }
+
+    updateScrollBtns();
+    pillsWrap.addEventListener('scroll', updateScrollBtns);
+    window.addEventListener('resize', updateScrollBtns);
+
+    scrollLeft.addEventListener('click', () => {
+        pillsWrap.scrollBy({ left: -280, behavior: 'smooth' });
+    });
+    scrollRight.addEventListener('click', () => {
+        pillsWrap.scrollBy({ left: 280, behavior: 'smooth' });
+    });
+
+    // update position when pills visibility changes (joki toggle)
+    const pillObserver = new MutationObserver(updateScrollBtns);
+    pillObserver.observe(pillsWrap, { attributes: true, subtree: true, attributeFilter: ['style'] });
 
     pills.forEach(btn => {
         btn.addEventListener('click', function() {

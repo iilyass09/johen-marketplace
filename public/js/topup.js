@@ -78,10 +78,12 @@ document.querySelectorAll('.tab-pill').forEach(tab => {
 function filterGames(filter) {
   const cards = document.querySelectorAll('.game-card');
   const container = document.getElementById('gamesGrid');
+  const loadMoreWrap = document.getElementById('loadMoreWrap');
 
   if (filter === 'all') {
     if (featuredGrid) featuredGrid.style.display = '';
     if (sectionHeading) sectionHeading.style.display = '';
+    if (loadMoreWrap) loadMoreWrap.style.display = '';
     if (window.__loadMoreReset) window.__loadMoreReset();
     if (container) container.style.justifyContent = '';
     return;
@@ -90,6 +92,7 @@ function filterGames(filter) {
   if (filter === 'joki') {
     if (featuredGrid) featuredGrid.style.display = 'none';
     if (sectionHeading) sectionHeading.style.display = 'none';
+    if (loadMoreWrap) loadMoreWrap.style.display = 'none';
 
     let found = false;
     cards.forEach(card => {
@@ -148,7 +151,7 @@ function bindSearch(input, suggestBox) {
         if (suggestBox) {
           if (matches.length) {
             suggestBox.innerHTML = matches.map(m =>
-              `<div class="search-suggest-item" data-brand="${m.brand}"><span>${getBrandIcon(m.brand)}</span> ${m.brand}</div>`
+              `<div class="search-suggest-item" data-brand="${m.brand}"><img class="search-suggest-thumb" src="${m.thumbnail_url || ''}" alt="" ${!m.thumbnail_url ? 'style=display:none' : ''} onerror="this.style.display='none'"> <span class="search-suggest-icon" ${m.thumbnail_url ? 'style=display:none' : ''}>${m.icon || '🎮'}</span> ${m.brand}</div>`
             ).join('');
           } else {
             suggestBox.innerHTML = `<div class="search-suggest-empty">Tidak ada game ditemukan untuk "${q}"</div>`;
@@ -271,7 +274,8 @@ async function openTopupModal(brand) {
   if (paySelectGrid) {
     if (payments.length) {
       paySelectGrid.innerHTML = payments.map(p => {
-        const photo = p.photo_url || '';
+        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        const photo = (isLight && p.photo_light_url) ? p.photo_light_url : (p.photo_url || '');
         const icon = p.icon || '';
         const content = photo ? `<img src="${photo}" alt="${p.name}" class="pay-opt-img">` : (icon ? `<span class="pay-opt-icon">${icon}</span><span class="pay-opt-name">${p.name}</span>` : p.name);
         return `<div class="pay-opt" data-pay="${p.name}">${content}</div>`;
@@ -329,82 +333,137 @@ document.getElementById('topupForm')?.addEventListener('submit', async (e) => {
 // ============ TESTIMONIALS CAROUSEL ============
 const testiTrack = document.getElementById('testiTrack');
 const testiDots = document.getElementById('testiDots');
-let testiIndex = 1;
+let testiCurrent = 0;
+let testiTimer = null;
+const TC = TESTIMONIALS.length;
+
+function createTestiCard(t) {
+  const card = document.createElement('div');
+  card.className = 'testi-card';
+  card.innerHTML = `
+    <div class="testi-user">
+      <div class="testi-avatar">${t.avatar}</div>
+      <div>
+        <div class="testi-name">${t.name}</div>
+        <div class="testi-game">${t.game}</div>
+      </div>
+    </div>
+    <p class="testi-quote">"${t.quote}"</p>`;
+  return card;
+}
+
+function getTestiOffset(i) {
+  const cw = testiTrack.parentElement.getBoundingClientRect().width;
+  const card = testiTrack.children[i + 1];
+  return card.offsetLeft - (cw - card.offsetWidth) / 2;
+}
+
+function applyTestiCenter(i) {
+  testiTrack.querySelectorAll('.testi-card').forEach((c, idx) => c.classList.toggle('center', idx === i + 1));
+  if (testiDots) Array.from(testiDots.children).forEach((d, idx) => d.classList.toggle('active', idx === i));
+}
 
 if (testiTrack) {
-  TESTIMONIALS.forEach(t => {
-    const card = document.createElement('div');
-    card.className = 'testi-card';
-    card.innerHTML = `
-      <div class="testi-user">
-        <div class="testi-avatar">${t.avatar}</div>
-        <div>
-          <div class="testi-name">${t.name}</div>
-          <div class="testi-game">${t.game}</div>
-        </div>
-      </div>
-      <p class="testi-quote">"${t.quote}"</p>`;
-    testiTrack.appendChild(card);
-  });
+  TESTIMONIALS.forEach(t => testiTrack.appendChild(createTestiCard(t)));
+  const clones = Array.from(testiTrack.children);
+  testiTrack.appendChild(clones[0].cloneNode(true));
+  testiTrack.insertBefore(clones[TC - 1].cloneNode(true), testiTrack.firstChild);
+
+  testiTrack.style.transition = 'none';
+  testiTrack.style.transform = `translateX(${-getTestiOffset(0)}px)`;
+  void testiTrack.offsetHeight;
+  testiTrack.style.transition = '';
+  applyTestiCenter(0);
 
   if (testiDots) {
     TESTIMONIALS.forEach((_, i) => {
       const dot = document.createElement('span');
-      dot.className = 'dot' + (i === testiIndex ? ' active' : '');
-      dot.addEventListener('click', () => setTesti(i));
+      dot.className = 'dot' + (i === 0 ? ' active' : '');
+      dot.addEventListener('click', () => goTesti(i));
       testiDots.appendChild(dot);
     });
   }
 
-  function setTesti(i) {
-    testiIndex = i;
-    document.querySelectorAll('.testi-card').forEach((c, idx) => c.classList.toggle('center', idx === i));
-    if (testiDots) {
-      Array.from(testiDots.children).forEach((d, idx) => d.classList.toggle('active', idx === i));
-    }
-    const firstCard = testiTrack.children[0];
-    if (firstCard) {
-      const cardWidth = firstCard.getBoundingClientRect().width + 19.2;
-      const offset = (i - 1) * cardWidth;
-      testiTrack.style.transform = `translateX(${-offset}px)`;
-    }
+  function goTesti(i, instant = false) {
+    if (i === testiCurrent) return;
+    testiCurrent = i;
+    const x = -getTestiOffset(i);
+    if (instant) testiTrack.style.transition = 'none';
+    testiTrack.style.transform = `translateX(${x}px)`;
+    if (instant) { void testiTrack.offsetHeight; testiTrack.style.transition = ''; }
+    applyTestiCenter(i);
+    resetTestiTimer();
   }
 
-  setTimeout(() => setTesti(1), 50);
-  let testiTimer = setInterval(() => setTesti((testiIndex + 1) % TESTIMONIALS.length), 6000);
+  testiTrack.addEventListener('transitionend', () => {
+    if (testiCurrent === -1) {
+      testiTrack.style.transition = 'none';
+      testiTrack.style.transform = `translateX(${-getTestiOffset(TC - 1)}px)`;
+      testiCurrent = TC - 1;
+      void testiTrack.offsetHeight;
+      testiTrack.style.transition = '';
+      applyTestiCenter(TC - 1);
+    } else if (testiCurrent === TC) {
+      testiTrack.style.transition = 'none';
+      testiTrack.style.transform = `translateX(${-getTestiOffset(0)}px)`;
+      testiCurrent = 0;
+      void testiTrack.offsetHeight;
+      testiTrack.style.transition = '';
+      applyTestiCenter(0);
+    }
+  });
+
+  window.prevTesti = function() { goTesti((testiCurrent - 1 + TC) % TC); };
+  window.nextTesti = function() { goTesti((testiCurrent + 1) % TC); };
+
+  function resetTestiTimer() {
+    if (testiTimer) clearInterval(testiTimer);
+    testiTimer = setInterval(() => nextTesti(), 5000);
+  }
+  resetTestiTimer();
   const testiCarousel = document.querySelector('.testi-carousel');
   if (testiCarousel) {
     testiCarousel.addEventListener('mouseenter', () => clearInterval(testiTimer));
-    testiCarousel.addEventListener('mouseleave', () => {
-      testiTimer = setInterval(() => setTesti((testiIndex + 1) % TESTIMONIALS.length), 6000);
-    });
+    testiCarousel.addEventListener('mouseleave', resetTestiTimer);
   }
-  window.addEventListener('resize', () => { if (testiTrack.children[0]) setTesti(testiIndex); });
+  window.addEventListener('resize', () => goTesti(testiCurrent, true));
 }
 
 // ============ PAYMENT MARQUEE ============
 const paymentTrack = document.getElementById('paymentTrack');
 
-(async function initPaymentMarquee() {
+function isLightTheme() {
+  return document.documentElement.getAttribute('data-theme') === 'light';
+}
+
+function renderPaymentMarquee(methods) {
   if (!paymentTrack) return;
-  let methods = await fetchPaymentMethods();
-  if (!methods.length) {
-    methods = ['QRIS','GoPay','OVO','DANA','BCA','BRI','Mandiri','Alfamart','Indomaret'];
-  }
-  const items = methods.map(m => typeof m === 'string' ? { name: m, photo_url: null, icon: null } : m);
+  const items = methods.map(m => typeof m === 'string' ? { name: m, photo_url: null, photo_light_url: null, icon: null } : m);
   const doubled = [...items, ...items];
   paymentTrack.innerHTML = '';
   doubled.forEach(p => {
     const badge = document.createElement('div');
     badge.className = 'pay-badge';
-    if (p.photo_url) {
-      badge.innerHTML = `<img src="${p.photo_url}" alt="${p.name}" class="pay-badge-img">`;
+    const imgUrl = isLightTheme() && p.photo_light_url ? p.photo_light_url : p.photo_url;
+    if (imgUrl) {
+      badge.innerHTML = `<img src="${imgUrl}" alt="${p.name}" class="pay-badge-img">`;
     } else if (p.icon) {
       badge.innerHTML = `<span class="pay-badge-icon">${p.icon}</span><span class="pay-badge-name">${p.name}</span>`;
     } else {
       badge.textContent = p.name;
     }
     paymentTrack.appendChild(badge);
+  });
+}
+
+(async function initPaymentMarquee() {
+  let methods = await fetchPaymentMethods();
+  if (!methods.length) {
+    methods = ['QRIS','GoPay','OVO','DANA','BCA','BRI','Mandiri','Alfamart','Indomaret'];
+  }
+  renderPaymentMarquee(methods);
+  document.addEventListener('themeChanged', function() {
+    renderPaymentMarquee(methods);
   });
 })();
 
@@ -468,3 +527,73 @@ document.querySelectorAll('.bento-card[data-featured-imgs]').forEach(card => {
     }, 600);
   }, 3000);
 });
+
+// ============ HERO BANNER ARROWS ============
+function initBanner(sectionId) {
+  const section = document.getElementById(sectionId);
+  if (!section) return;
+
+  const imgA = section.querySelector('.hero-banner-img-a');
+  const imgB = section.querySelector('.hero-banner-img-b');
+  let bannerIndex = 0;
+  let banners = [];
+  let bannerTimer = null;
+  let bannerMoving = false;
+  let activeImg = 'a';
+
+  try {
+    const raw = imgA?.dataset?.banners;
+    if (raw) banners = JSON.parse(raw);
+  } catch (e) {}
+
+  if (!banners.length) return;
+
+  function switchBanner(index, dir) {
+    if (!banners.length || !imgA || !imgB) return;
+    if (index === bannerIndex || bannerMoving) return;
+    bannerMoving = true;
+    bannerIndex = (index + banners.length) % banners.length;
+
+    const currEl = activeImg === 'a' ? imgA : imgB;
+    const nextEl = activeImg === 'a' ? imgB : imgA;
+
+    nextEl.src = banners[bannerIndex];
+
+    nextEl.classList.add('no-transition');
+    nextEl.style.transform = dir === 'next' ? 'translateX(100%)' : 'translateX(-100%)';
+
+    void nextEl.offsetHeight;
+
+    nextEl.classList.remove('no-transition');
+    currEl.style.transform = dir === 'next' ? 'translateX(-100%)' : 'translateX(100%)';
+    nextEl.style.transform = 'translateX(0)';
+
+    activeImg = activeImg === 'a' ? 'b' : 'a';
+
+    setTimeout(() => {
+      currEl.classList.add('no-transition');
+      currEl.style.transform = '';
+      currEl.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+      bannerMoving = false;
+    }, 500);
+
+    resetBannerTimer();
+  }
+
+  function prevBanner() { switchBanner(bannerIndex - 1, 'prev'); }
+  function nextBanner() { switchBanner(bannerIndex + 1, 'next'); }
+
+  function resetBannerTimer() {
+    if (bannerTimer) clearInterval(bannerTimer);
+    if (banners.length > 1) {
+      bannerTimer = setInterval(() => nextBanner(), 5000);
+    }
+  }
+  resetBannerTimer();
+
+  section.querySelector('[data-banner-prev]')?.addEventListener('click', prevBanner);
+  section.querySelector('[data-banner-next]')?.addEventListener('click', nextBanner);
+}
+
+initBanner('joki');
+initBanner('jba-hero');

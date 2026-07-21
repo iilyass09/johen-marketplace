@@ -39,7 +39,7 @@ class AdminAccountListingController extends Controller
             'detail_photo_2' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'detail_photo_3' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'detail_photo_4' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'detail_photo_5' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'video_url' => 'nullable|string|max:500',
         ]);
 
         if ($validator->fails()) {
@@ -58,9 +58,10 @@ class AdminAccountListingController extends Controller
             'discount_percent' => $request->promo_type === 'diskon' ? $request->discount_percent : null,
             'is_sold' => $request->boolean('is_sold', false),
             'is_active' => true,
+            'video_url' => $request->video_url,
         ];
 
-        foreach (['photo', 'detail_photo_1', 'detail_photo_2', 'detail_photo_3', 'detail_photo_4', 'detail_photo_5'] as $field) {
+        foreach (['photo', 'detail_photo_1', 'detail_photo_2', 'detail_photo_3', 'detail_photo_4'] as $field) {
             if ($request->hasFile($field) && $request->file($field)->isValid()) {
                 $data[$field] = $request->file($field)->store('account-listings', 'public');
             }
@@ -95,7 +96,7 @@ class AdminAccountListingController extends Controller
             'detail_photo_2' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'detail_photo_3' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'detail_photo_4' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'detail_photo_5' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'video_url' => 'nullable|string|max:500',
             'is_active' => 'boolean',
         ]);
 
@@ -115,9 +116,10 @@ class AdminAccountListingController extends Controller
             'discount_percent' => $request->promo_type === 'diskon' ? $request->discount_percent : null,
             'is_sold' => $request->boolean('is_sold', false),
             'is_active' => $request->boolean('is_active', true),
+            'video_url' => $request->video_url,
         ];
 
-        foreach (['photo', 'detail_photo_1', 'detail_photo_2', 'detail_photo_3', 'detail_photo_4', 'detail_photo_5'] as $field) {
+        foreach (['photo', 'detail_photo_1', 'detail_photo_2', 'detail_photo_3', 'detail_photo_4'] as $field) {
             if ($request->hasFile($field) && $request->file($field)->isValid()) {
                 if ($accountListing->$field) {
                     Storage::disk('public')->delete($accountListing->$field);
@@ -139,7 +141,7 @@ class AdminAccountListingController extends Controller
 
     public function destroy(AccountListing $accountListing)
     {
-        foreach (['photo', 'detail_photo_1', 'detail_photo_2', 'detail_photo_3', 'detail_photo_4', 'detail_photo_5'] as $field) {
+        foreach (['photo', 'detail_photo_1', 'detail_photo_2', 'detail_photo_3', 'detail_photo_4'] as $field) {
             if ($accountListing->$field) {
                 Storage::disk('public')->delete($accountListing->$field);
             }
