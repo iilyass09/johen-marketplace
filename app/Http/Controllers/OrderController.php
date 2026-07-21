@@ -135,7 +135,9 @@ class OrderController extends Controller
 
     public function myOrders()
     {
-        $orders = Order::where('user_id', Auth::id())->latest()->get();
+        $orders = Order::where('user_id', Auth::id())->latest()->paginate(10);
+
+        $orders->load('transaction');
 
         $brandNames = $orders->pluck('brand')->unique()->filter();
         $brands = Brand::whereIn('name', $brandNames)->get()->keyBy('name');

@@ -428,15 +428,15 @@ img{max-width:100%;display:block;}
 .bento-badge{
   display:inline-flex;align-items:center;gap:.35rem;
   width:fit-content;
-  background:linear-gradient(135deg,#f59e0b,#d97706);
+  background:linear-gradient(135deg,var(--purple-light),var(--purple));
   padding:.38rem .85rem;
   border-radius:8px;
   font-size:.7rem;font-weight:700;
   letter-spacing:.02em;
   text-transform:uppercase;
-  box-shadow:0 4px 14px -2px rgba(245,158,11,.5);
+  box-shadow:0 0 20px -2px var(--purple-glow);
   margin-bottom:.15rem;
-  color:#1a0f00;
+  color:#fff;
 }
 .bento-featured-title{
   font-family:var(--font-display);
@@ -484,7 +484,7 @@ img{max-width:100%;display:block;}
   font-family:var(--font-display);
   font-size:1.5rem;
   font-weight:800;
-  color:var(--gold);
+  color:var(--purple-light);
   line-height:1.1;
 }
 .bento-cta{
@@ -533,16 +533,15 @@ img{max-width:100%;display:block;}
 .bento-small-badge{
   display:inline-flex;align-items:center;
   width:fit-content;
-  background:rgba(255,255,255,.08);
-  backdrop-filter:blur(6px);
-  -webkit-backdrop-filter:blur(6px);
+  background:linear-gradient(135deg,var(--purple-light),var(--purple));
   padding:.2rem .55rem;
   border-radius:6px;
   font-size:.62rem;font-weight:700;
-  color:rgba(255,255,255,.9);
-  border:1px solid rgba(255,255,255,.1);
+  color:#fff;
+  border:1px solid var(--purple-light);
   margin-bottom:.1rem;
   line-height:1.4;
+  box-shadow:0 0 12px -2px var(--purple-glow);
 }
 .bento-small-title{
   font-family:var(--font-display);
@@ -1449,7 +1448,7 @@ img{max-width:100%;display:block;}
 .orders-subtitle{font-size:.85rem;color:var(--text-mute);margin-top:.15rem;}
 
 .orders-empty{text-align:center;padding:4.5rem 1.5rem;background:var(--surface);border-radius:var(--radius-lg);border:1px solid var(--border);}
-.orders-empty-icon{color:var(--text-mute);margin-bottom:1.25rem;opacity:.5;}
+.orders-empty-icon{display:flex;align-items:center;justify-content:center;color:var(--text-mute);margin-bottom:1.25rem;opacity:.5;}
 .orders-empty-title{font-size:1.15rem;font-weight:600;margin-bottom:.35rem;}
 .orders-empty-desc{color:var(--text-mute);font-size:.9rem;margin-bottom:1.5rem;}
 
