@@ -130,7 +130,17 @@ class OrderController extends Controller
             'token' => session('snap_token'),
             'redirect_url' => session('redirect_url'),
         ];
-        return view('orders.show', compact('order', 'snapResult'));
+        $brand = Brand::where('name', $order->brand)->first();
+        $product = Product::where('buyer_sku_code', $order->buyer_sku_code)->first();
+
+        $recommendedProducts = Product::where('brand', $order->brand)
+            ->where('is_active', true)
+            ->where('type', 'instant')
+            ->orderBy('selling_price')
+            ->limit(3)
+            ->get();
+
+        return view('orders.show', compact('order', 'snapResult', 'brand', 'product', 'recommendedProducts'));
     }
 
     public function myOrders()

@@ -22,7 +22,7 @@
   if ($instantKey) {
       $regions = $grouped->get($instantKey)->groupBy('region');
   }
-  $selectedRegion = $regions->isNotEmpty() ? ($regions->has('ID') ? 'ID' : $regions->keys()->first()) : null;
+  $selectedRegion = $regions->isNotEmpty() ? ($regions->has('ID') ? 'ID' : ($regions->has('') ? 'ALL' : $regions->keys()->first())) : null;
   $firstProduct = $products->first();
   $payData = $paymentMethods->map(fn($m) => [
       'key' => $m->code,
@@ -126,8 +126,7 @@
               data-id="{{ $p->id }}"
               data-label="{{ $p->product_name }}"
               data-price="{{ $p->selling_price }}"
-              @if($p->region) data-region="{{ $p->region }}"@endif
-              @if(!$p->region) data-region="ID"@endif>
+              data-region="{{ $p->region ?: 'ALL' }}">
               @if($p->photo_url)
                 <img class="gd-pkg-img" src="{{ $p->photo_url }}" alt="{{ $p->product_name }}">
               @else
@@ -164,7 +163,7 @@
           @if($isInstant && $regions->count() > 1)
             <div class="gd-region-tabs" data-group="{{ $typeKey }}">
               @foreach($regions->keys() as $r)
-                <button class="gd-region-btn{{ $r === $selectedRegion ? ' active' : '' }}" data-region="{{ $r }}">{{ $r === 'ID' ? 'Indonesia' : ($r === 'MY' ? 'Malaysia' : 'Philippines') }} ({{ $r }})</button>
+                <button class="gd-region-btn{{ $r === $selectedRegion ? ' active' : '' }}" data-region="{{ $r ?: 'ALL' }}">{{ $r === 'ID' ? 'Indonesia' : ($r === 'MY' ? 'Malaysia' : ($r === '' ? 'All Region' : $r)) }} ({{ $r ?: 'ALL' }})</button>
               @endforeach
             </div>
           @endif
@@ -178,8 +177,7 @@
                 data-id="{{ $p->id }}"
                 data-label="{{ $p->product_name }}"
               data-price="{{ $p->selling_price }}"
-              @if($isInstant && $p->region) data-region="{{ $p->region }}"@endif
-              @if($isInstant && !$p->region) data-region="ID"@endif>
+              @if($isInstant) data-region="{{ $p->region ?: 'ALL' }}"@endif>
               @if($p->photo_url)
                 <img class="gd-pkg-img" src="{{ $p->photo_url }}" alt="{{ $p->product_name }}">
               @else
@@ -359,6 +357,21 @@ let selectedRegion = @json($selectedRegion);
 let qty = 1;
 let promoDiscount = 0;
 let isAuth = @json(Auth::check());
+
+/* ---------- auto-select from URL ---------- */
+(function(){
+    const params = new URLSearchParams(window.location.search);
+    const preselectedId = params.get('product');
+    if (preselectedId) {
+        const card = document.querySelector('.gd-pkg-card[data-id="' + preselectedId + '"]');
+        if (card) {
+            setTimeout(function(){
+                card.click();
+                card.scrollIntoView({behavior:'smooth', block:'center'});
+            }, 300);
+        }
+    }
+})();
 
 /* ---------- package click ---------- */
 document.addEventListener('click', e => {

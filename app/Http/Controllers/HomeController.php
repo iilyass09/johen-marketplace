@@ -34,24 +34,6 @@ class HomeController extends Controller
         return view('home', compact('brands', 'popularBrands'));
     }
 
-    public function dashboard()
-    {
-        $user = Auth::user();
-
-        $totalOrders = Order::where('user_id', $user->id)->count();
-
-        $totalSpent = Order::where('user_id', $user->id)
-            ->where('status', 'success')
-            ->sum('price');
-
-        $recentOrders = Order::where('user_id', $user->id)
-            ->orderBy('created_at', 'desc')
-            ->limit(5)
-            ->get();
-
-        return view('dashboard', compact('totalOrders', 'totalSpent', 'recentOrders'));
-    }
-
     public function getApiProducts(Request $request)
     {
         $query = Product::where('is_active', true);

@@ -13,10 +13,6 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/products/by-brand', [HomeController::class, 'getProductsByBrand'])->name('products.by-brand');
 
-Route::get('/dashboard', [HomeController::class, 'dashboard'])
-    ->middleware(['auth:web,admin'])
-    ->name('dashboard');
-
 Route::get('/api/products', [HomeController::class, 'getApiProducts'])->name('api.products');
 Route::get('/api/brands/search', [HomeController::class, 'searchBrands'])->name('api.brands.search');
 Route::get('/api/payment-methods', [HomeController::class, 'getPaymentMethods'])->name('api.payment-methods');
@@ -38,7 +34,6 @@ Route::get('/leaderboard', [HomeController::class, 'leaderboard'])->name('leader
 Route::get('/leaderboard/{period}', [HomeController::class, 'leaderboardDetail'])->name('leaderboard.detail');
 Route::get('/api/leaderboard', [HomeController::class, 'leaderboardApi'])->name('api.leaderboard');
 
-Route::get('/products', [ProductController::class, 'index'])->name('products.index');
 Route::get('/products/sync', [ProductController::class, 'sync'])->name('products.sync');
 
 Route::middleware('auth:web,admin')->group(function () {

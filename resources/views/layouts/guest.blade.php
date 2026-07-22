@@ -127,7 +127,7 @@
         }
 
         .auth-container{
-            width:100%;max-width:600px;
+            width:100%;max-width:500px;
             background:var(--auth-card-bg);
             backdrop-filter:blur(30px);
             border:1px solid var(--auth-card-border);

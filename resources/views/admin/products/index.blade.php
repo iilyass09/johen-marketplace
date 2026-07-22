@@ -40,10 +40,18 @@
     </div>
 </div>
 
-<div class="flex gap-2 mb-4" id="productFilterTabs">
-    <button class="btn btn-sm {{ !request('type') ? 'btn-primary' : 'btn-ghost' }}" data-type="">Semua</button>
-    <button class="btn btn-sm {{ request('type') === 'instant' ? 'btn-primary' : 'btn-ghost' }}" data-type="instant">Top Up</button>
-    <button class="btn btn-sm {{ request('type') === 'joki' ? 'btn-primary' : 'btn-ghost' }}" data-type="joki">Joki</button>
+<div class="flex gap-2 mb-4 flex-wrap">
+    <select class="input-field" id="typeFilter" style="width:auto;min-width:120px;padding:0.35rem 0.75rem;font-size:0.82rem">
+        <option value="">Semua Tipe</option>
+        <option value="instant" {{ request('type') === 'instant' ? 'selected' : '' }}>Top Up</option>
+        <option value="joki" {{ request('type') === 'joki' ? 'selected' : '' }}>Joki</option>
+    </select>
+    <select class="input-field" id="brandFilter" style="width:auto;min-width:160px;padding:0.35rem 0.75rem;font-size:0.82rem">
+        <option value="">Semua Game</option>
+        @foreach($brands as $b)
+            <option value="{{ $b }}" {{ request('brand') === $b ? 'selected' : '' }}>{{ $b }}</option>
+        @endforeach
+    </select>
 </div>
 
 <div class="table-wrap">
@@ -116,9 +124,7 @@
     </div>
 </div>
 
-<div class="pagination-wrap">
-    {{ $products->links() }}
-</div>
+{{ $products->links('vendor.pagination.admin') }}
 
 <!-- ===== MODAL PRODUK ===== -->
 <div class="fixed inset-0 z-50 flex items-center justify-center" id="productModal" style="display:none">
@@ -219,13 +225,21 @@
 
 @push('scripts')
 <script>
-document.getElementById('productFilterTabs')?.addEventListener('click', function(e) {
-    const btn = e.target.closest('[data-type]');
-    if (!btn) return;
-    const type = btn.dataset.type;
+document.getElementById('typeFilter')?.addEventListener('change', function() {
+    const type = this.value;
     const url = new URL(window.location.href);
+    url.searchParams.delete('page');
     if (type) url.searchParams.set('type', type);
     else url.searchParams.delete('type');
+    window.location.href = url.toString();
+});
+
+document.getElementById('brandFilter')?.addEventListener('change', function() {
+    const brand = this.value;
+    const url = new URL(window.location.href);
+    url.searchParams.delete('page');
+    if (brand) url.searchParams.set('brand', brand);
+    else url.searchParams.delete('brand');
     window.location.href = url.toString();
 });
 

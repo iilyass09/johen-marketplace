@@ -15,18 +15,12 @@ class ProductController extends Controller
         $this->digiflazz = $digiflazz;
     }
 
-    public function index()
-    {
-        $products = Product::where('is_active', true)->orderBy('brand')->get()->groupBy('brand');
-        return view('products.index', compact('products'));
-    }
-
     public function sync()
     {
         $result = $this->digiflazz->syncProducts();
 
         if ($result['success']) {
-            return redirect()->route('products.index')->with('success', $result['message']);
+            return redirect()->route('home')->with('success', $result['message']);
         }
 
         return back()->with('error', $result['message']);

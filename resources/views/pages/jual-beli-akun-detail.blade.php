@@ -4,10 +4,6 @@
 
 @section('content')
 <div class="jba-detail-page">
-  <a href="{{ route('jual-beli-akun') }}#game={{ rawurlencode($listing->game) }}" class="jba-detail-back">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-    Kembali
-  </a>
   <div class="jba-detail-wrap">
     <div class="jba-detail-gallery {{ $listing->is_sold ? 'jba-detail-gallery--sold' : '' }}">
       <div class="jba-detail-main-photo" id="jbaZoomContainer">
@@ -177,17 +173,6 @@
   margin: 0 auto;
   padding: 2rem 1.5rem 4rem;
 }
-.jba-detail-back {
-  display: inline-flex;
-  align-items: center;
-  gap: .35rem;
-  font-size: .82rem;
-  color: var(--text-dim);
-  margin-bottom: 1.2rem;
-  transition: color .2s;
-  text-decoration: none;
-}
-.jba-detail-back:hover { color: var(--purple-light); }
 .jba-detail-wrap {
   display: grid;
   grid-template-columns: 1fr 1fr;

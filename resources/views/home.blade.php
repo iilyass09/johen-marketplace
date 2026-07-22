@@ -47,88 +47,93 @@
 
 <!-- ===== SECTION HEADER ===== -->
 <section class="section-heading">
-  <h2>PRODUK UNGGULAN</h2>
+  <h2>🔥 PRODUK UNGGULAN</h2>
   <p>Pilihan terbaik dengan transaksi terbanyak dan rating tertinggi dari pengguna.</p>
 </section>
 
 <!-- ===== FEATURED GAMES ===== -->
 @php
-  $featuredGameNames = ['PUBG Mobile', 'Mobile Legends', 'Free Fire', 'Roblox', 'Valorant'];
-  $featuredBrands = \App\Models\Brand::whereIn('name', $featuredGameNames)->get()->keyBy('name');
   $featuredFallback = [
     'PUBG Mobile' => ['icon' => '🔫', 'publisher' => 'Tencent', 'desc' => 'Top Up UC PUBG Mobile cepat & instan.', 'rating' => '4.9', 'sales' => '1.2M+', 'time' => '<1 Menit', 'price' => 'Rp1.500'],
     'Mobile Legends' => ['icon' => '🎮', 'publisher' => 'Moonton', 'desc' => 'Top Up diamond Mobile Legends cepat & instan.', 'rating' => '4.8', 'sales' => '950K+'],
     'Free Fire' => ['icon' => '🔥', 'publisher' => 'Garena', 'desc' => 'Dapatkan diamond Free Fire harga spesial.', 'rating' => '4.7', 'sales' => '780K+'],
     'Roblox' => ['icon' => '🧱', 'publisher' => 'Roblox Corp', 'desc' => 'Beli Robux dengan harga terbaik.', 'rating' => '4.8', 'sales' => '650K+'],
     'Valorant' => ['icon' => '🔫', 'publisher' => 'Riot Games', 'desc' => 'Top Up VALORANT Points murah.', 'rating' => '4.6', 'sales' => '520K+'],
+    'E-Football' => ['icon' => '⚽', 'publisher' => 'Konami', 'desc' => 'Top up eFootball Points dengan harga terbaik.', 'rating' => '4.7', 'sales' => '340K+'],
+    'FC Mobile' => ['icon' => '⚽', 'publisher' => 'EA Sports', 'desc' => 'Top up FC Mobile Points cepat & murah.', 'rating' => '4.6', 'sales' => '280K+'],
   ];
+  $featuredBrands = $popularBrands->keyBy('name');
   function fgData($name, $brands, $fallback) {
     $b = $brands->get($name);
+    $fb = $fallback[$name] ?? ['icon' => '🎮', 'publisher' => '-', 'desc' => 'Top up murah & instan.', 'rating' => '4.5', 'sales' => '100K+', 'time' => '<1 Menit', 'price' => 'Rp1.500'];
     return (object)[
       'name' => $b->name ?? $name,
-      'icon' => $b->icon ?? $fallback[$name]['icon'],
-      'publisher' => $b->category ?? $fallback[$name]['publisher'],
-      'desc' => $fallback[$name]['desc'],
+      'icon' => $b->icon ?? $fb['icon'],
+      'publisher' => $b->category ?? $fb['publisher'],
+      'desc' => $fb['desc'],
       'thumb' => $b->featured_thumbnail_url ?? null,
       'imgs' => $b ? $b->featured_img_urls : [],
-      'rating' => $fallback[$name]['rating'],
-      'sales' => $fallback[$name]['sales'],
-      'time' => $fallback[$name]['time'] ?? '<1 Menit',
-      'price' => $fallback[$name]['price'] ?? 'Rp1.500',
+      'rating' => $fb['rating'],
+      'sales' => $fb['sales'],
+      'time' => $fb['time'] ?? '<1 Menit',
+      'price' => $fb['price'] ?? 'Rp1.500',
     ];
   }
-  $pubg = fgData('PUBG Mobile', $featuredBrands, $featuredFallback);
-  $ml   = fgData('Mobile Legends', $featuredBrands, $featuredFallback);
-  $ff   = fgData('Free Fire', $featuredBrands, $featuredFallback);
-  $rbx  = fgData('Roblox', $featuredBrands, $featuredFallback);
-  $valo = fgData('Valorant', $featuredBrands, $featuredFallback);
-  $colors = [
+  $featuredList = $popularBrands->map(fn($b) => fgData($b->name, $featuredBrands, $featuredFallback))->values();
+  $pubgIdx = $featuredList->search(fn($c) => $c->name === 'PUBG Mobile');
+  if ($pubgIdx !== false) {
+    $first = $featuredList->pull($pubgIdx);
+    $featuredList = $featuredList->values();
+  } else {
+    $first = $featuredList->shift();
+  }
+  $badges = ['🔥 Populer', '🚀 Trending', '⭐ Favorit', '💎 Premium', '🏆 Best', '✨ Top', '🎯 Pilihan'];
+  $colorPalette = [
     ['primary' => '#f59e0b', 'secondary' => '#2a1f0a'],
     ['primary' => '#7c3aed', 'secondary' => '#1e0f3a'],
     ['primary' => '#ef4444', 'secondary' => '#2a0f0f'],
     ['primary' => '#10b981', 'secondary' => '#0a1f15'],
     ['primary' => '#ff4655', 'secondary' => '#1a0a0f'],
+    ['primary' => '#06b6d4', 'secondary' => '#0a1a2e'],
+    ['primary' => '#f97316', 'secondary' => '#1f120a'],
   ];
   function fgBgStyle($game, $color) {
     $img = $game->imgs[0] ?? $game->thumb;
     if ($img) return "background-image:url('{$img}');background-size:cover;background-position:center";
     return "background:linear-gradient(160deg,{$color['primary']},{$color['secondary']})";
   }
-  $rightCards = [$ml, $ff, $rbx, $valo];
-  $rightBadges = ['🔥 Populer', '🚀 Trending', '⭐ Favorit', '💎 Premium'];
-  $rightColors = [$colors[1], $colors[2], $colors[3], $colors[4]];
 @endphp
 <section class="featured-grid-section" id="topup">
   <div class="featured-grid-inner">
-    <a href="{{ route('games.show', $pubg->name) }}" class="bento-card bento-featured"
-       data-featured-imgs='{{ json_encode($pubg->imgs) }}'>
-      <div class="bento-card-bg" style="{{ fgBgStyle($pubg, $colors[0]) }}"></div>
+    <a href="{{ route('games.show', $first->name) }}" class="bento-card bento-featured"
+       data-featured-imgs='{{ json_encode($first->imgs) }}'>
+      <div class="bento-card-bg" style="{{ fgBgStyle($first, $colorPalette[0]) }}"></div>
       <div class="bento-overlay"></div>
       <div class="bento-featured-content">
         <span class="bento-badge bento-badge-best">🔥 Best Seller</span>
-        <h3 class="bento-featured-title">{{ $pubg->name }}</h3>
-        <p class="bento-featured-sub">{{ $pubg->desc }}</p>
+        <h3 class="bento-featured-title">{{ $first->name }}</h3>
+        <p class="bento-featured-sub">{{ $first->desc }}</p>
         <div class="bento-stats">
-          <span class="bento-stat">⭐ {{ $pubg->rating }}</span>
-          <span class="bento-stat">👥 {{ $pubg->sales }}</span>
-          <span class="bento-stat">⚡ {{ $pubg->time }}</span>
+          <span class="bento-stat">⭐ {{ $first->rating }}</span>
+          <span class="bento-stat">👥 {{ $first->sales }}</span>
+          <span class="bento-stat">⚡ {{ $first->time }}</span>
         </div>
         <div class="bento-price">
           <span class="bento-price-label">Mulai dari</span>
-          <span class="bento-price-value">{{ $pubg->price }}</span>
+          <span class="bento-price-value">{{ $first->price }}</span>
         </div>
         <span class="bento-cta">⚡ Top Up Sekarang</span>
       </div>
     </a>
 
     <div class="bento-grid-right">
-      @foreach($rightCards as $i => $card)
+      @foreach($featuredList as $i => $card)
       <a href="{{ route('games.show', $card->name) }}" class="bento-card bento-small-card"
          data-featured-imgs='{{ json_encode($card->imgs) }}'>
-        <div class="bento-card-bg" style="{{ fgBgStyle($card, $rightColors[$i]) }}"></div>
+        <div class="bento-card-bg" style="{{ fgBgStyle($card, $colorPalette[$i + 1]) }}"></div>
         <div class="bento-overlay"></div>
         <div class="bento-small-content">
-          <span class="bento-small-badge">{{ $rightBadges[$i] }}</span>
+          <span class="bento-small-badge">{{ $badges[$i] }}</span>
           <h4 class="bento-small-title">{{ $card->name }}</h4>
           <div class="bento-small-meta">
             <span>⭐ {{ $card->rating }}</span>

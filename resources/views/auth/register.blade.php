@@ -1,5 +1,8 @@
 <x-guest-layout>
 @section('title', 'Daftar — ' . config('app.name'))
+@push('styles')
+<style>.auth-container{max-width:600px!important}</style>
+@endpush
 
 <div class="auth-header">
     <h1>Buat Akun Baru</h1>

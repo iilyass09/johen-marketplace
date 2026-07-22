@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="max-w-lg mx-auto">
-    <a href="{{ route('products.index') }}" class="text-purple-400 hover:text-purple-300">&larr; Kembali</a>
+    <a href="{{ route('games.show', $product->brand) }}" class="text-purple-400 hover:text-purple-300">&larr; Kembali</a>
     <h1 class="text-2xl font-bold mt-2 mb-6">Beli {{ $product->product_name }}</h1>
 
     <div class="bg-gray-800 rounded-xl p-6 border border-gray-700 mb-6">

@@ -54,9 +54,15 @@ class AdminController extends Controller
             $query->where('type', $request->type);
         }
 
-        $products = $query->paginate(20);
+        if ($request->filled('brand')) {
+            $query->where('brand', $request->brand);
+        }
 
-        return view('admin.products.index', compact('products'));
+        $products = $query->paginate(20)->withQueryString();
+
+        $brands = Product::select('brand')->distinct()->orderBy('brand')->pluck('brand');
+
+        return view('admin.products.index', compact('products', 'brands'));
     }
 
     public function productsCreate()

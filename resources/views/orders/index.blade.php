@@ -6,7 +6,7 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
 
-:root{--ord-primary:#854DEA;--ord-primary-light:#a575ff;--ord-primary-glow:rgba(133,77,234,.35);--ord-primary-subtle:rgba(133,77,234,.12);--ord-border:rgba(255,255,255,.08);--ord-bg:#180D2F;--ord-surface:#24153F}
+:root{--ord-primary:#854DEA;--ord-primary-light:#a575ff;--ord-primary-glow:rgba(133,77,234,.35);--ord-primary-subtle:rgba(133,77,234,.12)}
 .ord-page{max-width:1000px;margin:0 auto;padding:2rem 1.5rem 4rem;font-family:'Poppins',sans-serif;animation:ordFadeIn .4s ease}
 @keyframes ordFadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .ord-breadcrumb{font-size:.78rem;color:var(--text-mute);margin-bottom:.75rem;display:flex;align-items:center;gap:.35rem}
@@ -17,34 +17,34 @@
 .ord-header-left{min-width:0}
 .ord-title{font-family:'Poppins',sans-serif;font-size:1.75rem;font-weight:800;letter-spacing:-.02em}
 .ord-subtitle{font-size:.85rem;color:var(--text-mute);margin-top:.15rem}
-.ord-help-btn{display:inline-flex;align-items:center;gap:.45rem;padding:.55rem 1.1rem;border-radius:10px;background:var(--ord-primary-subtle);color:#fff;font-size:.8rem;font-weight:700;border:1px solid transparent;transition:all .2s;text-decoration:none;white-space:nowrap;font-family:'Poppins',sans-serif}
-.ord-help-btn:hover{background:rgba(133,77,234,.18);border-color:#fff;transform:translateY(-2px);box-shadow:0 4px 14px -4px var(--ord-primary-glow)}
+.ord-help-btn{display:inline-flex;align-items:center;gap:.45rem;padding:.55rem 1.1rem;border-radius:10px;background:var(--ord-primary-subtle);color:var(--text);font-size:.8rem;font-weight:700;border:1px solid transparent;transition:all .2s;text-decoration:none;white-space:nowrap;font-family:'Poppins',sans-serif}
+.ord-help-btn:hover{background:rgba(133,77,234,.18);border-color:var(--border-strong);transform:translateY(-2px);box-shadow:0 4px 14px -4px var(--ord-primary-glow)}
 .ord-tabs{display:flex;gap:.5rem;margin-bottom:1.5rem;flex-wrap:wrap}
 .ord-tab{padding:.5rem 1.2rem;border-radius:999px;font-size:.8rem;font-weight:600;background:var(--surface);border:1px solid var(--border);color:var(--text-dim);cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:.4rem;font-family:'Poppins',sans-serif}
 .ord-tab:hover{border-color:var(--ord-primary);color:var(--text)}
 .ord-tab.active{background:var(--ord-primary);color:#fff;border-color:var(--ord-primary);box-shadow:0 0 20px -4px var(--ord-primary-glow)}
 .ord-tab svg{width:16px;height:16px;flex-shrink:0}
-.ord-filter-card{background:var(--ord-surface);border:1px solid var(--ord-border);border-radius:16px;padding:1rem 1.25rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ord-filter-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1rem 1.25rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .ord-filter-group{display:flex;align-items:center;gap:.5rem;min-width:120px}
 .ord-filter-group:first-child{margin-left:auto}
 .ord-filter-group:last-child{flex:1}
 .ord-filter-group label{font-size:.72rem;font-weight:600;color:var(--text-mute);white-space:nowrap}
 .ord-filter-select,.ord-filter-input{padding:.45rem .7rem;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);color:var(--text);font-size:.78rem;font-family:'Poppins',sans-serif;transition:border-color .2s;width:100%;max-width:200px}
 .ord-filter-select:focus,.ord-filter-input:focus{outline:none;border-color:var(--ord-primary)}
-.ord-filter-input[type=date]{max-width:150px;color-scheme:dark}
+.ord-filter-input[type=date]{max-width:150px;color-scheme:light dark}
 .ord-search-wrap{position:relative;min-width:180px;max-width:260px;margin-right:auto}
 .ord-search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--text-mute);pointer-events:none}
 .ord-search-wrap input{width:100%;padding:.45rem .7rem .45rem 2rem;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);color:var(--text);font-size:.78rem;font-family:'Poppins',sans-serif;transition:border-color .2s}
 .ord-search-wrap input:focus{outline:none;border-color:var(--ord-primary)}
 .ord-list{display:flex;flex-direction:column;gap:24px}
-.ord-card{display:flex;background:var(--ord-surface);border:1px solid var(--ord-border);border-radius:16px;padding:28px 32px;transition:all .25s ease;cursor:default;animation:ordFadeIn .35s ease both}
+.ord-card{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px 32px;transition:all .25s ease;cursor:default;animation:ordFadeIn .35s ease both}
 .ord-card:hover{border-color:var(--ord-primary);transform:translateY(-4px);box-shadow:0 10px 35px rgba(133,77,234,.18)}
 .ord-card-left{display:flex;gap:28px;flex:0 0 52%;max-width:52%;align-items:flex-start}
 .ord-thumb{width:145px;min-width:145px;height:145px;border-radius:12px;background:var(--surface-2);background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:var(--text-mute);overflow:hidden}
 .ord-thumb img{width:100%;height:100%;object-fit:cover}
 .ord-info{display:flex;flex-direction:column;gap:0;min-width:0;flex:1}
 .ord-info-top{display:flex;align-items:center;gap:0}
-.ord-product-name{font-size:18px;font-weight:700;line-height:1.1;color:#fff;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ord-product-name{font-size:18px;font-weight:700;line-height:1.1;color:var(--text);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .ord-status-badge{display:inline-flex;align-items:center;font-size:.65rem;font-weight:700;padding:0 14px;height:30px;border-radius:999px;text-transform:uppercase;letter-spacing:.04em;margin-left:14px;white-space:nowrap;flex-shrink:0}
 .ord-status-badge--success{background:rgba(52,211,153,.15);color:#34d399}
 .ord-status-badge--pending{background:rgba(251,191,36,.15);color:#fbbf24}
@@ -53,25 +53,25 @@
 .ord-status-badge--refund{background:rgba(148,163,184,.15);color:#94a3b8}
 .ord-meta{display:flex;flex-direction:column;gap:10px;margin-top:6px}
 .ord-meta-item{font-size:12px;color:var(--text-dim);display:flex;align-items:center;gap:10px}
-.ord-meta-item svg{width:20px;height:20px;color:rgba(255,255,255,.8);flex-shrink:0}
-.ord-meta-item strong{color:rgba(255,255,255,.9);font-weight:600;font-size:14px}
+.ord-meta-item svg{width:20px;height:20px;color:var(--text-dim);flex-shrink:0}
+.ord-meta-item strong{color:var(--text);font-weight:600;font-size:14px}
 .ord-meta-item span{font-size:14px}
-.ord-separator{width:1px;background:var(--ord-border);flex-shrink:0;margin:0 28px;height:80%;align-self:center}
+.ord-separator{width:1px;background:var(--border);flex-shrink:0;margin:0 28px;height:80%;align-self:center}
 .ord-card-right{flex:1;min-width:0;display:flex;flex-direction:column;padding:2px 0}
-.ord-right-order-id{font-size:18px;font-weight:700;color:#fff;line-height:1.1;margin-bottom:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ord-right-order-id{font-size:18px;font-weight:700;color:var(--text);line-height:1.1;margin-bottom:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ord-right-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-bottom:10px}
 .ord-right-label{font-size:12px;color:var(--text-mute);font-weight:500;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
-.ord-right-value{font-size:14px;color:rgba(255,255,255,.85);font-weight:500;line-height:1.4}
+.ord-right-value{font-size:14px;color:var(--text);font-weight:500;line-height:1.4}
 .ord-payment-display{display:flex;align-items:center;gap:6px}
 .ord-payment-display img,.ord-payment-display svg{height:26px;max-width:90px;object-fit:contain;flex-shrink:0}
-.ord-right-total{font-size:18px;font-weight:700;color:#fff;line-height:1;margin-bottom:24px}
+.ord-right-total{font-size:18px;font-weight:700;color:var(--text);line-height:1;margin-bottom:24px}
 .ord-left-total{margin-bottom:0;margin-top:20px}
 .ord-date-value{font-size:12px}
 .ord-detail-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:34px;padding:0 18px;border-radius:8px;background:var(--ord-primary);color:#fff;font-size:13px;font-weight:600;border:none;cursor:pointer;transition:all .25s;text-decoration:none;font-family:'Poppins',sans-serif;width:fit-content;margin-top:10px}
 .ord-detail-btn svg{width:16px;height:16px;transition:transform .25s}
 .ord-detail-btn:hover{background:var(--ord-primary-light);box-shadow:0 4px 18px -4px var(--ord-primary-glow)}
 .ord-detail-btn:hover svg{transform:translateX(4px)}
-.ord-empty{text-align:center;padding:5rem 1.5rem;background:var(--ord-surface);border-radius:16px;border:1px solid var(--ord-border)}
+.ord-empty{text-align:center;padding:5rem 1.5rem;background:var(--surface);border-radius:16px;border:1px solid var(--border)}
 .ord-empty-icon{display:flex;align-items:center;justify-content:center;color:var(--text-mute);margin-bottom:1.25rem;opacity:.4}
 .ord-empty-title{font-size:1.15rem;font-weight:600;margin-bottom:.35rem}
 .ord-empty-desc{color:var(--text-mute);font-size:.9rem;margin-bottom:1.5rem;max-width:360px;margin-left:auto;margin-right:auto}
@@ -79,7 +79,7 @@
 .ord-no-results.show{display:block}
 .ord-no-results-title{font-size:1rem;font-weight:600;margin-bottom:.25rem}
 .ord-no-results-desc{font-size:.82rem;color:var(--text-mute)}
-.ord-help-footer{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-top:2.5rem;padding:1.25rem 1.5rem;background:var(--ord-surface);border:1px solid var(--ord-border);border-radius:16px;flex-wrap:wrap}
+.ord-help-footer{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-top:2.5rem;padding:1.25rem 1.5rem;background:var(--surface);border:1px solid var(--border);border-radius:16px;flex-wrap:wrap}
 .ord-help-left{display:flex;align-items:center;gap:.85rem}
 .ord-help-icon{width:44px;height:44px;border-radius:12px;background:var(--ord-primary-subtle);display:flex;align-items:center;justify-content:center;color:var(--ord-primary);flex-shrink:0}
 .ord-help-icon svg{width:22px;height:22px}

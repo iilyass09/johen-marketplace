@@ -83,9 +83,9 @@
   --jba-accent: #9d5cf5;
 }
 .jba-page {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 2rem 1.5rem 4rem;
+  padding: 0 2rem 1.5rem;
 }
 .jba-hero {
   text-align: left;
@@ -154,11 +154,11 @@
   font-weight: 700;
   font-size: .88rem;
   line-height: 1.15;
-  color: var(--text);
+  color: #fff;
 }
 .jba-game-btn-cat {
   font-size: .66rem;
-  color: var(--text-dim);
+  color: rgba(255,255,255,.7);
   text-transform: uppercase;
   letter-spacing: .04em;
   margin-top: .15rem;
@@ -390,9 +390,9 @@
 
   const allListings = @json($listings);
 
-  // auto-open game from hash
-  const hash = location.hash.replace(/^#game=/,'').replace(/\+/g,' ');
-  const gameName = decodeURIComponent(hash);
+  // auto-open game from ?game= param
+  const params = new URLSearchParams(location.search);
+  const gameName = params.get('game');
   if (gameName && allListings[gameName]) {
     showGame(gameName);
   }
