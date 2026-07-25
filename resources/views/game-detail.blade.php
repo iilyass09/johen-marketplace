@@ -310,7 +310,7 @@
           <p>Kamu Bisa Hubungi Admin <a href="#" class="gd-help-link" id="adminHelpLink">Disini</a></p>
         </div>
       </div>
-      <div class="gd-card gd-summary-card" id="summaryCard">
+      <div class="gd-card gd-summary-card gd-summary-desktop-only" id="summaryCard">
         <div class="gd-summary-head">
           <div class="gd-summary-icon">
             @if($brand->thumbnail_url)
@@ -321,15 +321,15 @@
           </div>
           <div>
             <p class="gd-summary-game">{{ $brand->name }}</p>
-            <p class="gd-summary-pkg" id="sumPkgName">-</p>
+            <p class="gd-summary-pkg" id="sumPkgNameDesktop">-</p>
           </div>
         </div>
-        <div class="gd-summary-empty" id="sumEmpty">Tidak ada produk yang dipilih</div>
-        <div class="gd-summary-details" id="sumDetails" style="display:none">
-          <div class="gd-summary-line"><span>Harga</span><strong id="sumHarga">Rp 0</strong></div>
-          <div class="gd-summary-line"><span>Jumlah Pembelian</span><strong id="sumQty">1</strong></div>
-          <div class="gd-summary-line"><span>Biaya Layanan</span><strong id="sumFee">Rp 0</strong></div>
-          <div class="gd-summary-total"><span>Total Pembayaran</span><span id="sumTotal">Rp 0</span></div>
+        <div class="gd-summary-empty" id="sumEmptyDesktop">Tidak ada produk yang dipilih</div>
+        <div class="gd-summary-details" id="sumDetailsDesktop" style="display:none">
+          <div class="gd-summary-line"><span>Harga</span><strong id="sumHargaDesktop">Rp 0</strong></div>
+          <div class="gd-summary-line"><span>Jumlah Pembelian</span><strong id="sumQtyDesktop">1</strong></div>
+          <div class="gd-summary-line"><span>Biaya Layanan</span><strong id="sumFeeDesktop">Rp 0</strong></div>
+          <div class="gd-summary-total"><span>Total Pembayaran</span><span id="sumTotalDesktop">Rp 0</span></div>
         </div>
         <button class="btn btn-solid btn-full" id="orderNowBtn" style="margin-top:1rem">Pesan Sekarang</button>
       </div>
@@ -337,9 +337,50 @@
   </div>
 </div>
 
+<!-- ===== Mobile sticky bottom bar (with accordion) ===== -->
+<div class="gd-mobile-bar" id="mobileOrderBar">
+  <div class="gd-mobile-panel" id="mobilePanel">
+    <div class="gd-mobile-panel-inner">
+      <div class="gd-summary-head">
+        <div class="gd-summary-icon">
+          @if($brand->thumbnail_url)
+            <img src="{{ $brand->thumbnail_url }}" alt="{{ $brand->name }}">
+          @else
+            <span>{{ $brand->icon ?? '🎮' }}</span>
+          @endif
+        </div>
+        <div>
+          <p class="gd-summary-game">{{ $brand->name }}</p>
+          <p class="gd-summary-pkg" id="sumPkgName">-</p>
+        </div>
+      </div>
+      <div class="gd-summary-empty" id="sumEmpty">Tidak ada produk yang dipilih</div>
+      <div class="gd-summary-details" id="sumDetails" style="display:none">
+        <div class="gd-summary-line"><span>Harga</span><strong id="sumHarga">Rp 0</strong></div>
+        <div class="gd-summary-line"><span>Jumlah Pembelian</span><strong id="sumQty">1</strong></div>
+        <div class="gd-summary-line"><span>Biaya Layanan</span><strong id="sumFee">Rp 0</strong></div>
+        <div class="gd-summary-total"><span>Total Pembayaran</span><span id="sumTotal">Rp 0</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="gd-mobile-bar-inner">
+    <button class="gd-mobile-toggle" id="mobileToggle" aria-label="Buka detail pesanan">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+    <div class="gd-mobile-bar-info">
+      <span class="gd-mobile-bar-label">Total Pembayaran</span>
+      <strong class="gd-mobile-bar-total" id="mobileSumTotal">Rp 0</strong>
+    </div>
+    <button class="btn btn-solid gd-mobile-bar-btn" id="orderNowBtnMobile">Pesan Sekarang</button>
+  </div>
+</div>
+
 @endsection
 
 @push('scripts')
+<style>
+@media(max-width:640px){.fab-cs{display:none;}}
+</style>
 <script>
 (function(){
 'use strict';
@@ -356,8 +397,6 @@ let selectedPkg = null;
 let selectedRegion = @json($selectedRegion);
 let qty = 1;
 let promoDiscount = 0;
-let isAuth = @json(Auth::check());
-
 /* ---------- auto-select from URL ---------- */
 (function(){
     const params = new URLSearchParams(window.location.search);
@@ -382,7 +421,7 @@ document.addEventListener('click', e => {
         userIdInput.scrollIntoView({behavior:'smooth', block:'center'});
         return;
     }
-    if (card.closest('.gd-pkg-instant')) {
+    if (card.closest('.gd-pkg-instant') && !card.closest('[data-no-region-filter="true"]')) {
         const region = card.dataset.region;
         if (region && selectedRegion && region !== selectedRegion) return;
     }
@@ -498,21 +537,61 @@ $('#payGroup').addEventListener('click', e => {
 /* ---------- summary ---------- */
 function updateSummary() {
     const empty = !selectedPkg;
+    // mobile accordion
     $('#sumEmpty').style.display = empty ? '' : 'none';
     $('#sumDetails').style.display = empty ? 'none' : '';
-    if (empty) { $('#sumPkgName').textContent = '-'; return; }
+    // desktop sidebar
+    const de = $('#sumEmptyDesktop');
+    if (de) de.style.display = empty ? '' : 'none';
+    const dd = $('#sumDetailsDesktop');
+    if (dd) dd.style.display = empty ? 'none' : '';
+
+    if (empty) {
+        $('#sumPkgName').textContent = '-';
+        if ($('#sumPkgNameDesktop')) $('#sumPkgNameDesktop').textContent = '-';
+        updateMobileTotal(0);
+        return;
+    }
     const subtotal = selectedPkg.price * qty;
     const total = Math.max(0, subtotal + selectedPayFee - promoDiscount);
+    // mobile accordion
     $('#sumPkgName').textContent = selectedPkg.label;
     $('#sumHarga').textContent = rupiah(selectedPkg.price);
     $('#sumQty').textContent = qty;
     $('#sumFee').textContent = rupiah(selectedPayFee);
     $('#sumTotal').textContent = rupiah(total);
+    // desktop sidebar
+    if ($('#sumPkgNameDesktop')) $('#sumPkgNameDesktop').textContent = selectedPkg.label;
+    if ($('#sumHargaDesktop')) $('#sumHargaDesktop').textContent = rupiah(selectedPkg.price);
+    if ($('#sumQtyDesktop')) $('#sumQtyDesktop').textContent = qty;
+    if ($('#sumFeeDesktop')) $('#sumFeeDesktop').textContent = rupiah(selectedPayFee);
+    if ($('#sumTotalDesktop')) $('#sumTotalDesktop').textContent = rupiah(total);
+
+    updateMobileTotal(total);
+}
+function updateMobileTotal(v) {
+    const el = $('#mobileSumTotal');
+    if (el) el.textContent = rupiah(v);
 }
 updateSummary();
 
-$('#orderNowBtn').addEventListener('click', async function() {
-    if (!isAuth) { window.location.href = @json(route('login')); return; }
+/* ---------- mobile accordion toggle ---------- */
+$('#mobileToggle').addEventListener('click', function() {
+    const bar = document.getElementById('mobileOrderBar');
+    bar.classList.toggle('open');
+    const isOpen = bar.classList.contains('open');
+    this.setAttribute('aria-label', isOpen ? 'Tutup detail pesanan' : 'Buka detail pesanan');
+});
+// auto close accordion on product select
+document.addEventListener('click', e => {
+    const card = e.target.closest('.gd-pkg-card');
+    if (card) {
+        const bar = document.getElementById('mobileOrderBar');
+        if (bar) bar.classList.remove('open');
+    }
+});
+
+async function handleOrder(btn) {
     if (!selectedPkg) {
       showToast('Pilih produk terlebih dahulu', false);
       return;
@@ -530,7 +609,6 @@ $('#orderNowBtn').addEventListener('click', async function() {
       showToast('Periksa kembali Detail Kontak kamu', false);
       return;
     }
-    const btn = this;
     btn.disabled = true; btn.textContent = 'Memproses...';
     const fd = new FormData();
     fd.append('_token', document.querySelector('meta[name="csrf-token"]').content);
@@ -549,7 +627,10 @@ $('#orderNowBtn').addEventListener('click', async function() {
       if (data.success && data.redirect) { window.location.href = data.redirect; }
       else { btn.disabled = false; btn.textContent = 'Pesan Sekarang'; showToast(data.message || 'Gagal memproses pesanan', false); }
     } catch(e) { btn.disabled = false; btn.textContent = 'Pesan Sekarang'; showToast('Terjadi kesalahan: ' + e.message, false); }
-});
+}
+
+$('#orderNowBtn').addEventListener('click', function() { handleOrder(this); });
+$('#orderNowBtnMobile').addEventListener('click', function() { handleOrder(this); });
 
 $('#adminHelpLink')?.addEventListener('click', e => {
     e.preventDefault();

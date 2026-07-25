@@ -12,6 +12,7 @@ class Order extends Model
         'buyer_sku_code',
         'customer_number',
         'customer_name',
+        'email',
         'product_name',
         'brand',
         'category',

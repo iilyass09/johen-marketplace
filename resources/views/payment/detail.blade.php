@@ -197,10 +197,17 @@
           </div>
         </div>
         <div class="pd-ringkasan-actions">
+          @auth
           <a href="{{ route('orders.my') }}" class="btn btn-outline btn-full">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
             Lihat Semua Pesanan
           </a>
+          @else
+          <a href="{{ route('home') }}" class="btn btn-outline btn-full">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Kembali ke Beranda
+          </a>
+          @endauth
         </div>
       </div>
     </div>

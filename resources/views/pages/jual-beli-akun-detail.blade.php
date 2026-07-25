@@ -108,6 +108,16 @@
     </div>
   </div>
 
+  <div class="jba-transfer-info">
+    <div class="jba-transfer-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M12 9v6"/><path d="M9 12h6"/></svg>
+    </div>
+    <div class="jba-transfer-text">
+      <strong>Informasi Transfer</strong>
+      <span>Pembayaran hanya melalui transfer ke rekening <strong>BCA 1234567890 a/n Johen Gaming</strong>. Kami tidak pernah meminta transfer ke rekening lain.</span>
+    </div>
+  </div>
+
   @if($related->count() > 0)
   <section class="jba-related">
     <h2>Akun {{ $listing->game }} Lainnya</h2>
@@ -186,6 +196,13 @@
 @media (max-width: 768px) {
   .jba-detail-wrap { grid-template-columns: 1fr; }
   .jba-detail-gallery { position: static; }
+}
+@media (max-width: 640px) {
+  .jba-grid { grid-template-columns: repeat(2, 1fr); }
+  .jba-card-body { padding: .6rem .7rem; }
+  .jba-card-title { font-size: .78rem; }
+  .jba-card-price { font-size: .82rem; }
+  .jba-card-original { font-size: .68rem; }
 }
 .jba-detail-main-photo {
   width: 100%;
@@ -494,9 +511,43 @@
 .jba-detail-gallery--sold .jba-zoom-hint {
   display: none;
 }
+.jba-transfer-info {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .85rem 1rem;
+  margin: 2rem 0 .5rem;
+  border-radius: 12px;
+  background: rgba(157, 92, 245, .08);
+  border: 1px solid rgba(157, 92, 245, .25);
+  animation: jbaGlowPulse 2s ease-in-out infinite;
+}
+@keyframes jbaGlowPulse {
+  0%, 100% { border-color: rgba(157, 92, 245, .25); box-shadow: 0 0 6px rgba(157, 92, 245, .08); }
+  50% { border-color: rgba(157, 92, 245, .7); box-shadow: 0 0 14px rgba(157, 92, 245, .25); }
+}
+.jba-transfer-icon {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(157, 92, 245, .15);
+  color: var(--jba-accent);
+}
+.jba-transfer-text {
+  font-size: .8rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.jba-transfer-text strong {
+  color: var(--text);
+}
 .jba-related {
-  margin-top: 3rem;
-  padding-top: 2rem;
+  margin-top: .75rem;
+  padding-top: 1rem;
   border-top: 1px solid var(--glass-border);
 }
 .jba-related h2 {

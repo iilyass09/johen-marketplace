@@ -34,6 +34,7 @@ class OrderController extends Controller
             'product_id' => 'required|exists:products,id',
             'customer_number' => 'required|string',
             'customer_name' => 'nullable|string',
+            'email' => 'nullable|email',
             'quantity' => 'nullable|integer|min:1|max:99',
         ]);
 
@@ -64,6 +65,7 @@ class OrderController extends Controller
             'buyer_sku_code' => $product->buyer_sku_code,
             'customer_number' => $request->customer_number,
             'customer_name' => $request->customer_name,
+            'email' => $request->email,
             'product_name' => $product->product_name,
             'brand' => $product->brand,
             'category' => $product->category,
@@ -86,8 +88,8 @@ class OrderController extends Controller
                     'gross_amount' => $subtotal,
                 ],
                 'customer_details' => [
-                    'first_name' => Auth::user()->name,
-                    'email' => Auth::user()->email,
+                    'first_name' => Auth::check() ? Auth::user()->name : ($request->customer_name ?: $request->customer_number),
+                    'email' => Auth::check() ? Auth::user()->email : ($request->email ?: 'guest@johengaming.id'),
                 ],
                 'item_details' => [
                     [

@@ -37,6 +37,16 @@
     </button>
   </section>
 
+  <div class="jba-transfer-info">
+    <div class="jba-transfer-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M12 9v6"/><path d="M9 12h6"/></svg>
+    </div>
+    <div class="jba-transfer-text">
+      <strong>Informasi Transfer</strong>
+      <span>Pembayaran hanya melalui transfer ke rekening <strong>BCA 1234567890 a/n Johen Gaming</strong>. Kami tidak pernah meminta transfer ke rekening lain.</span>
+    </div>
+  </div>
+
   <div class="jba-hero">
     <h1>Jual Beli Akun Game</h1>
     <p>Temukan akun game terbaik dengan harga terbaik. Semua akun sudah diverifikasi.</p>
@@ -70,11 +80,20 @@
       Kembali
     </button>
 
-    <div class="jba-game-header">
-      <h2 class="jba-game-title" id="jbaGameTitle"></h2>
-    </div>
+<div class="jba-game-header">
+  <h2 class="jba-game-title" id="jbaGameTitle"></h2>
+</div>
 
-    <div class="jba-grid" id="jbaGrid"></div>
+<div class="jba-sort-bar">
+  <span class="jba-sort-label">Urutkan</span>
+  <div class="jba-sort-options">
+    <button class="jba-sort-btn active" data-sort="default">Default</button>
+    <button class="jba-sort-btn" data-sort="price-asc">Termurah</button>
+    <button class="jba-sort-btn" data-sort="price-desc">Termahal</button>
+  </div>
+</div>
+
+<div class="jba-grid" id="jbaGrid"></div>
   </div>
 </div>
 
@@ -85,7 +104,41 @@
 .jba-page {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 2rem 1.5rem;
+  padding: 1.5rem 2rem 1.5rem;
+}
+.jba-transfer-info {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .85rem 1rem;
+  margin: .75rem 0 1rem;
+  border-radius: 12px;
+  background: rgba(157, 92, 245, .08);
+  border: 1px solid rgba(157, 92, 245, .25);
+  animation: jbaGlowPulse 2s ease-in-out infinite;
+}
+@keyframes jbaGlowPulse {
+  0%, 100% { border-color: rgba(157, 92, 245, .25); box-shadow: 0 0 6px rgba(157, 92, 245, .08); }
+  50% { border-color: rgba(157, 92, 245, .7); box-shadow: 0 0 14px rgba(157, 92, 245, .25); }
+}
+.jba-transfer-icon {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(157, 92, 245, .15);
+  color: var(--jba-accent);
+}
+.jba-transfer-text {
+  font-size: .8rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.jba-transfer-text strong {
+  color: var(--text);
 }
 .jba-hero {
   text-align: left;
@@ -368,6 +421,19 @@
   text-align: center;
   padding: 4rem 1rem;
   color: var(--text-dim);
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+@media(max-width:640px){
+  .jba-page{padding:1rem 1.1rem 1.5rem;}
+  .jba-grid{grid-template-columns:repeat(2,1fr);gap:.7rem;}
+  .jba-card-body{padding:.6rem .7rem;}
+  .jba-card-title{font-size:.8rem;}
+  .jba-card-price{font-size:.85rem;}
+  .jba-card-original{font-size:.7rem;}
+  .jba-card-game{font-size:.6rem;}
 }
 .jba-empty h3 {
   font-size: 1.1rem;
@@ -377,6 +443,45 @@
 }
 .jba-empty p {
   font-size: .88rem;
+}
+.jba-sort-bar {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  margin-bottom: 1rem;
+  padding-left: .5rem;
+}
+.jba-sort-label {
+  font-size: .78rem;
+  color: var(--text-dim);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.jba-sort-options {
+  display: flex;
+  gap: .35rem;
+  flex-wrap: wrap;
+}
+.jba-sort-btn {
+  padding: .4rem .75rem;
+  border-radius: 8px;
+  font-size: .75rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all .16s ease;
+  font-family: inherit;
+}
+.jba-sort-btn:hover {
+  border-color: var(--jba-accent);
+  color: var(--text);
+}
+.jba-sort-btn.active {
+  background: var(--jba-accent);
+  border-color: var(--jba-accent);
+  color: #fff;
 }
 </style>
 
@@ -389,12 +494,23 @@
   const grid = document.getElementById('jbaGrid');
 
   const allListings = @json($listings);
+  let currentGame = null;
+  let currentSort = 'default';
 
   // auto-open game from ?game= param
   const params = new URLSearchParams(location.search);
   const gameName = params.get('game');
   if (gameName && allListings[gameName]) {
     showGame(gameName);
+  }
+
+  function sortListings(listings, sort) {
+    const arr = [...(listings || [])];
+    switch (sort) {
+      case 'price-asc': arr.sort((a, b) => Number(a.price) - Number(b.price)); break;
+      case 'price-desc': arr.sort((a, b) => Number(b.price) - Number(a.price)); break;
+    }
+    return arr;
   }
 
   function renderCards(listings) {
@@ -454,14 +570,27 @@
   const jbaBanner = document.getElementById('jba-hero');
 
   function showGame(game) {
+    currentGame = game;
     gameGrid.style.display = 'none';
     gameSection.style.display = '';
     if (jbaHero) jbaHero.style.display = 'none';
     if (jbaBanner) jbaBanner.style.display = 'none';
     gameTitle.textContent = game;
-    renderCards(allListings[game] || []);
+    renderCards(sortListings(allListings[game] || [], currentSort));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
+
+  /* ---------- sort ---------- */
+  document.querySelectorAll('.jba-sort-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.jba-sort-btn').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      currentSort = btn.dataset.sort;
+      if (currentGame) {
+        renderCards(sortListings(allListings[currentGame] || [], currentSort));
+      }
+    });
+  });
 
   document.querySelectorAll('.jba-game-btn').forEach(function(btn) {
     btn.addEventListener('click', function() {

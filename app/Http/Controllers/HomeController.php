@@ -9,8 +9,10 @@ use App\Models\ContactInquiry;
 use App\Models\Order;
 use App\Models\PaymentMethod;
 use App\Models\Product;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class HomeController extends Controller
 {
@@ -89,6 +91,7 @@ class HomeController extends Controller
 
         $order = Order::where('order_id', $q)
             ->orWhere('customer_number', $q)
+            ->orWhere('email', $q)
             ->orWhereHas('user', function ($query) use ($q) {
                 $query->where('email', $q);
             })
@@ -115,14 +118,6 @@ class HomeController extends Controller
 
     public function leaderboard(Request $request)
     {
-        $names = [
-            'Muhammad Ilyas', 'Muhammad Fadlan', 'Muhammad Taopik', 'Ahmad Rizaldi',
-            'Siti Nurhaliza', 'Dimas Pratama', 'Rina Marlina', 'Fajar Ramadhan',
-            'Dewi Lestari', 'Bambang Suprapto', 'Rizky_Ace', 'Dinda.ML',
-            'ProGamerID', 'FaizFF07', 'ValoQueen', 'Iky_Sniper',
-            'Nadia_Gaming', 'Rafi_Supremasi', 'Citra_Queen', 'Aldo_Boss',
-        ];
-
         $popularBrands = Brand::where('is_active', true)
             ->where('is_popular', true)
             ->orderBy('sort_order')
@@ -130,39 +125,45 @@ class HomeController extends Controller
 
         $games = $popularBrands->pluck('name')->toArray();
 
-        $today = [];
-        $week = [];
-        $month = [];
+        $gameFilter = $request->input('game', 'all');
 
-        $shuffled = $names;
-        shuffle($shuffled);
-        for ($i = 0; $i < 10; $i++) {
-            $today[] = ['rank' => $i + 1, 'name' => $shuffled[$i], 'amount' => rand(100000, 3000000)];
-        }
-        usort($today, fn($a, $b) => $b['amount'] - $a['amount']);
-        foreach ($today as $i => &$t) { $t['rank'] = $i + 1; } unset($t);
+        $baseQuery = Order::select('orders.user_id', 'users.name', DB::raw('SUM(orders.price) as total_amount'))
+            ->join('users', 'orders.user_id', '=', 'users.id')
+            ->whereNotNull('orders.user_id')
+            ->where('orders.status', 'success');
 
-        $shuffled = $names;
-        shuffle($shuffled);
-        for ($i = 0; $i < 10; $i++) {
-            $week[] = ['rank' => $i + 1, 'name' => $shuffled[$i], 'amount' => rand(200000, 5000000)];
+        if ($gameFilter !== 'all') {
+            $baseQuery->where('orders.brand', $gameFilter);
         }
-        usort($week, fn($a, $b) => $b['amount'] - $a['amount']);
-        foreach ($week as $i => &$w) { $w['rank'] = $i + 1; } unset($w);
 
-        $shuffled = $names;
-        shuffle($shuffled);
-        for ($i = 0; $i < 10; $i++) {
-            $month[] = ['rank' => $i + 1, 'name' => $shuffled[$i], 'amount' => rand(500000, 10000000)];
-        }
-        usort($month, fn($a, $b) => $b['amount'] - $a['amount']);
-        foreach ($month as $i => &$m) { $m['rank'] = $i + 1; } unset($m);
+        $today = (clone $baseQuery)->whereDate('orders.created_at', Carbon::today())
+            ->groupBy('orders.user_id', 'users.name')
+            ->orderByDesc('total_amount')
+            ->limit(10)
+            ->get()
+            ->map(fn($item, $i) => ['rank' => $i + 1, 'name' => $item->name, 'amount' => (int) $item->total_amount])
+            ->toArray();
+
+        $week = (clone $baseQuery)->whereBetween('orders.created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()])
+            ->groupBy('orders.user_id', 'users.name')
+            ->orderByDesc('total_amount')
+            ->limit(10)
+            ->get()
+            ->map(fn($item, $i) => ['rank' => $i + 1, 'name' => $item->name, 'amount' => (int) $item->total_amount])
+            ->toArray();
+
+        $month = (clone $baseQuery)->whereYear('orders.created_at', Carbon::now()->year)
+            ->whereMonth('orders.created_at', Carbon::now()->month)
+            ->groupBy('orders.user_id', 'users.name')
+            ->orderByDesc('total_amount')
+            ->limit(10)
+            ->get()
+            ->map(fn($item, $i) => ['rank' => $i + 1, 'name' => $item->name, 'amount' => (int) $item->total_amount])
+            ->toArray();
 
         $leaderboard = compact('today', 'week', 'month');
 
         if ($request->wantsJson()) {
-            $serviceType = $request->input('service_type', 'topup');
-            $game = $request->input('game', 'all');
             return response()->json($leaderboard);
         }
 
@@ -192,51 +193,44 @@ class HomeController extends Controller
 
     public function leaderboardApi(Request $request)
     {
-        $names = [
-            'Muhammad Ilyas', 'Muhammad Fadlan', 'Muhammad Taopik', 'Ahmad Rizaldi',
-            'Siti Nurhaliza', 'Dimas Pratama', 'Rina Marlina', 'Fajar Ramadhan',
-            'Dewi Lestari', 'Bambang Suprapto', 'Rizky_Ace', 'Dinda.ML',
-            'ProGamerID', 'FaizFF07', 'ValoQueen', 'Iky_Sniper',
-            'Nadia_Gaming', 'Rafi_Supremasi', 'Citra_Queen', 'Aldo_Boss',
-        ];
+        $period = $request->input('period', 'daily');
+        $gameFilter = $request->input('game', 'all');
 
-        $games = ['Mobile Legends', 'PUBG Mobile', 'Valorant', 'Free Fire', 'Honor of Kings'];
-        $times = ['08:15 WIB', '10:30 WIB', '13:45 WIB', '15:20 WIB', '18:00 WIB', '20:10 WIB', '21:35 WIB', '22:50 WIB', '07:05 WIB', '11:25 WIB'];
+        $query = Order::select(
+                'orders.user_id',
+                'users.name as customer',
+                'orders.brand as game',
+                DB::raw('SUM(orders.price) as total_purchase'),
+                DB::raw('MAX(orders.created_at) as last_transaction')
+            )
+            ->join('users', 'orders.user_id', '=', 'users.id')
+            ->whereNotNull('orders.user_id')
+            ->where('orders.status', 'success');
 
-        $allData = [];
-        for ($i = 0; $i < 50; $i++) {
-            $gameFilter = $request->input('game', 'all');
-            $game = $games[array_rand($games)];
-            if ($gameFilter !== 'all' && $game !== $gameFilter) {
-                continue;
-            }
-            $allData[] = [
-                'rank' => 0,
-                'customer' => $names[array_rand($names)],
-                'game' => $game,
-                'service' => $request->input('service', 'topup') === 'topup' ? 'Top Up' : 'Joki',
-                'total_purchase' => rand(100000, 10000000),
-                'last_transaction' => $times[array_rand($times)],
-            ];
+        if ($gameFilter !== 'all') {
+            $query->where('orders.brand', $gameFilter);
         }
 
-        if (count($allData) < 50) {
-            $allData = [];
-            for ($i = 0; $i < 50; $i++) {
-                $game = $games[array_rand($games)];
-                $allData[] = [
-                    'rank' => 0,
-                    'customer' => $names[array_rand($names)],
-                    'game' => $game,
-                    'service' => $request->input('service', 'topup') === 'topup' ? 'Top Up' : 'Joki',
-                    'total_purchase' => rand(100000, 10000000),
-                    'last_transaction' => $times[array_rand($times)],
-                ];
-            }
+        if ($period === 'daily') {
+            $query->whereDate('orders.created_at', Carbon::today());
+        } elseif ($period === 'weekly') {
+            $query->whereBetween('orders.created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
+        } elseif ($period === 'monthly') {
+            $query->whereYear('orders.created_at', Carbon::now()->year)
+                  ->whereMonth('orders.created_at', Carbon::now()->month);
         }
 
-        usort($allData, fn($a, $b) => $b['total_purchase'] - $a['total_purchase']);
-        foreach ($allData as $i => &$d) { $d['rank'] = $i + 1; } unset($d);
+        $allData = $query->groupBy('orders.user_id', 'users.name', 'orders.brand')
+            ->orderByDesc('total_purchase')
+            ->get()
+            ->map(fn($item, $i) => [
+                'rank' => $i + 1,
+                'customer' => $item->customer,
+                'game' => $item->game,
+                'total_purchase' => (int) $item->total_purchase,
+                'last_transaction' => Carbon::parse($item->last_transaction)->format('d M Y H:i') . ' WIB',
+            ])
+            ->toArray();
 
         $perPage = (int) $request->input('per_page', 10);
         $page = (int) $request->input('page', 1);
