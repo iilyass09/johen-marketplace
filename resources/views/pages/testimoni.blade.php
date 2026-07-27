@@ -6,7 +6,14 @@
 <div class="testi-page">
   <div class="testi-page-hero">
     <h1>APA KATA MEREKA?</h1>
-    <p>Ribuan orang telah mempercayai Top Up mereka di Johen Gaming. Simak pengalaman mereka berikut ini.</p>
+    <p>Ribuan orang telah mempercayai Johen Gaming. Simak pengalaman mereka berikut ini.</p>
+  </div>
+
+  <div class="testi-page-filters">
+    <a href="{{ route('testimoni') }}" class="testi-filter-btn {{ !$activeLayanan ? 'active' : '' }}">Semua</a>
+    <a href="{{ route('testimoni', ['layanan' => 'topup']) }}" class="testi-filter-btn {{ $activeLayanan === 'topup' ? 'active' : '' }}">Top Up</a>
+    <a href="{{ route('testimoni', ['layanan' => 'jual-beli-akun']) }}" class="testi-filter-btn {{ $activeLayanan === 'jual-beli-akun' ? 'active' : '' }}">Jual Beli Akun</a>
+    <a href="{{ route('testimoni', ['layanan' => 'joki']) }}" class="testi-filter-btn {{ $activeLayanan === 'joki' ? 'active' : '' }}">Joki MLBB</a>
   </div>
 
   <div class="testi-page-grid">
@@ -32,6 +39,10 @@
   margin: 0 auto;
   padding: 3rem 1.5rem 5rem;
 }
+.testi-page-filters{display:flex;gap:.5rem;justify-content:center;margin-bottom:2rem;flex-wrap:wrap}
+.testi-filter-btn{display:inline-flex;padding:.4rem 1rem;border-radius:8px;font-size:.8rem;font-weight:600;border:1px solid var(--glass-border);color:var(--text-dim);text-decoration:none;transition:all .16s ease;background:transparent}
+.testi-filter-btn:hover{border-color:var(--accent);color:var(--text)}
+.testi-filter-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 0 16px -4px rgba(157,92,245,.3)}
 .testi-page-hero {
   text-align: center;
   margin-bottom: 3rem;

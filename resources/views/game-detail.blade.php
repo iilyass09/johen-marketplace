@@ -307,7 +307,7 @@
       <div class="gd-card">
         <div class="gd-help-section">
           <strong>Butuh Bantuan?</strong>
-          <p>Kamu Bisa Hubungi Admin <a href="#" class="gd-help-link" id="adminHelpLink">Disini</a></p>
+          <p>Kamu Bisa Hubungi Admin <a href="{{ route('kontak') }}" class="gd-help-link">Disini</a></p>
         </div>
       </div>
       <div class="gd-card gd-summary-card gd-summary-desktop-only" id="summaryCard">
@@ -632,10 +632,6 @@ async function handleOrder(btn) {
 $('#orderNowBtn').addEventListener('click', function() { handleOrder(this); });
 $('#orderNowBtnMobile').addEventListener('click', function() { handleOrder(this); });
 
-$('#adminHelpLink')?.addEventListener('click', e => {
-    e.preventDefault();
-    showToast('Menghubungkan ke admin support…');
-});
 
 /* ---------- promo ---------- */
 const promoInput = $('#promoInput'), promoMsg = $('#promoMsg');

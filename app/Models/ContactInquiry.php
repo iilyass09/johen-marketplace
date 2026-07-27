@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class ContactInquiry extends Model
 {
     protected $fillable = [
+        'user_id',
         'name',
         'email',
         'phone',
@@ -19,6 +20,7 @@ class ContactInquiry extends Model
     {
         return [
             'is_read' => 'boolean',
+            'responded_at' => 'datetime',
         ];
     }
 }

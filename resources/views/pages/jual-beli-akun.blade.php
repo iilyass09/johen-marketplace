@@ -608,6 +608,108 @@
 })();
 </script>
 
+<!-- ===== TESTIMONIALS ===== -->
+<section class="testi-section">
+  <h2>APA KATA MEREKA?</h2>
+  <p class="testi-sub">Ribuan orang telah mempercayai Transaksi mereka di Johen Gaming</p>
+  <div class="testi-carousel">
+    <button class="testi-arrow testi-arrow-left" onclick="prevTestiJba()" aria-label="Sebelumnya">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="testi-track" id="testiTrackJba"></div>
+    <button class="testi-arrow testi-arrow-right" onclick="nextTestiJba()" aria-label="Selanjutnya">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+  </div>
+  <div class="testi-dots" id="testiDotsJba"></div>
+  <div class="load-more-wrap" style="margin-top:1.2rem">
+    <a href="{{ route('testimoni', ['layanan' => 'jual-beli-akun']) }}" class="btn btn-outline btn-load-more">Lihat Selengkapnya</a>
+  </div>
+</section>
+
+<script>
+// ============ TESTIMONIALS CAROUSEL (JBA) ============
+const testiTrackJba = document.getElementById('testiTrackJba');
+const testiDotsJba = document.getElementById('testiDotsJba');
+let testiJbaCurrent = 0;
+let testiJbaTimer = null;
+
+function createTestiCardJba(t) {
+  const card = document.createElement('div');
+  card.className = 'testi-card';
+  card.innerHTML = `
+    <div class="testi-user">
+      <div class="testi-avatar">${t.avatar}</div>
+      <div>
+        <div class="testi-name">${t.name}</div>
+        <div class="testi-game">${t.game}</div>
+      </div>
+    </div>
+    <p class="testi-quote">"${t.quote}"</p>`;
+  return card;
+}
+
+function getTestiOffsetJba(i) {
+  const cw = testiTrackJba.parentElement.getBoundingClientRect().width;
+  const card = testiTrackJba.children[i + 1];
+  return card.offsetLeft - (cw - card.offsetWidth) / 2;
+}
+
+function applyTestiCenterJba(i) {
+  testiTrackJba.querySelectorAll('.testi-card').forEach((c, idx) => c.classList.toggle('center', idx === i + 1));
+  if (testiDotsJba) Array.from(testiDotsJba.children).forEach((d, idx) => d.classList.toggle('active', idx === i));
+}
+
+function goTestiJba(i) {
+  testiJbaCurrent = i;
+  if (i > testiJbaTotal - 1) { testiJbaCurrent = 0; }
+  if (i < 0) { testiJbaCurrent = testiJbaTotal - 1; }
+  testiTrackJba.style.transform = 'translateX(' + (-getTestiOffsetJba(testiJbaCurrent)) + 'px)';
+  applyTestiCenterJba(testiJbaCurrent);
+}
+
+function prevTestiJba() { goTestiJba(testiJbaCurrent - 1); resetTestiJbaTimer(); }
+function nextTestiJba() { goTestiJba(testiJbaCurrent + 1); resetTestiJbaTimer(); }
+function resetTestiJbaTimer() {
+  if (testiJbaTimer) clearInterval(testiJbaTimer);
+  testiJbaTimer = setInterval(function() { goTestiJba(testiJbaCurrent + 1); }, 5000);
+}
+
+const testiJbaData = @json($testimonials);
+const testiJbaTotal = testiJbaData.length;
+
+if (testiTrackJba && testiJbaTotal > 0) {
+  testiJbaData.forEach(t => testiTrackJba.appendChild(createTestiCardJba(t)));
+  const clones = Array.from(testiTrackJba.children);
+  testiTrackJba.appendChild(clones[0].cloneNode(true));
+  testiTrackJba.insertBefore(clones[testiJbaTotal - 1].cloneNode(true), testiTrackJba.firstChild);
+  testiTrackJba.style.transition = 'none';
+  testiTrackJba.style.transform = 'translateX(' + (-getTestiOffsetJba(0)) + 'px)';
+  void testiTrackJba.offsetHeight;
+  testiTrackJba.style.transition = '';
+  applyTestiCenterJba(0);
+  if (testiDotsJba) {
+    testiJbaData.forEach(function(_, i) {
+      const dot = document.createElement('button');
+      dot.className = 'testi-dot' + (i === 0 ? ' active' : '');
+      dot.setAttribute('aria-label', 'Testimonial ' + (i + 1));
+      dot.addEventListener('click', function() { goTestiJba(i); resetTestiJbaTimer(); });
+      testiDotsJba.appendChild(dot);
+    });
+  }
+  testiJbaTimer = setInterval(function() { goTestiJba(testiJbaCurrent + 1); }, 5000);
+}
+</script>
+
+<!-- ===== PAYMENT METHODS ===== -->
+<section class="payment-section">
+  <h2>METODE PEMBAYARAN</h2>
+  <p>Kami mendukung berbagai metode pembayaran seperti QRIS, e-wallet, virtual account dan minimarket.</p>
+  <div class="payment-track-wrap">
+    <div class="payment-track" id="paymentTrack"></div>
+  </div>
+</section>
+
 <!-- ===== CTA ===== -->
 <section class="cta-section">
   <div class="cta-card">

@@ -18,7 +18,17 @@
         </div>
         <div>
             <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.25rem">Kategori</div>
-            <span class="badge badge-neutral" style="text-transform:capitalize">{{ $inquiry->category }}</span>
+            @php
+            $catColors = [
+                'topup' => ['bg' => 'rgba(133,77,234,0.15)', 'text' => '#9d5cf5'],
+                'jual-beli-akun' => ['bg' => 'rgba(245,158,11,0.15)', 'text' => '#d97706'],
+                'pembayaran' => ['bg' => 'rgba(59,130,246,0.15)', 'text' => '#3b82f6'],
+                'keluhan' => ['bg' => 'rgba(239,68,68,0.15)', 'text' => '#dc2626'],
+                'saran' => ['bg' => 'rgba(16,185,129,0.15)', 'text' => '#059669'],
+            ];
+            $cc = $catColors[$inquiry->category] ?? ['bg' => 'rgba(100,116,139,0.15)', 'text' => '#64748b'];
+            @endphp
+            <span style="display:inline-block;padding:2px 10px;border-radius:6px;font-size:0.72rem;font-weight:600;text-transform:capitalize;background:{{ $cc['bg'] }};color:{{ $cc['text'] }}">{{ $inquiry->category }}</span>
         </div>
         <div>
             <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.25rem">Email</div>
@@ -34,10 +44,12 @@
         </div>
         <div>
             <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.25rem">Status</div>
-            @if($inquiry->is_read)
-                <span style="color:var(--text-dim);font-size:0.85rem"><i class="far fa-envelope-open mr-1"></i> Sudah dibaca</span>
+            @if($inquiry->responded_at)
+                <span style="display:inline-block;padding:2px 10px;border-radius:6px;font-size:0.72rem;font-weight:600;background:rgba(16,185,129,0.15);color:#059669">Direspon</span>
+            @elseif($inquiry->is_read)
+                <span style="display:inline-block;padding:2px 10px;border-radius:6px;font-size:0.72rem;font-weight:600;background:rgba(75,85,99,0.12);color:var(--text-dim)">Dibaca</span>
             @else
-                <span style="color:var(--accent)"><i class="fas fa-envelope mr-1"></i> Belum dibaca</span>
+                <span style="display:inline-block;padding:2px 10px;border-radius:6px;font-size:0.72rem;font-weight:600;background:rgba(157,92,245,0.15);color:#9d5cf5">Belum dibaca</span>
             @endif
         </div>
     </div>

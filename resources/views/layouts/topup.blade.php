@@ -54,6 +54,10 @@
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="12" y1="7" x2="12" y2="13"/></svg>
               Ulasan
             </a>
+            <a href="{{ route('my-inquiries') }}" class="auth-dropdown-item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              Riwayat Pesan
+            </a>
             @if(Auth::user()->isAdmin())
               <a href="{{ route('admin.dashboard') }}" class="auth-dropdown-item">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
@@ -106,6 +110,7 @@
     @auth
       <a href="{{ route('orders.my') }}">Pesanan Saya</a>
       <a href="{{ route('testimoni') }}">Ulasan</a>
+      <a href="{{ route('my-inquiries') }}">Riwayat Pesan</a>
       @if(Auth::user()->isAdmin())
         <a href="{{ route('admin.dashboard') }}">Admin Panel</a>
       @endif

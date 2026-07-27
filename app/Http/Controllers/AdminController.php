@@ -387,7 +387,7 @@ class AdminController extends Controller
     // ---- ORDERS ----
     public function orders()
     {
-        $orders = Order::with('user')->latest()->paginate(20);
+        $orders = Order::with('user', 'transaction')->latest()->paginate(20);
         return view('admin.orders.index', compact('orders'));
     }
 
@@ -404,6 +404,14 @@ class AdminController extends Controller
         ]);
 
         $order->update(['status' => $request->status]);
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Status berhasil diperbarui menjadi ' . $request->status,
+                'status' => $request->status,
+            ]);
+        }
 
         return back()->with('success', 'Status pesanan berhasil diperbarui menjadi ' . $request->status);
     }
@@ -422,17 +430,28 @@ class AdminController extends Controller
 
     public function usersUpdate(Request $request, User $user)
     {
-        $request->validate([
+        $validator = validator($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
             'is_admin' => 'boolean',
         ]);
+
+        if ($validator->fails()) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['errors' => $validator->errors()->messages()], 422);
+            }
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
 
         $user->update([
             'name' => $request->name,
             'email' => $request->email,
             'is_admin' => $request->boolean('is_admin', false),
         ]);
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Pengguna berhasil diperbarui']);
+        }
 
         return redirect()->route('admin.users')->with('success', 'Pengguna berhasil diperbarui');
     }
@@ -571,25 +590,47 @@ class AdminController extends Controller
     public function contactInquiriesMarkRead(ContactInquiry $contactInquiry)
     {
         $contactInquiry->update(['is_read' => true]);
+
+        if (request()->ajax() || request()->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Pesan ditandai sudah dibaca.']);
+        }
+
         return back()->with('success', 'Pesan ditandai sudah dibaca.');
     }
 
     public function contactInquiriesDestroy(ContactInquiry $contactInquiry)
     {
         $contactInquiry->delete();
+
+        if (request()->ajax() || request()->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Pesan berhasil dihapus.']);
+        }
+
         return redirect()->route('admin.contact-inquiries')->with('success', 'Pesan berhasil dihapus.');
     }
 
     public function contactInquiriesReply(Request $request, ContactInquiry $contactInquiry)
     {
-        $validated = $request->validate([
+        $validator = validator($request->all(), [
             'reply' => 'required|string|max:10000',
         ]);
 
-        Mail::to($contactInquiry->email)->send(new ContactReplyMail($contactInquiry, $validated['reply']));
+        if ($validator->fails()) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['errors' => $validator->errors()->messages()], 422);
+            }
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
 
-        if (!$contactInquiry->is_read) {
-            $contactInquiry->update(['is_read' => true]);
+        Mail::to($contactInquiry->email)->send(new ContactReplyMail($contactInquiry, $validator->validated()['reply']));
+
+        $contactInquiry->update([
+            'is_read' => true,
+            'responded_at' => now(),
+        ]);
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Balasan berhasil dikirim ke ' . $contactInquiry->email]);
         }
 
         return back()->with('success', 'Balasan berhasil dikirim ke ' . $contactInquiry->email);

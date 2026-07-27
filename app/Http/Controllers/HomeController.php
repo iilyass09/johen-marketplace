@@ -263,7 +263,9 @@ class HomeController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('pages.jual-beli-akun', compact('popularGames', 'listings'));
+        $testimonials = array_values(array_filter(static::getTestimonials(), fn($t) => ($t['layanan'] ?? '') === 'jual-beli-akun'));
+
+        return view('pages.jual-beli-akun', compact('popularGames', 'listings', 'testimonials'));
     }
 
     public function jualBeliAkunDetail(AccountListing $listing)
@@ -343,23 +345,29 @@ class HomeController extends Controller
         $now = now()->setTimezone('Asia/Jakarta');
         $fmt = fn($d) => $d->format('d-m-Y H:i:s');
         return [
-            ['name' => 'User Free Fire', 'game' => 'Top Up - Free Fire', 'avatar' => '🙂', 'quote' => 'Top up Diamond Free Fire di sini cepat banget. Setelah pembayaran berhasil, diamond langsung masuk ke akun tanpa perlu menunggu lama.', 'date' => $fmt((clone $now)->subMinutes(3))],
-            ['name' => 'User Mobile Legends', 'game' => 'Top Up - Mobile Legends', 'avatar' => '😄', 'quote' => 'Top up Diamond MLBB cuma beberapa menit langsung masuk. Harganya juga lebih murah dibanding tempat lain. Sudah langganan dari lama dan selalu aman.', 'date' => $fmt((clone $now)->subMinutes(17))],
-            ['name' => 'User PUBG Mobile', 'game' => 'Top Up - PUBG Mobile', 'avatar' => '🎮', 'quote' => 'Top up UC PUBG Mobile menit langsung masuk ke akun. Harganya bersaing, prosesnya cepat, dan sejauh ini tanpa kendala. Sudah beberapa kali top up di sini dan hasilnya selalu memuaskan.', 'date' => $fmt((clone $now)->subHours(2))],
-            ['name' => 'User Valorant', 'game' => 'Top Up - Valorant', 'avatar' => '🎯', 'quote' => 'Poin Valorant masuk instan setelah bayar QRIS. Prosesnya jelas dan ada notifikasi tiap tahap. Recommended buat yang males ribet.', 'date' => $fmt((clone $now)->subHours(5))],
-            ['name' => 'User Genshin Impact', 'game' => 'Top Up - Genshin Impact', 'avatar' => '💎', 'quote' => 'Genesis Crystal masuk kurang dari 5 menit. CS-nya responsif kalau ada kendala. Harga juga bersahabat buat dompet pelajar seperti saya.', 'date' => $fmt((clone $now)->subHours(8))],
-            ['name' => 'User Honor of Kings', 'game' => 'Top Up - Honor of Kings', 'avatar' => '⚔️', 'quote' => 'Top up Token HOK super cepat, kurang dari 2 menit langsung masuk. Harganya juga kompetitif, jadi saya sering top up di sini tiap season baru.', 'date' => $fmt((clone $now)->subDay())],
-            ['name' => 'User FIFA Mobile', 'game' => 'Top Up - EA Sports FC', 'avatar' => '⚽', 'quote' => 'FIFA Points masuk secepat kilat. Pertama kali coba agak ragu, tapi setelah bukti sendiri sekarang jadi langganan. Pokoknya recommended!', 'date' => $fmt((clone $now)->subDays(2))],
-            ['name' => 'User Steam Wallet', 'game' => 'Top Up - Steam Wallet', 'avatar' => '🕹️', 'quote' => 'Saldo Steam masuk dalam hitungan menit. Harganya bersahabat, prosesnya juga transparan dengan bukti pengisian yang dikirim.', 'date' => $fmt((clone $now)->subDays(4))],
-            ['name' => 'User Call of Duty', 'game' => 'Top Up - Call of Duty Mobile', 'avatar' => '🔫', 'quote' => 'CP CODM langsung nambah setelah bayar. Proses cepat tanpa ribet, selalu jadi andalan buat top up mingguan.', 'date' => $fmt((clone $now)->subWeek())],
-            ['name' => 'User Mobile Legends', 'game' => 'Joki Rank Mobile Legends', 'avatar' => '🏆', 'quote' => 'Jasa joki rank MLBB profesional banget. Dari Legend ke Mythic dalam 3 hari, aman, fast respon, dan harganya worth it!', 'date' => $fmt((clone $now)->subWeeks(2))],
+            ['name' => 'User Free Fire', 'game' => 'Top Up - Free Fire', 'avatar' => '🙂', 'layanan' => 'topup', 'quote' => 'Top up Diamond Free Fire di sini cepat banget. Setelah pembayaran berhasil, diamond langsung masuk ke akun tanpa perlu menunggu lama.', 'date' => $fmt((clone $now)->subMinutes(3))],
+            ['name' => 'User Mobile Legends', 'game' => 'Top Up - Mobile Legends', 'avatar' => '😄', 'layanan' => 'topup', 'quote' => 'Top up Diamond MLBB cuma beberapa menit langsung masuk. Harganya juga lebih murah dibanding tempat lain. Sudah langganan dari lama dan selalu aman.', 'date' => $fmt((clone $now)->subMinutes(17))],
+            ['name' => 'User PUBG Mobile', 'game' => 'Top Up - PUBG Mobile', 'avatar' => '🎮', 'layanan' => 'topup', 'quote' => 'Top up UC PUBG Mobile menit langsung masuk ke akun. Harganya bersaing, prosesnya cepat, dan sejauh ini tanpa kendala. Sudah beberapa kali top up di sini dan hasilnya selalu memuaskan.', 'date' => $fmt((clone $now)->subHours(2))],
+            ['name' => 'User Valorant', 'game' => 'Top Up - Valorant', 'avatar' => '🎯', 'layanan' => 'topup', 'quote' => 'Poin Valorant masuk instan setelah bayar QRIS. Prosesnya jelas dan ada notifikasi tiap tahap. Recommended buat yang males ribet.', 'date' => $fmt((clone $now)->subHours(5))],
+            ['name' => 'User Genshin Impact', 'game' => 'Top Up - Genshin Impact', 'avatar' => '💎', 'layanan' => 'topup', 'quote' => 'Genesis Crystal masuk kurang dari 5 menit. CS-nya responsif kalau ada kendala. Harga juga bersahabat buat dompet pelajar seperti saya.', 'date' => $fmt((clone $now)->subHours(8))],
+            ['name' => 'User Honor of Kings', 'game' => 'Top Up - Honor of Kings', 'avatar' => '⚔️', 'layanan' => 'topup', 'quote' => 'Top up Token HOK super cepat, kurang dari 2 menit langsung masuk. Harganya juga kompetitif, jadi saya sering top up di sini tiap season baru.', 'date' => $fmt((clone $now)->subDay())],
+            ['name' => 'User FIFA Mobile', 'game' => 'Top Up - EA Sports FC', 'avatar' => '⚽', 'layanan' => 'topup', 'quote' => 'FIFA Points masuk secepat kilat. Pertama kali coba agak ragu, tapi setelah bukti sendiri sekarang jadi langganan. Pokoknya recommended!', 'date' => $fmt((clone $now)->subDays(2))],
+            ['name' => 'User Steam Wallet', 'game' => 'Top Up - Steam Wallet', 'avatar' => '🕹️', 'layanan' => 'topup', 'quote' => 'Saldo Steam masuk dalam hitungan menit. Harganya bersahabat, prosesnya juga transparan dengan bukti pengisian yang dikirim.', 'date' => $fmt((clone $now)->subDays(4))],
+            ['name' => 'User Call of Duty', 'game' => 'Top Up - Call of Duty Mobile', 'avatar' => '🔫', 'layanan' => 'topup', 'quote' => 'CP CODM langsung nambah setelah bayar. Proses cepat tanpa ribet, selalu jadi andalan buat top up mingguan.', 'date' => $fmt((clone $now)->subWeek())],
+            ['name' => 'User Mobile Legends', 'game' => 'Joki Rank Mobile Legends', 'avatar' => '🏆', 'layanan' => 'joki', 'quote' => 'Jasa joki rank MLBB profesional banget. Dari Legend ke Mythic dalam 3 hari, aman, fast respon, dan harganya worth it!', 'date' => $fmt((clone $now)->subWeeks(2))],
+            ['name' => 'User Free Fire', 'game' => 'Jual Akun - Free Fire', 'avatar' => '🙂', 'layanan' => 'jual-beli-akun', 'quote' => 'Beli akun Free Fire di sini aman dan terpercaya. Akun sesuai deskripsi, harga reasonable, dan proses transaksinya jelas. Recommended buat yang cari akun second.', 'date' => $fmt((clone $now)->subDays(3))],
+            ['name' => 'User Mobile Legends', 'game' => 'Jual Akun - Mobile Legends', 'avatar' => '😄', 'layanan' => 'jual-beli-akun', 'quote' => 'Jual akun MLBB saya laku dalam 2 hari. Admin fast respon dan membantu proses negosiasi dengan pembeli. Sangat membantu!', 'date' => $fmt((clone $now)->subDays(6))],
+            ['name' => 'User PUBG Mobile', 'game' => 'Jual Akun - PUBG Mobile', 'avatar' => '🎮', 'layanan' => 'jual-beli-akun', 'quote' => 'Pengalaman jual akun PUBG pertama kali dan ternyata gampang. Admin menjelaskan prosedur dengan jelas. Pembayaran cepat cair.', 'date' => $fmt((clone $now)->subDays(10))],
         ];
     }
 
     public function testimoni()
     {
-        $testimonials = static::getTestimonials();
-        return view('pages.testimoni', compact('testimonials'));
+        $all = static::getTestimonials();
+        $layanan = request('layanan');
+        $testimonials = $layanan ? array_filter($all, fn($t) => ($t['layanan'] ?? '') === $layanan) : $all;
+        $activeLayanan = $layanan;
+        return view('pages.testimoni', compact('testimonials', 'activeLayanan'));
     }
 
     public function kontak()
@@ -392,9 +400,21 @@ class HomeController extends Controller
             'message' => 'required|string|max:5000',
         ]);
 
-        ContactInquiry::create($validated);
+        $data = $validated;
+        $data['user_id'] = auth()->check() ? auth()->id() : null;
+
+        ContactInquiry::create($data);
 
         return redirect()->route('kontak')
             ->with('success', 'Pesan berhasil dikirim! Tim CS kami akan menghubungi anda segera.');
+    }
+
+    public function myInquiries()
+    {
+        $inquiries = ContactInquiry::where('user_id', auth()->id())
+            ->latest()
+            ->paginate(15);
+
+        return view('pages.my-inquiries', compact('inquiries'));
     }
 }

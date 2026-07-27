@@ -42,6 +42,7 @@ Route::middleware('auth:web,admin')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::get('/orders', [OrderController::class, 'myOrders'])->name('orders.my');
+    Route::get('/pesan-saya', [HomeController::class, 'myInquiries'])->name('my-inquiries');
 });
 
 Route::get('/orders/create/{product}', [OrderController::class, 'create'])->name('orders.create');

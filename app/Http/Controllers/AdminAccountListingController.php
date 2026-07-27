@@ -12,7 +12,8 @@ class AdminAccountListingController extends Controller
     public function index()
     {
         $listings = AccountListing::orderBy('game')->orderBy('product_name')->paginate(20);
-        return view('admin.account-listings.index', compact('listings'));
+        $brands = Brand::where('is_active', true)->orderBy('name')->get();
+        return view('admin.account-listings.index', compact('listings', 'brands'));
     }
 
     public function create()
@@ -43,6 +44,9 @@ class AdminAccountListingController extends Controller
         ]);
 
         if ($validator->fails()) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['errors' => $validator->errors()->all()], 422);
+            }
             return redirect()->back()->withErrors($validator)->withInput();
         }
 
@@ -68,6 +72,10 @@ class AdminAccountListingController extends Controller
         }
 
         AccountListing::create($data);
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Listing akun berhasil ditambahkan']);
+        }
 
         return redirect()->route('admin.account-listings')->with('success', 'Listing akun berhasil ditambahkan');
     }

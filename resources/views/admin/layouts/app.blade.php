@@ -128,8 +128,6 @@
             transition: transform 0.3s cubic-bezier(.22,1,.36,1), background 0.3s ease;
             overflow-y: auto;
         }
-        .sidebar.collapsed { transform: translateX(-100%); }
-
         .sidebar-logo {
             padding: 1.25rem 1.25rem;
             border-bottom: 1px solid var(--glass-border);
@@ -151,13 +149,6 @@
             box-shadow: 0 4px 12px -4px rgba(9,135,245,0.4);
         }
         .sidebar-logo .brand-highlight { color: var(--accent); }
-        .sidebar-collapse-btn {
-            background: none; border: none;
-            color: var(--text-muted); cursor: pointer;
-            font-size: 0.9rem; padding: 0.25rem;
-            transition: color 0.2s, transform 0.2s;
-        }
-        .sidebar-collapse-btn:hover { color: var(--text); transform: scale(1.1); }
 
         .sidebar-nav { padding: 0.75rem; flex: 1; }
         .sidebar-nav a, .sidebar-nav form button {
@@ -192,8 +183,6 @@
             display: flex; flex-direction: column; min-height: 100vh;
             transition: margin-left 0.3s cubic-bezier(.22,1,.36,1);
         }
-        .sidebar.collapsed ~ .main-area { margin-left: 0; }
-
         .header {
             background: var(--glass-bg);
             backdrop-filter: blur(20px);
@@ -518,9 +507,6 @@
                     <div class="brand-icon"><i class="fas fa-crown"></i></div>
                     <span>JOHEN<span class="brand-highlight">PANEL</span></span>
                 </a>
-                <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" title="Ciutkan sidebar">
-                    <i class="fas fa-chevron-left"></i>
-                </button>
             </div>
             <nav class="sidebar-nav">
                 <div class="nav-section">Menu</div>
@@ -647,14 +633,6 @@
         document.getElementById('sidebarOverlay')?.addEventListener('click', function () {
             document.getElementById('sidebar').classList.remove('open');
             this.classList.remove('show');
-        });
-
-        document.getElementById('sidebarCollapseBtn')?.addEventListener('click', function () {
-            document.getElementById('sidebar').classList.toggle('collapsed');
-            const icon = this.querySelector('i');
-            icon.className = icon.className.includes('fa-chevron-left')
-                ? 'fas fa-chevron-right'
-                : 'fas fa-chevron-left';
         });
 
         // ===== USER DROPDOWN =====
