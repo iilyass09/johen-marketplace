@@ -33,6 +33,14 @@
                 <span>Sinkronisasi Digiflazz</span>
             </button>
         </form>
+        <form action="{{ route('admin.products.sync') }}" method="POST" style="display:inline">
+            @csrf
+            <input type="hidden" name="force" value="1">
+            <button type="submit" class="btn btn-ghost" style="color:#f59e0b" {{ $digiflazzReady ? '' : 'disabled' }}>
+                <i class="fas fa-sync-alt"></i>
+                <span>Force Refresh</span>
+            </button>
+        </form>
         <button type="button" class="btn btn-primary" onclick="openCreateModal()">
             <i class="fas fa-plus"></i>
             <span>Tambah Produk</span>

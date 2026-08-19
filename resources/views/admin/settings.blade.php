@@ -30,17 +30,17 @@
                 <div class="grid grid-cols-2 gap-3 mb-3">
                     <div>
                         <label class="block text-xs font-medium mb-1">Username</label>
-                        <input type="text" name="digiflazz_username" value="{{ old('digiflazz_username', env('DIGIFLAZZ_USERNAME')) }}" class="input-field text-sm" placeholder="username">
+                        <input type="text" name="digiflazz_username" value="{{ old('digiflazz_username', $settings['digiflazz_username'] ?? '') }}" class="input-field text-sm" placeholder="username">
                     </div>
                     <div>
                         <label class="block text-xs font-medium mb-1">Key</label>
-                        <input type="password" name="digiflazz_key" value="{{ old('digiflazz_key', env('DIGIFLAZZ_KEY')) }}" class="input-field text-sm" placeholder="key">
+                        <input type="password" name="digiflazz_key" value="{{ old('digiflazz_key', $settings['digiflazz_key'] ?? '') }}" class="input-field text-sm" placeholder="key">
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
                     <select name="digiflazz_production" class="input-field text-sm" style="width:auto;min-width:140px">
-                        <option value="0" {{ env('DIGIFLAZZ_PRODUCTION') ? '' : 'selected' }}>Sandbox</option>
-                        <option value="1" {{ env('DIGIFLAZZ_PRODUCTION') ? 'selected' : '' }}>Production</option>
+                        <option value="0" {{ ($settings['digiflazz_production'] ?? '0') === '1' ? '' : 'selected' }}>Sandbox</option>
+                        <option value="1" {{ ($settings['digiflazz_production'] ?? '0') === '1' ? 'selected' : '' }}>Production</option>
                     </select>
                     <span class="badge {{ $digiflazzConfigured ? 'badge-success' : 'badge-error' }}" style="font-size:0.7rem">
                         {{ $digiflazzConfigured ? 'Terkonfigurasi' : 'Belum config' }}

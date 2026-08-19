@@ -187,9 +187,10 @@ class AdminController extends Controller
         return redirect()->route('admin.products')->with('success', 'Produk berhasil dihapus');
     }
 
-    public function productsSync()
+    public function productsSync(Request $request)
     {
-        $result = $this->digiflazz->syncProducts();
+        $force = $request->boolean('force', false);
+        $result = $this->digiflazz->syncProducts($force);
 
         if ($result['success']) {
             return redirect()->route('admin.products')->with('success', $result['message']);
@@ -639,6 +640,10 @@ class AdminController extends Controller
     public function settings()
     {
         $settings = SiteSetting::allKeyValue();
+        // Ensure digiflazz credentials are available in settings for the view
+        $settings['digiflazz_username'] = $settings['digiflazz_username'] ?? config('digiflazz.username', '');
+        $settings['digiflazz_key'] = $settings['digiflazz_key'] ?? config('digiflazz.key', '');
+        $settings['digiflazz_production'] = $settings['digiflazz_production'] ?? (config('digiflazz.production') ? '1' : '0');
         return view('admin.settings', compact('settings'));
     }
 
@@ -652,6 +657,9 @@ class AdminController extends Controller
             'contact_whatsapp' => 'nullable|string|max:50',
             'contact_instagram' => 'nullable|string|max:255',
             'footer_text' => 'nullable|string|max:500',
+            'digiflazz_username' => 'nullable|string|max:255',
+            'digiflazz_key' => 'nullable|string|max:255',
+            'digiflazz_production' => 'nullable|in:0,1',
         ]);
 
         $textKeys = ['site_name', 'site_tagline', 'site_description', 'contact_email', 'contact_whatsapp', 'contact_instagram', 'footer_text', 'min_balance_alert'];
@@ -660,6 +668,22 @@ class AdminController extends Controller
             if ($request->has($key)) {
                 \App\Models\SiteSetting::set($key, $request->input($key, ''));
             }
+        }
+
+        // Save Digiflazz credentials to SiteSetting and update config runtime
+        $digiflazzKeys = ['digiflazz_username', 'digiflazz_key'];
+        foreach ($digiflazzKeys as $key) {
+            if ($request->has($key)) {
+                $value = $request->input($key, '');
+                \App\Models\SiteSetting::set($key, $value);
+                config(["digiflazz." . str_replace('digiflazz_', '', $key) => $value]);
+            }
+        }
+
+        if ($request->has('digiflazz_production')) {
+            $prodValue = $request->input('digiflazz_production') === '1';
+            \App\Models\SiteSetting::set('digiflazz_production', $prodValue ? '1' : '0');
+            config(['digiflazz.production' => $prodValue]);
         }
 
         if ($request->hasFile('site_logo') && $request->file('site_logo')->isValid()) {

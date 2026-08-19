@@ -22,7 +22,7 @@
   if ($instantKey) {
       $regions = $grouped->get($instantKey)->groupBy('region');
   }
-  $selectedRegion = $regions->isNotEmpty() ? ($regions->has('ID') ? 'ID' : ($regions->has('') ? 'ALL' : $regions->keys()->first())) : null;
+  $selectedRegion = $regions->isNotEmpty() ? 'ID' : null;
   $firstProduct = $products->first();
   $payData = $paymentMethods->map(fn($m) => [
       'key' => $m->code,
@@ -162,9 +162,9 @@
           <div class="gd-group-title">{{ ucwords($type) }} <span class="gd-spark">✨</span></div>
           @if($isInstant && $regions->count() > 1)
             <div class="gd-region-tabs" data-group="{{ $typeKey }}">
-              @foreach($regions->keys() as $r)
-                <button class="gd-region-btn{{ $r === $selectedRegion ? ' active' : '' }}" data-region="{{ $r ?: 'ALL' }}">{{ $r === 'ID' ? 'Indonesia' : ($r === 'MY' ? 'Malaysia' : ($r === '' ? 'All Region' : $r)) }} ({{ $r ?: 'ALL' }})</button>
-              @endforeach
+              <button class="gd-region-btn{{ $selectedRegion === 'ID' ? ' active' : '' }}" data-region="ID">Indonesia</button>
+              <button class="gd-region-btn{{ $selectedRegion === 'MY' ? ' active' : '' }}" data-region="MY">Malaysia</button>
+              <button class="gd-region-btn{{ $selectedRegion === 'PH' ? ' active' : '' }}" data-region="PH">Philippines</button>
             </div>
           @endif
         </div>
@@ -423,7 +423,7 @@ document.addEventListener('click', e => {
     }
     if (card.closest('.gd-pkg-instant') && !card.closest('[data-no-region-filter="true"]')) {
         const region = card.dataset.region;
-        if (region && selectedRegion && region !== selectedRegion) return;
+        if (region && selectedRegion && region !== selectedRegion && region !== 'ALL') return;
     }
     $$('.gd-pkg-card').forEach(c => c.classList.remove('selected'));
     card.classList.add('selected');
@@ -441,7 +441,7 @@ $$('.gd-region-tabs').forEach(tabs => {
         selectedRegion = btn.dataset.region;
         $$('.gd-pkg-card', tabs.closest('.gd-group')).forEach(c => {
             if (c.dataset.region) {
-                c.style.display = c.dataset.region === selectedRegion ? '' : 'none';
+                c.style.display = (c.dataset.region === selectedRegion || c.dataset.region === 'ALL') ? '' : 'none';
             }
         });
         const visible = $$('.gd-pkg-card:not([style*="display:none"])', tabs.closest('.gd-group'));
@@ -455,7 +455,7 @@ $$('.gd-region-tabs').forEach(tabs => {
 $$('.gd-pkg-instant').forEach(grid => {
     if (grid.dataset.noRegionFilter) return;
     $$('.gd-pkg-card', grid).forEach(c => {
-        if (c.dataset.region && c.dataset.region !== selectedRegion) {
+        if (c.dataset.region && c.dataset.region !== selectedRegion && c.dataset.region !== 'ALL') {
             c.style.display = 'none';
         }
     });
