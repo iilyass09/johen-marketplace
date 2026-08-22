@@ -41,4 +41,18 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Simulasi Pembayaran
+    |--------------------------------------------------------------------------
+    |
+    | Saat PAYMENT_SIMULATION=true: invoice Xendit tidak dibuat dan
+    | transaksi Digiflazz (topUp/checkStatus) dijawab secara lokal.
+    |
+    */
+
+    'payment' => [
+        'simulation' => env('PAYMENT_SIMULATION', false),
+    ],
+
 ];

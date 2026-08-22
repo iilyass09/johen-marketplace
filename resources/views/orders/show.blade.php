@@ -78,7 +78,7 @@
         <div class="dt-summary-info-item">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
           <span class="dt-summary-info-label">User ID</span>
-          <span class="dt-summary-info-value">{{ $order->customer_number }}@if($order->customer_name) ({{ $order->customer_name }})@endif</span>
+          <span class="dt-summary-info-value">{{ $order->customer_number }}@if($order->effective_zone_id) ({{ $order->effective_zone_id }})@endif</span>
         </div>
         <div class="dt-summary-info-item">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 2v4"/><path d="M6 2v4"/><path d="M18 2v4"/></svg>
@@ -137,7 +137,7 @@
           <div class="dt-divider"></div>
           <div class="dt-detail-row">
             <span class="dt-detail-label">User ID</span>
-            <span class="dt-detail-value">{{ $order->customer_number }}@if($order->customer_name) ({{ $order->customer_name }})@endif</span>
+            <span class="dt-detail-value">{{ $order->customer_number }}@if($order->effective_zone_id) ({{ $order->effective_zone_id }})@endif</span>
           </div>
           <div class="dt-divider"></div>
           <div class="dt-detail-row">
@@ -264,7 +264,7 @@
           <div class="dt-divider"></div>
           <div class="dt-detail-row">
             <span class="dt-detail-label">Server / Zone</span>
-            <span class="dt-detail-value">{{ $order->customer_name ?: '-' }}</span>
+            <span class="dt-detail-value">{{ $order->effective_zone_id ?: '-' }}</span>
           </div>
         </div>
       </div>

@@ -11,7 +11,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="icon" type="image/png" href="{{ asset('logo.png') }}">
 <link rel="shortcut icon" href="{{ asset('logo.png') }}">
-<link rel="stylesheet" href="{{ asset('css/topup.css') }}?v=2">
+<link rel="stylesheet" href="{{ asset('css/topup.css') }}?v=3">
 @stack('styles')
 </head>
 <body>
@@ -184,8 +184,8 @@
       <label>User ID
         <input type="text" name="customer_number" required placeholder="Masukkan User ID">
       </label>
-      <label>Zone ID / Server (opsional)
-        <input type="text" name="customer_name" placeholder="Contoh: 2001">
+      <label id="zoneIdLabel" style="display:none">Zone ID / Server
+        <input type="text" name="zone_id" placeholder="Contoh: 2001">
       </label>
       <p class="field-label">Pilih Nominal</p>
       <div class="nominal-grid" id="nominalGrid"></div>
@@ -352,7 +352,10 @@ html:not([data-theme="light"]) .mobile-theme-btn .icon-moon {
 })();
 </script>
 
-<script src="{{ asset('js/topup.js') }}?v=2"></script>
+<script>
+  window.ZONE_BRANDS = @json(\App\Models\Brand::where('requires_zone_id', true)->where('is_active', true)->pluck('name'));
+</script>
+<script src="{{ asset('js/topup.js') }}?v=3"></script>
 @stack('scripts')
 </body>
 </html>

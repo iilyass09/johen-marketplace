@@ -17,7 +17,7 @@
   @if($isDemo)
   <div class="pd-demo-banner">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 002 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><circle cx="12" cy="12" r="4"/></svg>
-    <span>Mode Demo — Midtrans belum dikonfigurasi. Tampilan hanya untuk preview.</span>
+    <span>@if($isSimulation)Mode Simulasi Aktif — pembayaran tidak nyata. Gunakan tombol "Simulasi Bayar" untuk menyelesaikan pesanan.@else Mode Demo — Xendit belum dikonfigurasi. Tampilan hanya untuk preview.@endif</span>
   </div>
   @endif
 
@@ -74,10 +74,10 @@
                 <rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M7 15h4"/>
               </svg>
             </div>
-            <p class="pd-method-placeholder-text">Pilih metode pembayaran untuk melanjutkan</p>
+            <p class="pd-method-placeholder-text">Klik tombol di bawah untuk membuka halaman pembayaran</p>
             <button class="btn btn-solid btn-lg" id="payNowBtn">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-              Bayar Sekarang
+              @if($isSimulation) Simulasi Bayar (QRIS) @else Bayar Sekarang @endif
             </button>
           </div>
           <div class="pd-method-result" id="pdMethodResult" style="display:none">
@@ -159,7 +159,7 @@
           <div class="pd-ringkasan-details">
             <div class="pd-ringkasan-row">
               <span class="pd-r-label">Akun</span>
-              <span class="pd-r-value">{{ $order->customer_number }}@if($order->customer_name) ({{ $order->customer_name }})@endif</span>
+              <span class="pd-r-value">{{ $order->customer_number }}@if($order->effective_zone_id) ({{ $order->effective_zone_id }})@endif</span>
             </div>
             <div class="pd-ringkasan-row">
               <span class="pd-r-label">ID Pesanan</span>
@@ -216,41 +216,65 @@
 @endsection
 
 @push('scripts')
-@if(!$isDemo)
-<script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ config('midtrans.client_key') }}"></script>
-@endif
 <script>
 (function(){
 'use strict';
 
 const isDemo = @json($isDemo);
+const isSimulation = @json($isSimulation);
 const orderId = @json($order->order_id);
-const snapToken = @json($snapToken);
+const invoiceUrl = @json($invoiceUrl);
 const statusUrl = @json(route('payment.status', $order));
+const simulateUrl = @json(route('payment.simulate', $order));
+const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
-/* ===== midtrans snap ===== */
+/* ===== xendit invoice ===== */
 const payBtn = document.getElementById('payNowBtn');
 
-function openSnap() {
-    if (!snapToken || isDemo) {
+function startPayment() {
+    if (isSimulation) {
+        runSimulatedPayment();
+        return;
+    }
+    if (!invoiceUrl || isDemo) {
         simulatePayment();
         return;
     }
-    snap.pay(snapToken, {
-        onSuccess: function(result) {
-            updateStatus('success', result);
+    window.location.href = invoiceUrl;
+}
+
+/* Tampilkan QR dummy lalu panggil endpoint simulasi bayar di server. */
+function runSimulatedPayment() {
+    if (!payBtn || payBtn.disabled) return;
+    payBtn.disabled = true;
+    payBtn.innerHTML = '<svg class="spin-slow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg> Memproses...';
+
+    document.getElementById('pdMethodPlaceholder').style.display = 'none';
+    document.getElementById('pdMethodResult').style.display = 'block';
+    document.getElementById('pdMethodQrWrap').style.display = 'block';
+    document.getElementById('pdMethodQr').innerHTML =
+        '<div class="pd-qr-dummy"><img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(orderId) + '" alt="QR Code" style="width:180px;height:180px;border-radius:8px;display:block;background:#fff;"></div>';
+    document.getElementById('pdMethodName').textContent = 'QRIS — Mode Simulasi';
+    document.querySelector('#pdVaCopyBtn').dataset.copy = orderId;
+
+    fetch(simulateUrl, {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': csrfToken,
+            'Accept': 'application/json',
         },
-        onPending: function(result) {
-            updateStatus('pending', result);
-        },
-        onError: function(result) {
-            updateStatus('failed', result);
-        },
-        onClose: function() {
-            const label = document.getElementById('pdStatusLabel');
-            if (label.textContent === 'Pembayaran Berhasil') return;
-        }
-    });
+    })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'success' || data.status === 'processing') {
+                updateStatus('success');
+            } else if (data.status === 'failed') {
+                updateStatus('failed');
+            } else {
+                startPolling();
+            }
+        })
+        .catch(() => { startPolling(); });
 }
 
 function simulatePayment() {
@@ -322,11 +346,19 @@ function updateStatus(type, result) {
 }
 
 if (payBtn) {
-    payBtn.addEventListener('click', openSnap);
+    payBtn.addEventListener('click', startPayment);
 }
 
-if (!isDemo && snapToken) {
-    setTimeout(openSnap, 600);
+if (isSimulation) {
+    /* Menunggu klik tombol "Simulasi Bayar" */
+} else if (!isDemo && invoiceUrl) {
+    const redirectKey = 'xendit_redirect_' + orderId;
+    if (!sessionStorage.getItem(redirectKey)) {
+        sessionStorage.setItem(redirectKey, '1');
+        const label = document.getElementById('pdStatusLabel');
+        if (label) label.textContent = 'Mengalihkan ke halaman pembayaran...';
+        setTimeout(() => { window.location.href = invoiceUrl; }, 800);
+    }
 } else if (isDemo) {
     setTimeout(simulatePayment, 800);
 }
@@ -353,30 +385,34 @@ if (!isDemo && snapToken) {
     setInterval(tick, 1000);
 })();
 
-/* ===== polling status (only if not demo) ===== */
-if (!isDemo) {
-    (function poll() {
-        let attempts = 0;
-        function check() {
-            fetch(statusUrl)
-                .then(r => r.json())
-                .then(data => {
-                    const s = data.status;
-                    if (s === 'success' || s === 'processing') {
-                        updateStatus('success');
-                        return;
-                    }
-                    if (s === 'failed') {
-                        updateStatus('failed');
-                        return;
-                    }
-                    attempts++;
-                    if (attempts < 300) setTimeout(check, 3000);
-                })
-                .catch(() => { if (attempts < 300) setTimeout(check, 5000); });
-        }
-        setTimeout(check, 5000);
+/* ===== polling status (aktif saat bukan demo murni, termasuk mode simulasi) ===== */
+let pollingStarted = false;
+function startPolling() {
+    if (pollingStarted) return;
+    pollingStarted = true;
+    let attempts = 0;
+    (function check() {
+        fetch(statusUrl)
+            .then(r => r.json())
+            .then(data => {
+                const s = data.status;
+                if (s === 'success' || s === 'processing') {
+                    updateStatus('success');
+                    return;
+                }
+                if (s === 'failed') {
+                    updateStatus('failed');
+                    return;
+                }
+                attempts++;
+                if (attempts < 300) setTimeout(check, 3000);
+            })
+            .catch(() => { if (attempts < 300) setTimeout(check, 5000); });
     })();
+}
+
+if (!isDemo || isSimulation) {
+    startPolling();
 }
 
 /* ===== copy button ===== */

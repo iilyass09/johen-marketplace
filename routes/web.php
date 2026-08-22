@@ -5,6 +5,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -15,6 +16,9 @@ Route::get('/api/products', [HomeController::class, 'getApiProducts'])->name('ap
 Route::get('/api/brands/search', [HomeController::class, 'searchBrands'])->name('api.brands.search');
 Route::get('/api/payment-methods', [HomeController::class, 'getPaymentMethods'])->name('api.payment-methods');
 Route::get('/api/orders/check', [HomeController::class, 'checkOrder'])->name('api.orders.check');
+Route::get('/api/account/check', [HomeController::class, 'checkAccount'])
+    ->name('api.account.check')
+    ->middleware('throttle:30,1');
 Route::get('/games/{brand:name}', [HomeController::class, 'gameDetail'])->name('games.show');
 Route::get('/cek-transaksi', [HomeController::class, 'checkTransaction'])->name('check.transaction');
 Route::get('/jual-beli-akun', [App\Http\Controllers\HomeController::class, 'jualBeliAkun'])->name('jual-beli-akun');
@@ -49,7 +53,12 @@ Route::get('/payment/detail/{order}', [PaymentController::class, 'detail'])->nam
 Route::get('/payment/success/{order}', [PaymentController::class, 'success'])->name('payment.success');
 Route::get('/payment/status/{order}', [PaymentController::class, 'status'])->name('payment.status');
 
+Route::post('/payment/simulate/{order}', [PaymentController::class, 'simulatePay'])
+    ->name('payment.simulate');
+
 Route::post('/payment/notification', [PaymentController::class, 'notificationHandler'])->name('payment.notification');
+
+Route::post('/digiflazz/callback', [PaymentController::class, 'digiflazzCallback'])->name('payment.digiflazz.callback');
 
 Route::get('/admin', function () {
     if (Auth::guard('admin')->check()) {

@@ -229,6 +229,15 @@ async function openTopupModal(brand) {
   if (nameEl) nameEl.textContent = brand;
   if (iconEl) iconEl.textContent = getBrandIcon(brand);
 
+  // Tampilkan field Zone ID hanya untuk game yang membutuhkannya
+  const zoneLabel = document.getElementById('zoneIdLabel');
+  if (zoneLabel) {
+    const needsZone = (window.ZONE_BRANDS || []).some(b => b.toLowerCase() === String(brand).toLowerCase());
+    zoneLabel.style.display = needsZone ? '' : 'none';
+    const zoneInput = zoneLabel.querySelector('input[name="zone_id"]');
+    if (zoneInput) { zoneInput.value = ''; zoneInput.required = needsZone; }
+  }
+
   const cat = getBrandCategory(brand);
   const label = cat === 'moba' ? 'Diamond' : cat === 'fps' ? 'Poin' : cat === 'br' ? 'UC' : 'Item';
 
@@ -304,6 +313,18 @@ document.getElementById('topupForm')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!selectedNominal) { showToast('Pilih nominal top up terlebih dahulu', true); return; }
   if (!selectedPay) { showToast('Pilih metode pembayaran terlebih dahulu', true); return; }
+
+  const zoneInput = e.target.querySelector('input[name="zone_id"]');
+  if (zoneInput && zoneInput.required && !zoneInput.value.trim()) {
+    showToast('Zone ID wajib diisi untuk game ini', true);
+    zoneInput.focus();
+    return;
+  }
+  if (zoneInput && zoneInput.value.trim() && !/^[A-Za-z0-9]+$/.test(zoneInput.value.trim())) {
+    showToast('Zone ID hanya boleh huruf dan angka', true);
+    zoneInput.focus();
+    return;
+  }
 
   const form = e.target;
   const formData = new FormData(form);

@@ -1108,9 +1108,13 @@ img{max-width:100%;display:block;}
 .gd-field input:hover{border-color:var(--border-strong);}
 .gd-field input:focus{outline:none;border-color:var(--purple-light);}
 .gd-field input.error{border-color:#f87171;}
+.gd-field input.valid{border-color:#34d399;}
 .gd-field-hint{font-size:.72rem;color:var(--text-mute);margin-top:.6rem;}
 .gd-field-error{font-size:.72rem;color:#f87171;margin-top:.3rem;display:none;}
 .gd-field-error.show{display:block;}
+.gd-field-ok{font-size:.72rem;color:#34d399;margin-top:.3rem;display:none;}
+.gd-field-ok.show{display:block;}
+.gd-field-ok.bad{color:#f87171;}
 
 /* step 1 left column */
 .gd-step1-left{display:flex;flex-direction:column;gap:1.1rem;height:100%;}

@@ -92,14 +92,17 @@
           <div class="gd-field-row">
             <div class="gd-field">
               <label for="userId">Email atau User ID</label>
-              <input type="text" id="userId" placeholder="12345678">
+              <input type="text" id="userId" placeholder="12345678" autocomplete="off">
+              <div class="gd-field-ok" id="userIdOk"></div>
               <div class="gd-field-error" id="userIdError">User ID wajib diisi.</div>
             </div>
+            @if($brand->requires_zone_id)
             <div class="gd-field">
               <label for="zoneId">Zone ID</label>
-              <input type="text" id="zoneId" placeholder="(1234)">
+              <input type="text" id="zoneId" placeholder="(1234)" autocomplete="off">
               <div class="gd-field-error" id="zoneIdError">Zone ID wajib diisi.</div>
             </div>
+            @endif
           </div>
           <p class="gd-field-hint">To find your User ID, tap on your avatar in the top-left corner of the main game screen.</p>
         </div>
@@ -489,9 +492,10 @@ let selectedPayLabel = '';
 const payGroup = $('#payGroup');
 const productLock = $('#productLock');
 const userIdInput = $('#userId'), zoneIdInput = $('#zoneId');
+const zoneRequired = !!zoneIdInput;
 
 function togglePayLock() {
-    const unlocked = userIdInput.value.trim().length > 0 && zoneIdInput.value.trim().length > 0;
+    const unlocked = userIdInput.value.trim().length > 0 && (!zoneRequired || zoneIdInput.value.trim().length > 0);
     payGroup.classList.toggle('gd-pay-group--locked', !unlocked);
     productLock.classList.toggle('gd-step-locked', !unlocked);
     if (!unlocked && selectedPkg) {
@@ -501,8 +505,88 @@ function togglePayLock() {
     }
 }
 userIdInput.addEventListener('input', togglePayLock);
-zoneIdInput.addEventListener('input', togglePayLock);
+if (zoneIdInput) zoneIdInput.addEventListener('input', togglePayLock);
 togglePayLock();
+
+/* ---------- deteksi akun real-time (indikator hijau) ---------- */
+const userIdOk = $('#userIdOk');
+const accountCheckUrl = @json(route('api.account.check'));
+const MIN_UID_LEN = 5;
+let accountCheckTimer = null;
+let accountCheckAbort = null;
+let detectedNickname = null;
+
+function clearAccountFeedback() {
+    detectedNickname = null;
+    userIdInput.classList.remove('valid');
+    if (zoneIdInput) zoneIdInput.classList.remove('valid');
+    if (userIdOk) { userIdOk.className = 'gd-field-ok'; userIdOk.textContent = ''; }
+}
+
+function showAccountValid(nickname) {
+    detectedNickname = nickname || null;
+    userIdInput.classList.add('valid');
+    if (zoneIdInput) zoneIdInput.classList.add('valid');
+    if (userIdOk) {
+        userIdOk.className = 'gd-field-ok show';
+        userIdOk.textContent = '';
+        userIdOk.append('✓ Akun ditemukan: ');
+        const b = document.createElement('strong');
+        b.textContent = detectedNickname || 'OK';
+        userIdOk.append(b);
+    }
+}
+
+function showAccountNotFound() {
+    detectedNickname = null;
+    userIdInput.classList.remove('valid');
+    if (zoneIdInput) zoneIdInput.classList.remove('valid');
+    if (userIdOk) {
+        userIdOk.className = 'gd-field-ok bad show';
+        userIdOk.textContent = 'Akun tidak ditemukan atau profil privat.';
+    }
+}
+
+function scheduleAccountCheck() {
+    clearTimeout(accountCheckTimer);
+    const uid = userIdInput.value.trim();
+    const zid = zoneIdInput ? zoneIdInput.value.trim() : '';
+
+    if (uid.length < MIN_UID_LEN || (zoneRequired && zid.length === 0)) {
+        clearAccountFeedback();
+        return;
+    }
+    accountCheckTimer = setTimeout(runAccountCheck, 450);
+}
+
+async function runAccountCheck() {
+    const uid = userIdInput.value.trim();
+    const zid = zoneIdInput ? zoneIdInput.value.trim() : '';
+
+    if (accountCheckAbort) accountCheckAbort.abort();
+    const myAbort = accountCheckAbort = new AbortController();
+    try {
+        const params = new URLSearchParams({ brand: brandName, user_id: uid });
+        if (zid) params.append('zone_id', zid);
+        const res = await fetch(accountCheckUrl + '?' + params.toString(), {
+            headers: { 'Accept': 'application/json' },
+            signal: myAbort.signal,
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        if (myAbort !== accountCheckAbort) return; /* respons basi */
+        if (data.checked === false) { clearAccountFeedback(); return; }
+        if (data.valid) showAccountValid(data.nickname);
+        else showAccountNotFound();
+    } catch (e) {
+        if (e.name !== 'AbortError' && myAbort === accountCheckAbort) {
+            clearAccountFeedback(); /* gagal jaringan → netral */
+        }
+    }
+}
+
+userIdInput.addEventListener('input', scheduleAccountCheck);
+if (zoneIdInput) zoneIdInput.addEventListener('input', scheduleAccountCheck);
 
 /* category accordion toggle */
 $('#payGroup').addEventListener('click', e => {
@@ -597,7 +681,7 @@ async function handleOrder(btn) {
       return;
     }
     const okUserId = validateField(userIdInput, $('#userIdError'), v => v.length > 0);
-    const okZone = validateField(zoneIdInput, $('#zoneIdError'), v => v.length > 0);
+    const okZone = !zoneRequired || validateField(zoneIdInput, $('#zoneIdError'), v => v.length > 0);
     const okEmail = validateField(emailInput, $('#emailError'), v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v));
     const okWa = validateField(waInput, $('#waError'), v => v.length >= 8);
     if (!okUserId || !okZone) {
@@ -614,7 +698,8 @@ async function handleOrder(btn) {
     fd.append('_token', document.querySelector('meta[name="csrf-token"]').content);
     fd.append('product_id', selectedPkg.id);
     fd.append('customer_number', userIdInput.value.trim());
-    fd.append('customer_name', zoneIdInput.value.trim());
+    if (detectedNickname) fd.append('customer_name', detectedNickname);
+    if (zoneIdInput) fd.append('zone_id', zoneIdInput.value.trim());
     fd.append('quantity', qty);
     fd.append('promo_code', promoInput.value.trim());
     fd.append('email', emailInput.value.trim());
@@ -680,7 +765,7 @@ function showToast(msg, ok) {
 }
 
 /* live-clear errors */
-[userIdInput, zoneIdInput, emailInput, waInput].forEach(inp => {
+[userIdInput, zoneIdInput, emailInput, waInput].filter(Boolean).forEach(inp => {
     inp.addEventListener('input', () => inp.classList.remove('error'));
 });
 

@@ -19,6 +19,7 @@ class Brand extends Model
         'detail_bg_position',
         'category',
         'service_type',
+        'requires_zone_id',
         'description',
         'is_active',
         'is_popular',
@@ -28,6 +29,7 @@ class Brand extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'is_popular' => 'boolean',
+        'requires_zone_id' => 'boolean',
         'sort_order' => 'integer',
     ];
 

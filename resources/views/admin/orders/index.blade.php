@@ -62,7 +62,7 @@
                         </div>
                     </td>
                     <td style="font-size:0.85rem;color:var(--text-muted)">{{ $order->product_name }}</td>
-                    <td style="font-size:0.82rem">{{ $order->customer_number }}</td>
+                    <td style="font-size:0.82rem">{{ $order->customer_number }}@if($order->effective_zone_id) <span style="color:var(--text-muted)">&middot; {{ $order->effective_zone_id }}</span>@endif</td>
                     <td class="text-center">
                         <span class="badge status-badge-{{ $order->id }}
                             @if($order->status === 'success') badge-success
@@ -185,7 +185,7 @@ function openOrderModal(btn) {
                 </div>
                 <div>
                     <div class="ord-label">Penerima</div>
-                    <div class="ord-value">${d.customer_number}</div>
+                    <div class="ord-value">${d.customer_number}${d.effective_zone_id ? ' · Zone ' + d.effective_zone_id : ''}</div>
                     <div style="font-size:.82rem;color:var(--text-dim)">${d.customer_name || 'Tanpa nickname'}</div>
                 </div>
             </div>

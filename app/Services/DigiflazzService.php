@@ -18,17 +18,33 @@ class DigiflazzService
 
     protected bool $production = false;
 
+    protected bool $simulation = false;
+
     public function __construct()
     {
         $this->username = (string) (SiteSetting::get('digiflazz_username') ?? config('digiflazz.username', ''));
         $this->key = (string) (SiteSetting::get('digiflazz_key') ?? config('digiflazz.key', ''));
         $this->baseUrl = (string) config('digiflazz.base_url', 'https://api.digiflazz.com/v1');
         $this->production = (bool) (SiteSetting::get('digiflazz_production') === '1' || config('digiflazz.production', false));
+        $this->simulation = (bool) config('services.payment.simulation', false);
+    }
+
+    public function isSimulation(): bool
+    {
+        return $this->simulation;
     }
 
     public function isConfigured(): bool
     {
         return $this->username !== '' && $this->key !== '';
+    }
+
+    /**
+     * API key dipakai untuk verifikasi signature webhook (X-Hub-Signature).
+     */
+    public function getKey(): string
+    {
+        return $this->key;
     }
 
     public function testConnection(): array
@@ -166,8 +182,17 @@ class DigiflazzService
         return ['success' => true, 'message' => "{$count} produk berhasil disinkronisasi.", 'count' => $count];
     }
 
-    public function topUp(string $buyerSkuCode, string $customerNumber, string $refId): array
+    public function topUp(string $buyerSkuCode, string $customerNumber, string $refId, ?string $zoneId = null): array
     {
+        $customerNo = $this->buildCustomerNo($customerNumber, $zoneId);
+
+        if ($this->simulation) {
+            Log::info('Digiflazz SIMULASI topUp', ['ref_id' => $refId, 'sku' => $buyerSkuCode, 'customer_no' => $customerNo]);
+
+            // Balas "Pending" agar aliran order: processing → polling → sukses tetap teruji.
+            return $this->simulateResult($refId, $buyerSkuCode, $customerNo, 'Pending');
+        }
+
         $sign = md5($this->username.$this->key.$refId);
 
         try {
@@ -175,7 +200,7 @@ class DigiflazzService
                 'cmd' => 'topup',
                 'username' => $this->username,
                 'buyer_sku_code' => $buyerSkuCode,
-                'customer_no' => $customerNumber,
+                'customer_no' => $customerNo,
                 'ref_id' => $refId,
                 'sign' => $sign,
             ]);
@@ -188,8 +213,16 @@ class DigiflazzService
         }
     }
 
-    public function checkStatus(string $buyerSkuCode, string $customerNumber, string $refId): array
+    public function checkStatus(string $buyerSkuCode, string $customerNumber, string $refId, ?string $zoneId = null): array
     {
+        $customerNo = $this->buildCustomerNo($customerNumber, $zoneId);
+
+        if ($this->simulation) {
+            Log::info('Digiflazz SIMULASI checkStatus', ['ref_id' => $refId]);
+
+            return $this->simulateResult($refId, $buyerSkuCode, $customerNo, 'Sukses');
+        }
+
         $sign = md5($this->username.$this->key.$refId);
 
         try {
@@ -197,7 +230,7 @@ class DigiflazzService
                 'cmd' => 'status',
                 'username' => $this->username,
                 'buyer_sku_code' => $buyerSkuCode,
-                'customer_no' => $customerNumber,
+                'customer_no' => $customerNo,
                 'ref_id' => $refId,
                 'sign' => $sign,
             ]);
@@ -208,5 +241,42 @@ class DigiflazzService
 
             return ['success' => false, 'message' => $e->getMessage()];
         }
+    }
+
+    /**
+     * Respons tiruan dengan format identik respons transaksi Digiflazz.
+     */
+    protected function simulateResult(string $refId, string $buyerSkuCode, string $customerNo, string $status): array
+    {
+        $sukses = $status === 'Sukses';
+
+        return [
+            'data' => [
+                'rc' => $sukses ? '00' : '68',
+                'message' => $sukses ? 'TRANSACTION SUCCESSFUL' : 'TRANSACTION PENDING',
+                'buyer_sku_code' => $buyerSkuCode,
+                'customer_no' => $customerNo,
+                'ref_id' => $refId,
+                'status' => $status,
+                'sn' => $sukses ? 'SIM'.substr(md5($refId), 0, 12) : '',
+                'price' => 0,
+            ],
+        ];
+    }
+
+    /**
+     * Format customer_no untuk Digiflazz:
+     * game ber-Zone ID memerlukan format "userid.zoneid".
+     */
+    protected function buildCustomerNo(string $customerNumber, ?string $zoneId): string
+    {
+        $customerNumber = trim($customerNumber);
+        $zoneId = trim((string) $zoneId);
+
+        if ($zoneId === '' || str_contains($customerNumber, '.')) {
+            return $customerNumber;
+        }
+
+        return $customerNumber.'.'.$zoneId;
     }
 }

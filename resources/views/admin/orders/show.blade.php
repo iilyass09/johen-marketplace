@@ -41,7 +41,7 @@
             </div>
             <div>
                 <p style="font-size:0.78rem;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.25rem">Penerima</p>
-                <p class="font-semibold">{{ $order->customer_number }}</p>
+                <p class="font-semibold">{{ $order->customer_number }}@if($order->effective_zone_id) &middot; Zone {{ $order->effective_zone_id }}@endif</p>
                 <p style="font-size:0.85rem;color:var(--text-muted)">{{ $order->customer_name ?? 'Tanpa nickname' }}</p>
             </div>
         </div>

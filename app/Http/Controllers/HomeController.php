@@ -9,6 +9,7 @@ use App\Models\ContactInquiry;
 use App\Models\Order;
 use App\Models\PaymentMethod;
 use App\Models\Product;
+use App\Services\GameAccountService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -83,6 +84,23 @@ class HomeController extends Controller
     {
         $methods = PaymentMethod::where('is_active', true)->get(['name', 'code', 'icon', 'photo', 'photo_light']);
         return response()->json($methods);
+    }
+
+    /**
+     * Deteksi akun game real-time (User ID + Zone ID).
+     * Dipakai halaman game detail untuk indikator hijau saat akun ditemukan.
+     */
+    public function checkAccount(Request $request, GameAccountService $gameAccount)
+    {
+        $validated = $request->validate([
+            'brand' => 'required|string|max:100',
+            'user_id' => 'required|string|max:32',
+            'zone_id' => 'nullable|string|max:20|regex:/^[A-Za-z0-9]+$/',
+        ]);
+
+        return response()->json(
+            $gameAccount->check($validated['brand'], $validated['user_id'], $validated['zone_id'] ?? null)
+        );
     }
 
     public function checkOrder(Request $request)
