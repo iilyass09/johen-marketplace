@@ -523,6 +523,15 @@ function clearAccountFeedback() {
     if (userIdOk) { userIdOk.className = 'gd-field-ok'; userIdOk.textContent = ''; }
 }
 
+function showAccountLoading() {
+    if (!userIdOk) return;
+    userIdOk.className = 'gd-field-ok show loading';
+    userIdOk.textContent = '';
+    const s = document.createElement('span');
+    s.className = 'gd-spinner';
+    userIdOk.append(s, ' Mencari akun...');
+}
+
 function showAccountValid(nickname) {
     detectedNickname = nickname || null;
     userIdInput.classList.add('valid');
@@ -565,6 +574,7 @@ async function runAccountCheck() {
 
     if (accountCheckAbort) accountCheckAbort.abort();
     const myAbort = accountCheckAbort = new AbortController();
+    showAccountLoading();
     try {
         const params = new URLSearchParams({ brand: brandName, user_id: uid });
         if (zid) params.append('zone_id', zid);

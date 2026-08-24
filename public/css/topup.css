@@ -1115,6 +1115,13 @@ img{max-width:100%;display:block;}
 .gd-field-ok{font-size:.72rem;color:#34d399;margin-top:.3rem;display:none;}
 .gd-field-ok.show{display:block;}
 .gd-field-ok.bad{color:#f87171;}
+.gd-field-ok.loading{color:var(--text-mute);display:flex;align-items:center;gap:.4rem;}
+.gd-spinner{
+  width:.85rem;height:.85rem;flex:none;border-radius:50%;
+  border:2px solid var(--border-strong);border-top-color:var(--purple-light);
+  animation:gd-spin .7s linear infinite;
+}
+@keyframes gd-spin{to{transform:rotate(360deg);}}
 
 /* step 1 left column */
 .gd-step1-left{display:flex;flex-direction:column;gap:1.1rem;height:100%;}
