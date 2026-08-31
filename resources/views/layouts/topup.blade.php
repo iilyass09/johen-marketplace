@@ -355,7 +355,7 @@ html:not([data-theme="light"]) .mobile-theme-btn .icon-moon {
 <script>
   window.ZONE_BRANDS = @json(\App\Models\Brand::where('requires_zone_id', true)->where('is_active', true)->pluck('name'));
 </script>
-<script src="{{ asset('js/topup.js') }}?v=3"></script>
+<script src="{{ asset('js/topup.js') }}?v=4"></script>
 @stack('scripts')
 </body>
 </html>
