@@ -50,6 +50,16 @@ return [
             'game' => 'codm',
             'params' => ['id' => '{user_id}'],
         ],
+        'valorant*' => [
+            'type' => 'isan',
+            'game' => 'valo',
+            'params' => ['id' => '{user_id}'],
+        ],
+        'point blank*' => [
+            'type' => 'isan',
+            'game' => 'pb',
+            'params' => ['id' => '{user_id}'],
+        ],
         'pubg mobile*' => [
             'type' => 'gopay',
             'code' => 'PUBG_ID',
