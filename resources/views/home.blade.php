@@ -72,6 +72,7 @@
       'publisher' => $b->category ?? $fb['publisher'],
       'desc' => $fb['desc'],
       'thumb' => $b->featured_thumbnail_url ?? null,
+      'bg' => $b ? $b->carousel_bg_url : null,
       'imgs' => $b ? $b->featured_img_urls : [],
       'rating' => $fb['rating'],
       'sales' => $fb['sales'],
@@ -98,7 +99,7 @@
     ['primary' => '#f97316', 'secondary' => '#1f120a'],
   ];
   function fgBgStyle($game, $color) {
-    $img = $game->imgs[0] ?? $game->thumb;
+    $img = $game->bg ?? ($game->imgs[0] ?? $game->thumb);
     if ($img) return "background-image:url('{$img}');background-size:cover;background-position:center";
     return "background:linear-gradient(160deg,{$color['primary']},{$color['secondary']})";
   }
