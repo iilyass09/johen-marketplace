@@ -105,27 +105,34 @@ class HomeController extends Controller
 
     public function checkOrder(Request $request)
     {
-        $q = $request->input('q', '');
+        $q = trim((string) $request->input('q', ''));
 
-        $order = Order::where('order_id', $q)
-            ->orWhere('customer_number', $q)
-            ->orWhere('email', $q)
-            ->orWhereHas('user', function ($query) use ($q) {
-                $query->where('email', $q);
+        if ($q === '') {
+            return response()->json(['message' => 'Masukkan ID transaksi atau email'], 422);
+        }
+
+        $orders = Order::where(function ($query) use ($q) {
+                $query->where('order_id', $q)
+                    ->orWhere('customer_number', $q)
+                    ->orWhere('email', $q)
+                    ->orWhereHas('user', fn ($uq) => $uq->where('email', $q));
             })
-            ->first();
+            ->orderByDesc('created_at')
+            ->get();
 
-        if (!$order) {
+        if ($orders->isEmpty()) {
             return response()->json(['message' => 'Transaksi tidak ditemukan'], 404);
         }
 
         return response()->json([
-            'order_id' => $order->order_id,
-            'product_name' => $order->product_name,
-            'customer_number' => $order->customer_number,
-            'price' => $order->price,
-            'status' => $order->status,
-            'processed_at' => $order->updated_at ? $order->updated_at->format('d M Y H:i') : null,
+            'transactions' => $orders->map(fn ($o) => [
+                'order_id' => $o->order_id,
+                'product_name' => $o->product_name,
+                'customer_number' => $o->customer_number,
+                'price' => (float) $o->price,
+                'status' => $o->status,
+                'processed_at' => $o->updated_at?->format('d M Y H:i'),
+            ])->values(),
         ]);
     }
 
@@ -382,6 +389,34 @@ class HomeController extends Controller
     public function testimoni()
     {
         $all = static::getTestimonials();
+
+        $reviews = \App\Models\Review::where('status', 'approved')
+            ->whereNotNull('comment')
+            ->latest()
+            ->limit(12)
+            ->get()
+            ->map(function (\App\Models\Review $r) {
+                $name = $r->user?->name
+                    ?: ($r->email ? str($r->email)->before('@')->toString() : 'User ' . ($r->game ?: 'Johen'));
+                return [
+                    'name' => $name,
+                    'game' => ($r->game ? 'Top Up - ' . $r->game : 'Top Up'),
+                    'avatar' => match ((int) $r->rating) {
+                        5 => '🌟🌟🌟🌟🌟',
+                        4 => '🌟🌟🌟🌟',
+                        3 => '🌟🌟🌟',
+                        2 => '🌟🌟',
+                        default => '🌟',
+                    },
+                    'layanan' => 'topup',
+                    'quote' => $r->comment,
+                    'date' => $r->created_at ? $r->created_at->format('d-m-Y H:i:s') : now()->format('d-m-Y H:i:s'),
+                ];
+            })
+            ->toArray();
+
+        $all = array_merge($reviews, $all);
+
         $layanan = request('layanan');
         $testimonials = $layanan ? array_filter($all, fn($t) => ($t['layanan'] ?? '') === $layanan) : $all;
         $activeLayanan = $layanan;

@@ -6,6 +6,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReviewController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -47,6 +48,7 @@ Route::middleware('auth:web,admin')->group(function () {
 
 Route::get('/orders/create/{product}', [OrderController::class, 'create'])->name('orders.create');
 Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
+Route::post('/orders/reorder/{order}', [OrderController::class, 'reorder'])->name('orders.reorder');
 Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
 
 Route::get('/payment/detail/{order}', [PaymentController::class, 'detail'])->name('payment.detail');
@@ -57,6 +59,8 @@ Route::post('/payment/simulate/{order}', [PaymentController::class, 'simulatePay
     ->name('payment.simulate');
 
 Route::post('/payment/notification', [PaymentController::class, 'notificationHandler'])->name('payment.notification');
+
+Route::post('/reviews/{order}', [ReviewController::class, 'store'])->name('reviews.store');
 
 Route::post('/digiflazz/callback', [PaymentController::class, 'digiflazzCallback'])->name('payment.digiflazz.callback');
 
@@ -78,6 +82,7 @@ Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->gro
     Route::patch('/products/{product}/toggle', [AdminController::class, 'productsToggle'])->name('products.toggle');
     Route::delete('/products/{product}', [AdminController::class, 'productsDestroy'])->name('products.destroy');
     Route::post('/products/sync', [AdminController::class, 'productsSync'])->name('products.sync');
+    Route::get('/products/stock', [AdminController::class, 'productsStockJson'])->name('products.stock');
 
     Route::get('/account-listings', [App\Http\Controllers\AdminAccountListingController::class, 'index'])->name('account-listings');
     Route::get('/account-listings/create', [App\Http\Controllers\AdminAccountListingController::class, 'create'])->name('account-listings.create');

@@ -126,6 +126,30 @@ class AdminController extends Controller
         return view('admin.products.index', compact('products', 'brands'));
     }
 
+    public function productsStockJson(Request $request)
+    {
+        $query = Product::orderBy('brand')->orderBy('product_name');
+
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+        if ($request->filled('brand')) {
+            $query->where('brand', $request->brand);
+        }
+
+        $ids = $query->paginate(20, ['id', 'stock'])->getCollection()->pluck('id');
+
+        return response()->json([
+            'stock' => Product::whereIn('id', $ids)
+                ->get(['id', 'stock', 'is_active'])
+                ->map(fn ($p) => [
+                    'id' => $p->id,
+                    'stock' => $p->stock,
+                    'is_active' => $p->is_active,
+                ]),
+        ]);
+    }
+
     public function productsCreate()
     {
         return view('admin.products.create');
@@ -228,6 +252,10 @@ class AdminController extends Controller
         }
 
         $product->update($data);
+
+        if ((int) ($data['stock'] ?? 0) >= Product::LOW_STOCK_THRESHOLD) {
+            $product->resetStockAlert();
+        }
 
         if ($request->expectsJson()) {
             return response()->json(['message' => 'Produk berhasil diperbarui']);

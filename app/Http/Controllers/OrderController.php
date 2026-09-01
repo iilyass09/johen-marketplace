@@ -63,10 +63,75 @@ class OrderController extends Controller
         }
 
         $quantity = (int) ($request->quantity ?? 1);
+
+        $order = $this->createTopupOrder($product, [
+            'customer_number' => trim($request->customer_number),
+            'zone_id' => $zoneId,
+            'customer_name' => $request->customer_name,
+            'email' => $request->email,
+            'quantity' => $quantity,
+            'promo_code' => $request->promo_code,
+        ]);
+
+        $demo = $order->gateway_invoice_id ? false : true;
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'redirect' => route('payment.detail', $order),
+                'demo' => $demo,
+            ]);
+        }
+
+        return redirect()->route('orders.show', $order);
+    }
+
+    /**
+     * "Beli Lagi": buat ulang order dari order sebelumnya langsung ke halaman pembayaran.
+     */
+    public function reorder(Request $request, Order $source)
+    {
+        $product = Product::where('buyer_sku_code', $source->buyer_sku_code)
+            ->where('is_active', true)
+            ->first();
+
+        if (!$product || $product->stock < 1) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Stok produk sedang kosong.'], 422);
+            }
+            return back()->with('error', 'Maaf, stok produk ini sedang kosong');
+        }
+
+        $order = $this->createTopupOrder($product, [
+            'customer_number' => $source->customer_number,
+            'zone_id' => $source->effective_zone_id,
+            'customer_name' => $source->customer_name,
+            'email' => $source->email,
+            'quantity' => (int) ($source->quantity ?: 1),
+        ]);
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'redirect' => route('payment.detail', $order), 'demo' => true]);
+        }
+
+        return redirect()->route('payment.detail', $order);
+    }
+
+    /**
+     * Membuat order top up baru lengkap dengan charge gateway + transaksi.
+     */
+    private function createTopupOrder(Product $product, array $input): Order
+    {
+        $quantity = (int) ($input['quantity'] ?? 1);
+        $customerNumber = $input['customer_number'];
+        $zoneId = $input['zone_id'] ?? null;
+        $customerName = $input['customer_name'] ?? null;
+        $email = $input['email'] ?? null;
+
         $subtotal = (int) $product->selling_price * $quantity;
 
-        if ($request->filled('promo_code')) {
-            $code = strtoupper(trim($request->promo_code));
+        if (!empty($input['promo_code'])) {
+            $code = strtoupper(trim((string) $input['promo_code']));
             if ($code === 'JOHENI10' || $code === 'JOHENGAMING10') {
                 $subtotal = (int) round($subtotal * 0.9);
             }
@@ -78,10 +143,10 @@ class OrderController extends Controller
             'user_id' => Auth::id(),
             'order_id' => $orderId,
             'buyer_sku_code' => $product->buyer_sku_code,
-            'customer_number' => trim($request->customer_number),
+            'customer_number' => $customerNumber,
             'zone_id' => $zoneId,
-            'customer_name' => $request->customer_name,
-            'email' => $request->email,
+            'customer_name' => $customerName,
+            'email' => $email,
             'product_name' => $product->product_name,
             'brand' => $product->brand,
             'category' => $product->category,
@@ -90,9 +155,6 @@ class OrderController extends Controller
             'status' => 'pending',
         ]);
 
-        $demo = true;
-
-        // PAYMENT_SIMULATION aktif → lewati pembuatan charge Xendit (mode demo penuh).
         if (!config('services.payment.simulation') && $this->xendit->isConfigured()) {
             $itemName = $product->product_name;
             if ($quantity > 1) {
@@ -101,10 +163,10 @@ class OrderController extends Controller
 
             $payerEmail = Auth::check()
                 ? Auth::user()->email
-                : ($request->email ?: 'guest@johengaming.id');
+                : ($email ?: 'guest@johengaming.id');
             $payerName = Auth::check()
                 ? Auth::user()->name
-                : ($request->customer_name ?: $request->customer_number);
+                : ($customerName ?: $customerNumber);
 
             $expiresAt = now()->addHours(24)->toIso8601String();
 
@@ -115,16 +177,15 @@ class OrderController extends Controller
                     'currency' => 'IDR',
                     'amount' => $subtotal,
                     'expires_at' => $expiresAt,
-                    'description' => $itemName . ' - ' . $request->customer_number,
+                    'description' => $itemName . ' - ' . $customerNumber,
                     'metadata' => [
                         'order_id' => $orderId,
                         'product' => $itemName,
-                        'customer_number' => trim($request->customer_number),
+                        'customer_number' => $customerNumber,
                     ],
                 ]);
 
                 if ($qrResult['success']) {
-                    $demo = false;
                     $order->update([
                         'gateway_type' => 'qris',
                         'gateway_invoice_id' => $qrResult['qr_id'],
@@ -135,7 +196,7 @@ class OrderController extends Controller
                 $invoiceResult = $this->xendit->createInvoice([
                     'external_id' => $orderId,
                     'amount' => $subtotal,
-                    'description' => $itemName . ' - ' . $request->customer_number,
+                    'description' => $itemName . ' - ' . $customerNumber,
                     'payer_email' => $payerEmail,
                     'customer' => [
                         'given_names' => $payerName,
@@ -156,7 +217,6 @@ class OrderController extends Controller
                 ]);
 
                 if ($invoiceResult['success']) {
-                    $demo = false;
                     $order->update([
                         'gateway_type' => 'invoice',
                         'gateway_invoice_id' => $invoiceResult['id'],
@@ -172,15 +232,7 @@ class OrderController extends Controller
             'status' => 'pending',
         ]);
 
-        if ($request->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'redirect' => route('payment.detail', $order),
-                'demo' => $demo,
-            ]);
-        }
-
-        return redirect()->route('orders.show', $order);
+        return $order;
     }
 
     public function show(Order $order)

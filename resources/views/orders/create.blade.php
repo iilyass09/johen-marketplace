@@ -22,6 +22,7 @@
         <div class="mb-4">
             <label class="block text-sm font-medium mb-2">ID Game / Nomor HP</label>
             <input type="text" name="customer_number" placeholder="Masukkan ID game atau nomor HP" required
+                   value="{{ old('customer_number', request('customer_number')) }}"
                    class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-purple-500">
             @error('customer_number')
                 <p class="text-red-400 text-sm mt-1">{{ $message }}</p>
@@ -31,12 +32,14 @@
         <div class="mb-4">
             <label class="block text-sm font-medium mb-2">Nickname (opsional)</label>
             <input type="text" name="customer_name" placeholder="Nickname game"
+                   value="{{ old('customer_name', request('customer_name')) }}"
                    class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-purple-500">
         </div>
 
         <div class="mb-6">
             <label class="block text-sm font-medium mb-2">Email <span class="text-gray-400 text-xs">(untuk cek transaksi)</span></label>
             <input type="email" name="email" placeholder="contoh@email.com"
+                   value="{{ old('email', request('email')) }}"
                    class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-purple-500">
             @error('email')
                 <p class="text-red-400 text-sm mt-1">{{ $message }}</p>

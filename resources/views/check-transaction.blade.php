@@ -63,6 +63,8 @@
 }
 .status-pill { background: rgba(16,185,129,.12); color: #34d399; }
 .status-pill.pending { background: rgba(245,158,11,.12); color: #f59e0b; }
+.status-pill.processing { background: rgba(59,130,246,.12); color: #60a5fa; }
+.status-pill.refund { background: rgba(148,163,184,.12); color: #94a3b8; }
 .status-pill.failed { background: rgba(239,68,68,.12); color: #f87171; }
 @keyframes fadeUp { from { opacity:0;transform:translateY(8px) } to { opacity:1;transform:translateY(0) } }
 </style>
@@ -70,6 +72,14 @@
 
 @push('scripts')
 <script>
+const STATUS_MAP = {
+    success: { cls: 'status-pill', label: 'Berhasil' },
+    processing: { cls: 'status-pill processing', label: 'Diproses' },
+    pending: { cls: 'status-pill pending', label: 'Pending' },
+    refund: { cls: 'status-pill refund', label: 'Refund' },
+    failed: { cls: 'status-pill failed', label: 'Gagal' }
+};
+
 document.getElementById('checkForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const val = document.getElementById('checkInput')?.value?.trim();
@@ -78,22 +88,32 @@ document.getElementById('checkForm')?.addEventListener('submit', async (e) => {
     result.innerHTML = '<div style="text-align:center;color:var(--text-mute);padding:1rem;">Memeriksa...</div>';
     try {
         const res = await fetch('/api/orders/check?q=' + encodeURIComponent(val));
-        if (!res.ok) {
+        const data = await res.json();
+        if (res.status === 404 || (res.status === 422 && (!data.transactions || !data.transactions.length))) {
             result.innerHTML = '<div class="status-box"><span class="status-pill failed">Tidak Ditemukan</span><p style="font-size:.85rem;color:var(--text-dim);margin-top:.5rem;">Transaksi <strong style="color:var(--text)">' + val + '</strong> tidak ditemukan. Periksa kembali ID transaksi atau email Anda.</p></div>';
             return;
         }
-        const data = await res.json();
-        const statusClass = data.status === 'success' ? 'status-pill' : (data.status === 'pending' ? 'status-pill pending' : 'status-pill failed');
-        const statusLabel = data.status === 'success' ? 'Berhasil' : (data.status === 'pending' ? 'Pending' : 'Gagal');
-        result.innerHTML = '<div class="status-box">' +
-            '<span class="' + statusClass + '">' + statusLabel + '</span>' +
-            '<p style="font-size:.85rem;color:var(--text-dim);margin-top:.5rem;">' +
-            'Transaksi <strong style="color:var(--text)">' + (data.order_id || val) + '</strong><br>' +
-            (data.product_name ? 'Produk: ' + data.product_name : '') +
-            (data.customer_number ? '<br>ID: ' + data.customer_number : '') +
-            (data.price ? '<br>Total: Rp ' + Number(data.price).toLocaleString('id-ID') : '') +
-            (data.processed_at ? '<br>Diproses: ' + data.processed_at : '') +
-            '</p></div>';
+        if (!res.ok) {
+            result.innerHTML = '<div class="status-box"><span class="status-pill failed">Error</span><p style="font-size:.85rem;color:var(--text-dim);margin-top:.5rem;">' + (data.message || 'Gagal memeriksa transaksi. Coba lagi nanti.') + '</p></div>';
+            return;
+        }
+        const txns = data.transactions || [];
+        const heading = '<p style="font-size:.8rem;color:var(--text-dim);margin:0 0 .75rem;">Ditemukan <strong style="color:var(--text)">' + txns.length + ' transaksi</strong> untuk <strong style="color:var(--text)">' + val + '</strong></p>';
+        const list = txns.map(t => {
+            const st = STATUS_MAP[t.status] || STATUS_MAP.failed;
+            return '<div class="status-box" style="margin-bottom:.75rem">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap">' +
+                '<strong style="color:var(--text);font-size:.9rem">' + (t.order_id || '') + '</strong>' +
+                '<span class="' + st.cls + '">' + st.label + '</span>' +
+                '</div>' +
+                '<p style="font-size:.85rem;color:var(--text-dim);margin:.5rem 0 0">' +
+                (t.product_name ? 'Produk: ' + t.product_name + '<br>' : '') +
+                (t.customer_number ? 'ID: ' + t.customer_number + '<br>' : '') +
+                (t.price != null ? 'Total: Rp ' + Number(t.price).toLocaleString('id-ID') + '<br>' : '') +
+                (t.processed_at ? 'Diproses: ' + t.processed_at : '') +
+                '</p></div>';
+        }).join('');
+        result.innerHTML = '<div class="status-box" style="margin-bottom:.75rem">' + heading + '</div>' + list;
     } catch (err) {
         result.innerHTML = '<div class="status-box"><span class="status-pill failed">Error</span><p style="font-size:.85rem;color:var(--text-dim);margin-top:.5rem;">Gagal memeriksa transaksi. Coba lagi nanti.</p></div>';
     }

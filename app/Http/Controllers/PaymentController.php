@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Brand;
 use App\Models\Order;
+use App\Models\Product;
 use App\Services\DigiflazzService;
 use App\Services\XenditService;
 use Illuminate\Http\Request;
@@ -29,8 +30,15 @@ class PaymentController extends Controller
         $qrString = $order->qr_string;
         $gatewayType = $order->gateway_type ?: ($isQris ? 'qris' : 'invoice');
         $brand = Brand::where('name', $order->brand)->first();
+        $hasReviewed = \App\Models\Review::where('order_id', $order->order_id)->exists();
+        $reorderProduct = Product::where('buyer_sku_code', $order->buyer_sku_code)
+            ->where('is_active', true)
+            ->where('stock', '>', 0)
+            ->first();
 
-        return view('payment.detail', compact('order', 'invoiceUrl', 'isDemo', 'isSimulation', 'brand', 'isQris', 'qrString', 'gatewayType'));
+        return view('payment.detail', compact(
+            'order', 'invoiceUrl', 'isDemo', 'isSimulation', 'brand', 'isQris', 'qrString', 'gatewayType', 'hasReviewed', 'reorderProduct'
+        ));
     }
 
     /**
@@ -272,6 +280,11 @@ class PaymentController extends Controller
                 'note' => $data['sn'] ?? null,
             ]);
             $order->transaction?->update(['status' => 'success', 'raw_response' => $result]);
+
+            $product = \App\Models\Product::where('buyer_sku_code', $order->buyer_sku_code)->first();
+            if ($product) {
+                $product->consumeStock((int) ($order->quantity ?? 1));
+            }
         } elseif ($status === 'pending') {
             $order->update(['status' => 'processing', 'note' => null]);
             $order->transaction?->update(['status' => 'processing', 'raw_response' => $result]);

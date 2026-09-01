@@ -88,7 +88,7 @@
                     <td class="text-right">Rp {{ number_format($product->price, 0, ',', '.') }}</td>
                     <td class="text-right font-semibold" style="color:var(--accent)">Rp {{ number_format($product->selling_price, 0, ',', '.') }}</td>
                     <td class="text-center">
-                        <span class="badge {{ $product->stock > 0 ? 'badge-success' : 'badge-error' }}">
+                        <span class="badge {{ $product->stock > 0 ? 'badge-success' : 'badge-error' }}" data-stock-id="{{ $product->id }}" data-stock-value="{{ $product->stock }}">
                             {{ $product->stock }}
                         </span>
                     </td>
@@ -250,6 +250,44 @@ document.getElementById('brandFilter')?.addEventListener('change', function() {
     else url.searchParams.delete('brand');
     window.location.href = url.toString();
 });
+
+(function pollStock() {
+    const cell = document.querySelector('span[data-stock-id]');
+    if (!cell) return;
+
+    async function refresh() {
+        const params = new URLSearchParams();
+        const t = document.getElementById('typeFilter')?.value;
+        const b = document.getElementById('brandFilter')?.value;
+        if (t) params.set('type', t);
+        if (b) params.set('brand', b);
+
+        try {
+            const res = await fetch('{{ route('admin.products.stock') }}?' + params.toString(), {
+                headers: { 'Accept': 'application/json' }
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            (data.stock || []).forEach(p => {
+                const el = document.querySelector('span[data-stock-id="' + p.id + '"]');
+                if (!el) return;
+                const prev = parseInt(el.dataset.stockValue, 10);
+                if (prev !== p.stock) {
+                    el.textContent = p.stock;
+                    el.dataset.stockValue = p.stock;
+                    el.className = 'badge ' + (p.stock > 0 ? 'badge-success' : 'badge-error');
+                    el.style.transition = 'background .4s';
+                    el.style.animation = 'none';
+                    void el.offsetWidth;
+                    el.style.animation = 'stockFlash .8s';
+                }
+            });
+        } catch (e) { /* ignore polling errors */ }
+    }
+
+    refresh();
+    setInterval(refresh, 10000);
+})();
 
 let editProductId = null;
 const photoInput = document.getElementById('photoInput');

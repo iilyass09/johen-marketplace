@@ -410,6 +410,11 @@
             50% { box-shadow: 0 0 0 6px rgba(245,158,11,0); }
         }
 
+        @keyframes stockFlash {
+            0% { background: rgba(245,158,11,0.35); }
+            100% { background: rgba(16,185,129,0.12); }
+        }
+
         .btn {
             display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
             padding: 0.55rem 1.1rem; border-radius: 10px;
