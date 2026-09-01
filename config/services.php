@@ -53,6 +53,16 @@ return [
 
     'payment' => [
         'simulation' => env('PAYMENT_SIMULATION', false),
+        /*
+        |--------------------------------------------------------------------------
+        | Saluran Pembayaran
+        |--------------------------------------------------------------------------
+        |
+        | 'invoice' → pelanggan diarahkan ke halaman invoice yang di-hosting Xendit.
+        | 'qris'    → QRIS dibuat dan dibayar langsung di halaman sendiri (embed QR).
+        |
+        */
+        'channel' => env('PAYMENT_CHANNEL', 'qris'),
     ],
 
 ];

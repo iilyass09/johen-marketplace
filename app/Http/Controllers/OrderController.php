@@ -92,7 +92,7 @@ class OrderController extends Controller
 
         $demo = true;
 
-        // PAYMENT_SIMULATION aktif → lewati pembuatan invoice Xendit (mode demo penuh).
+        // PAYMENT_SIMULATION aktif → lewati pembuatan charge Xendit (mode demo penuh).
         if (!config('services.payment.simulation') && $this->xendit->isConfigured()) {
             $itemName = $product->product_name;
             if ($quantity > 1) {
@@ -106,35 +106,63 @@ class OrderController extends Controller
                 ? Auth::user()->name
                 : ($request->customer_name ?: $request->customer_number);
 
-            $invoiceResult = $this->xendit->createInvoice([
-                'external_id' => $orderId,
-                'amount' => $subtotal,
-                'description' => $itemName . ' - ' . $request->customer_number,
-                'payer_email' => $payerEmail,
-                'customer' => [
-                    'given_names' => $payerName,
-                    'email' => $payerEmail,
-                ],
-                'invoice_duration' => 86400,
-                'currency' => 'IDR',
-                'items' => [
-                    [
-                        'name' => $itemName,
-                        'quantity' => $quantity,
-                        'price' => (int) $product->selling_price,
-                        'category' => $product->category,
-                    ],
-                ],
-                'success_redirect_url' => route('payment.detail', $order),
-                'failure_redirect_url' => route('payment.detail', $order),
-            ]);
+            $expiresAt = now()->addHours(24)->toIso8601String();
 
-            if ($invoiceResult['success']) {
-                $demo = false;
-                $order->update([
-                    'gateway_invoice_id' => $invoiceResult['id'],
-                    'gateway_invoice_url' => $invoiceResult['invoice_url'],
+            if (config('services.payment.channel', 'qris') === 'qris') {
+                $qrResult = $this->xendit->createQr([
+                    'reference_id' => $orderId,
+                    'type' => 'DYNAMIC',
+                    'currency' => 'IDR',
+                    'amount' => $subtotal,
+                    'expires_at' => $expiresAt,
+                    'description' => $itemName . ' - ' . $request->customer_number,
+                    'metadata' => [
+                        'order_id' => $orderId,
+                        'product' => $itemName,
+                        'customer_number' => trim($request->customer_number),
+                    ],
                 ]);
+
+                if ($qrResult['success']) {
+                    $demo = false;
+                    $order->update([
+                        'gateway_type' => 'qris',
+                        'gateway_invoice_id' => $qrResult['qr_id'],
+                        'qr_string' => $qrResult['qr_string'],
+                    ]);
+                }
+            } else {
+                $invoiceResult = $this->xendit->createInvoice([
+                    'external_id' => $orderId,
+                    'amount' => $subtotal,
+                    'description' => $itemName . ' - ' . $request->customer_number,
+                    'payer_email' => $payerEmail,
+                    'customer' => [
+                        'given_names' => $payerName,
+                        'email' => $payerEmail,
+                    ],
+                    'invoice_duration' => 86400,
+                    'currency' => 'IDR',
+                    'items' => [
+                        [
+                            'name' => $itemName,
+                            'quantity' => $quantity,
+                            'price' => (int) $product->selling_price,
+                            'category' => $product->category,
+                        ],
+                    ],
+                    'success_redirect_url' => route('payment.detail', $order),
+                    'failure_redirect_url' => route('payment.detail', $order),
+                ]);
+
+                if ($invoiceResult['success']) {
+                    $demo = false;
+                    $order->update([
+                        'gateway_type' => 'invoice',
+                        'gateway_invoice_id' => $invoiceResult['id'],
+                        'gateway_invoice_url' => $invoiceResult['invoice_url'],
+                    ]);
+                }
             }
         }
 

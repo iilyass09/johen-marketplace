@@ -224,6 +224,8 @@ const isDemo = @json($isDemo);
 const isSimulation = @json($isSimulation);
 const orderId = @json($order->order_id);
 const invoiceUrl = @json($invoiceUrl);
+const isQris = @json($isQris);
+const qrString = @json($qrString);
 const statusUrl = @json(route('payment.status', $order));
 const simulateUrl = @json(route('payment.simulate', $order));
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
@@ -236,11 +238,38 @@ function startPayment() {
         runSimulatedPayment();
         return;
     }
+    if (isQris && qrString) {
+        renderQris(qrString);
+        return;
+    }
     if (!invoiceUrl || isDemo) {
         simulatePayment();
         return;
     }
     window.location.href = invoiceUrl;
+}
+
+/* Tampilkan QRIS asli langsung di halaman (tanpa redirect ke Xendit). */
+function renderQris(qrData) {
+    const placeholder = document.getElementById('pdMethodPlaceholder');
+    const result = document.getElementById('pdMethodResult');
+    const qrWrap = document.getElementById('pdMethodQrWrap');
+    const qr = document.getElementById('pdMethodQr');
+    const name = document.getElementById('pdMethodName');
+    const payBtnEl = document.getElementById('payNowBtn');
+
+    placeholder.style.display = 'none';
+    result.style.display = 'block';
+    qrWrap.style.display = 'block';
+    qr.innerHTML =
+        '<div class="pd-qr-dummy" style="padding:12px;background:#fff;border-radius:12px;display:inline-block">' +
+        '<img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(qrData) + '" alt="QRIS" style="width:200px;height:200px;border-radius:6px;display:block">' +
+        '</div>';
+    name.textContent = 'QRIS';
+    if (payBtnEl) {
+        payBtnEl.style.display = 'none';
+    }
+    startPolling();
 }
 
 /* Tampilkan QR dummy lalu panggil endpoint simulasi bayar di server. */
@@ -351,6 +380,14 @@ if (payBtn) {
 
 if (isSimulation) {
     /* Menunggu klik tombol "Simulasi Bayar" */
+} else if (isQris && qrString) {
+    const qrShownKey = 'xendit_qr_shown_' + orderId;
+    if (!sessionStorage.getItem(qrShownKey)) {
+        sessionStorage.setItem(qrShownKey, '1');
+        const label = document.getElementById('pdStatusLabel');
+        if (label) label.textContent = 'Silakan scan QRIS untuk membayar';
+        setTimeout(() => { renderQris(qrString); }, 400);
+    }
 } else if (!isDemo && invoiceUrl) {
     const redirectKey = 'xendit_redirect_' + orderId;
     if (!sessionStorage.getItem(redirectKey)) {

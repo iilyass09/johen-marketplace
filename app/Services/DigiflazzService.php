@@ -47,6 +47,37 @@ class DigiflazzService
         return $this->key;
     }
 
+    public function getUsername(): string
+    {
+        return $this->username;
+    }
+
+    public function isProduction(): bool
+    {
+        return $this->production;
+    }
+
+    /*
+     * Deteksi konfigurasi yang berisiko (mis. key "dev-" tapi production=true).
+     * Dipakai halaman status gateway di admin sebagai peringatan.
+     */
+    public function configProblems(): array
+    {
+        $problems = [];
+
+        if ($this->username === '' || $this->key === '') {
+            $problems[] = 'Digiflazz belum dikonfigurasi (username/key kosong).';
+        }
+
+        $isDevKey = str_starts_with(strtolower($this->key), 'dev-');
+
+        if ($this->production && $isDevKey) {
+            $problems[] = 'Key Digiflazz ber-prefix "dev-" tetapi DIGIFLAZZ_PRODUCTION=true. Transaksi akan dikirim sebagai produksi dengan key development. Periksa kembali.';
+        }
+
+        return $problems;
+    }
+
     public function testConnection(): array
     {
         if (! $this->isConfigured()) {

@@ -1,0 +1,64 @@
+@extends('admin.layouts.app')
+
+@section('title', 'Status Gateway Pembayaran')
+
+@section('content')
+@php
+    $allOk = collect($checks)->every(fn($c) => $c['ok']);
+@endphp
+
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+    <div>
+        <h2 class="text-lg font-semibold">Status Gateway Pembayaran</h2>
+        <p class="text-sm" style="color:var(--text-muted)">Cek kesiapan Xendit & Digiflazz sebelum menerima pembayaran live.</p>
+    </div>
+    <span class="badge {{ $allOk ? 'badge-success' : 'badge-error' }}" style="font-size:0.8rem">
+        <i class="fas {{ $allOk ? 'fa-check-circle' : 'fa-exclamation-triangle' }}"></i>
+        {{ $allOk ? 'Siap Live' : 'Belum Semua Siap' }}
+    </span>
+</div>
+
+<div class="mb-4">
+    <div class="card-glass p-4">
+        <div class="flex items-center gap-3">
+            <i class="fas fa-globe" style="color:var(--accent);font-size:1.2rem"></i>
+            <div>
+                <div class="text-sm" style="color:var(--text-muted)">Domain/URL Aplikasi (APP_URL)</div>
+                <div class="font-semibold">{{ $appUrl }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="space-y-3">
+    @foreach($checks as $key => $check)
+    <div class="card-glass p-4">
+        <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <span class="badge {{ $check['ok'] ? 'badge-success' : 'badge-error' }}" style="min-width:64px;justify-content:center">
+                    <i class="fas {{ $check['ok'] ? 'fa-check' : 'fa-times' }}"></i>
+                    {{ $check['ok'] ? 'OK' : 'Gagal' }}
+                </span>
+                <span class="font-semibold">{{ $check['label'] }}</span>
+            </div>
+        </div>
+        @if($check['detail'])
+        <p class="text-sm mt-2" style="color:var(--text-muted)">{{ $check['detail'] }}</p>
+        @endif
+    </div>
+    @endforeach
+</div>
+
+<div class="card-glass p-5 mt-6">
+    <h3 class="font-semibold mb-3"><i class="fas fa-clipboard-check" style="color:var(--accent)"></i> Urutan Persiapan Live</h3>
+    <ol class="list-decimal list-inside space-y-1 text-sm" style="color:var(--text-muted)">
+        <li>Deploy aplikasi ke hosting + domain + SSL, set <code>APP_URL=https://domainmu</code>.</li>
+        <li>Set webhook <strong>QR Code paid</strong> &amp; <strong>Invoice paid</strong> di dashboard Xendit ke <code>{{ route('payment.notification') }}</code> dengan Callback Token sesuai <code>XENDIT_CALLBACK_TOKEN</code>.</li>
+        <li>Aktifkan produk QRIS/VA/dll di akun Xendit.</li>
+        <li>Ajukan verifikasi business Xendit &amp; tunggu approve.</li>
+        <li>Setelah approve: ganti ke secret key live, set <code>XENDIT_IS_PRODUCTION=true</code>.</li>
+        <li>Set key &amp; mode Digiflazz konsisten (key live, <code>DIGIFLAZZ_PRODUCTION=true</code>), set webhook Digiflazz ke <code>{{ route('payment.digiflazz.callback') }}</code>.</li>
+        <li>Set <code>PAYMENT_SIMULATION=false</code> (kecuali ingin menguji aman).</li>
+    </ol>
+</div>
+@endsection

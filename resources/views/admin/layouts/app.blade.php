@@ -525,6 +525,9 @@
                 <a href="{{ route('admin.payment-methods') }}" class="{{ request()->routeIs('admin.payment-methods*') ? 'active' : '' }}">
                     <i class="fas fa-credit-card"></i> Pembayaran
                 </a>
+                <a href="{{ route('admin.gateway-status') }}" class="{{ request()->routeIs('admin.gateway-status*') ? 'active' : '' }}">
+                    <i class="fas fa-plug"></i> Status Gateway
+                </a>
                 <a href="{{ route('admin.orders') }}" class="{{ request()->routeIs('admin.orders*') ? 'active' : '' }}">
                     <i class="fas fa-shopping-cart"></i> Pesanan
                 </a>

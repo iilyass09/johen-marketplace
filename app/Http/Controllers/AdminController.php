@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Models\SiteSetting;
 use App\Models\User;
 use App\Services\DigiflazzService;
+use App\Services\ImageOptimizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
@@ -43,6 +44,66 @@ class AdminController extends Controller
         $recentOrders = Order::with('user')->latest()->take(10)->get();
 
         return view('admin.dashboard', compact('stats', 'recentOrders'));
+    }
+
+    public function gatewayStatus()
+    {
+        $appUrl = config('app.url');
+        $isLocal = in_array(parse_url($appUrl, PHP_URL_HOST), ['localhost', '127.0.0.1', '::1']);
+
+        $xenditConfigured = app(\App\Services\XenditService::class)->isConfigured();
+        $xenditSvc = app(\App\Services\XenditService::class);
+
+        $checks = [
+            'domain_public' => [
+                'label' => 'Domain/URL publik (bukan localhost)',
+                'ok' => !$isLocal,
+                'detail' => $isLocal
+                    ? 'APP_URL masih "' . $appUrl . '". Webhook Xendit & Digiflazz tidak dapat menjangkau localhost. Deploy + set APP_URL ke https://domain.'
+                    : 'APP_URL = ' . $appUrl,
+            ],
+            'xendit_configured' => [
+                'label' => 'Xendit API key terkonfigurasi',
+                'ok' => $xenditSvc->isConfigured(),
+                'detail' => $xenditSvc->isConfigured() ? 'Secret key terisi.' : 'XENDIT_SECRET_KEY masih kosong.',
+            ],
+            'xendit_live' => [
+                'label' => 'Xendit dalam mode live (bukan test)',
+                'ok' => (bool) config('xendit.is_production'),
+                'detail' => config('xendit.is_production')
+                    ? 'Mode live aktif.'
+                    : 'Masih mode test (' . (str_starts_with((string) config('xendit.secret_key'), 'xnd_development_') ? 'key development' : 'check key') . '). Verifikasi & ganti key live setelah approve.',
+            ],
+            'xendit_callback_token' => [
+                'label' => 'Xendit callback token terisi',
+                'ok' => (string) config('xendit.callback_token') !== '',
+                'detail' => (string) config('xendit.callback_token') !== '' ? 'Terkonfigurasi.' : 'XENDIT_CALLBACK_TOKEN kosong — webhook akan ditolak.',
+            ],
+            'webhook_route' => [
+                'label' => 'CSRF dikecualikan di webhook',
+                'ok' => true,
+                'detail' => 'payment/notification & digiflazz/callback sudah di-exclude CSRF.',
+            ],
+            'digiflazz_configured' => [
+                'label' => 'Digiflazz API terkonfigurasi',
+                'ok' => $this->digiflazz->isConfigured(),
+                'detail' => $this->digiflazz->isConfigured() ? 'Username & key terisi.' : 'DIGIFLAZZ_USERNAME/KEY kosong.',
+            ],
+            'digiflazz_mismatch' => [
+                'label' => 'Digiflazz key & mode konsisten',
+                'ok' => count($this->digiflazz->configProblems()) === 0,
+                'detail' => implode(' ', $this->digiflazz->configProblems()) ?: 'Usia key & mode konsisten (ID: ' . $this->digiflazz->getUsername() . ', production=' . ($this->digiflazz->isProduction() ? 'ya' : 'tidak') . ').',
+            ],
+            'simulation' => [
+                'label' => 'Mode simulasi pembayaran',
+                'ok' => !(bool) config('services.payment.simulation'),
+                'detail' => config('services.payment.simulation')
+                    ? 'PAYMENT_SIMULATION=true — order tidak melibatkan pembayaran Digiflazz nyata.'
+                    : 'PAYMENT_SIMULATION=false — pembayaran nyata.',
+            ],
+        ];
+
+        return view('admin.gateway-status', compact('checks', 'isLocal', 'appUrl'));
     }
 
     // ---- PRODUCTS ----
@@ -222,8 +283,8 @@ class AdminController extends Controller
             'featured_img_1' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'featured_img_2' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'featured_img_3' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'carousel_bg' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-            'detail_bg' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'carousel_bg' => 'nullable|image|mimes:jpeg,png,jpg|max:10240',
+            'detail_bg' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
             'detail_bg_position' => 'nullable|string|max:50',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
@@ -260,11 +321,11 @@ class AdminController extends Controller
         $data = array_merge($data, $this->handleFeaturedImages($request));
 
         if ($request->hasFile('carousel_bg') && $request->file('carousel_bg')->isValid()) {
-            $data['carousel_bg'] = $request->file('carousel_bg')->store('brands/bg', 'public');
+            $data['carousel_bg'] = ImageOptimizer::optimizeAndCrop($request->file('carousel_bg'), '2:1');
         }
 
         if ($request->hasFile('detail_bg') && $request->file('detail_bg')->isValid()) {
-            $data['detail_bg'] = $request->file('detail_bg')->store('brands/bg', 'public');
+            $data['detail_bg'] = ImageOptimizer::optimizeAndCrop($request->file('detail_bg'), '21:9');
         }
 
         Brand::create($data);
@@ -292,8 +353,8 @@ class AdminController extends Controller
             'featured_img_1' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'featured_img_2' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'featured_img_3' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'carousel_bg' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-            'detail_bg' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'carousel_bg' => 'nullable|image|mimes:jpeg,png,jpg|max:10240',
+            'detail_bg' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
             'detail_bg_position' => 'nullable|string|max:50',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
@@ -338,14 +399,14 @@ class AdminController extends Controller
             if ($brand->carousel_bg) {
                 Storage::disk('public')->delete($brand->carousel_bg);
             }
-            $data['carousel_bg'] = $request->file('carousel_bg')->store('brands/bg', 'public');
+            $data['carousel_bg'] = ImageOptimizer::optimizeAndCrop($request->file('carousel_bg'), '2:1');
         }
 
         if ($request->hasFile('detail_bg') && $request->file('detail_bg')->isValid()) {
             if ($brand->detail_bg) {
                 Storage::disk('public')->delete($brand->detail_bg);
             }
-            $data['detail_bg'] = $request->file('detail_bg')->store('brands/bg', 'public');
+            $data['detail_bg'] = ImageOptimizer::optimizeAndCrop($request->file('detail_bg'), '21:9');
         }
 
         $data['detail_bg_position'] = $request->input('detail_bg_position', 'center');

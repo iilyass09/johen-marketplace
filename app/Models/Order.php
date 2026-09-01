@@ -11,6 +11,8 @@ class Order extends Model
         'order_id',
         'gateway_invoice_id',
         'gateway_invoice_url',
+        'gateway_type',
+        'qr_string',
         'buyer_sku_code',
         'customer_number',
         'zone_id',

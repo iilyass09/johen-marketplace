@@ -24,10 +24,13 @@ class PaymentController extends Controller
     {
         $invoiceUrl = $order->gateway_invoice_url;
         $isSimulation = (bool) config('services.payment.simulation');
-        $isDemo = $isSimulation || !$this->xendit->isConfigured() || empty($invoiceUrl);
+        $isDemo = $isSimulation || !$this->xendit->isConfigured() || empty($order->gateway_invoice_id);
+        $isQris = $order->gateway_type === 'qris' || (!empty($order->qr_string));
+        $qrString = $order->qr_string;
+        $gatewayType = $order->gateway_type ?: ($isQris ? 'qris' : 'invoice');
         $brand = Brand::where('name', $order->brand)->first();
 
-        return view('payment.detail', compact('order', 'invoiceUrl', 'isDemo', 'isSimulation', 'brand'));
+        return view('payment.detail', compact('order', 'invoiceUrl', 'isDemo', 'isSimulation', 'brand', 'isQris', 'qrString', 'gatewayType'));
     }
 
     /**
@@ -70,6 +73,14 @@ class PaymentController extends Controller
 
         try {
             $payload = $request->all();
+            $event = $payload['event'] ?? '';
+
+            // Webhook QR Code ("qr.payment") — body berisi data bersarang.
+            if ($event === 'qr.payment' || str_contains((string) $event, 'qr.')) {
+                return $this->handleQrCallback($payload);
+            }
+
+            // Webhook Invoice (V2) — status & external_id di level teratas.
             $status = strtoupper($payload['status'] ?? '');
             $externalId = $payload['external_id'] ?? null;
 
@@ -103,6 +114,40 @@ class PaymentController extends Controller
         }
     }
 
+    private function handleQrCallback(array $payload)
+    {
+        $data = $payload['data'] ?? $payload['qr_code'] ?? $payload;
+
+        $referenceId = $data['reference_id'] ?? $data['external_id'] ?? null;
+        $status = strtoupper($data['status'] ?? $payload['status'] ?? '');
+
+        $order = Order::where('order_id', $referenceId)->first();
+
+        if (!$order) {
+            Log::warning('Xendit QR webhook: order tidak ditemukan', ['reference_id' => $referenceId]);
+            return response()->json(['status' => 'ok']);
+        }
+
+        $orderTransaction = $order->transaction;
+
+        $orderTransaction?->update([
+            'transaction_id' => $data['id'] ?? ($payload['id'] ?? null),
+            'payment_type' => 'QRIS - ' . (($data['payment_detail']['source'] ?? $data['channel_code'] ?? 'QRIS') ?: 'QRIS'),
+            'status' => strtolower($status),
+            'raw_response' => $payload,
+        ]);
+
+        // QR Code dibayar → status SUCCEEDED pada QR webhook / COMPLETED pada v1.
+        if (in_array($status, ['SUCCEEDED', 'COMPLETED', 'PAID', 'SETTLED'])) {
+            $this->handlePaid($order);
+        } elseif (in_array($status, ['FAILED', 'EXPIRED'])) {
+            $order->update(['status' => 'failed']);
+            $orderTransaction?->update(['status' => 'failed']);
+        }
+
+        return response()->json(['status' => 'ok']);
+    }
+
     public function success(Order $order)
     {
         return view('payment.success', compact('order'));
@@ -133,6 +178,31 @@ class PaymentController extends Controller
         }
 
         if (!$this->xendit->isConfigured()) {
+            return;
+        }
+
+        // QRIS (embedded) disinkronkan lewat Get QR Code; Invoice lewat Get Invoice.
+        if (($order->gateway_type ?? 'invoice') === 'qris' || !empty($order->qr_string)) {
+            $qr = $this->xendit->getQr($order->gateway_invoice_id);
+
+            if (!$qr || empty($qr['status'])) {
+                return;
+            }
+
+            $status = strtoupper($qr['status']);
+
+            $order->transaction?->update([
+                'transaction_id' => $qr['id'] ?? null,
+                'payment_type' => 'QRIS - ' . (($qr['channel_code'] ?? 'QRIS') ?: 'QRIS'),
+                'raw_response' => $qr,
+            ]);
+
+            // DYNAMIC QR yang sudah dibayar menjadi INACTIVE di sisi Xendit.
+            if ($status === 'INACTIVE') {
+                $order->transaction?->update(['status' => 'paid']);
+                $this->handlePaid($order);
+            }
+
             return;
         }
 

@@ -95,6 +95,8 @@ Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->gro
     Route::patch('/brands/{brand}/toggle', [AdminController::class, 'brandsToggle'])->name('brands.toggle');
     Route::delete('/brands/{brand}', [AdminController::class, 'brandsDestroy'])->name('brands.destroy');
 
+    Route::get('/gateway-status', [AdminController::class, 'gatewayStatus'])->name('gateway-status');
+
     Route::get('/payment-methods', [AdminController::class, 'paymentMethods'])->name('payment-methods');
     Route::get('/payment-methods/create', [AdminController::class, 'paymentMethodsCreate'])->name('payment-methods.create');
     Route::post('/payment-methods', [AdminController::class, 'paymentMethodsStore'])->name('payment-methods.store');
