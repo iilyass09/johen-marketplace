@@ -252,7 +252,14 @@ class OrderController extends Controller
 
     public function myOrders()
     {
-        $orders = Order::where('user_id', Auth::id())->latest()->paginate(10);
+        $user = Auth::user();
+
+        $orders = Order::where(function ($query) use ($user) {
+                $query->where('user_id', $user->id)
+                    ->orWhere('email', $user->email);
+            })
+            ->latest()
+            ->paginate(10);
 
         $orders->load('transaction');
 

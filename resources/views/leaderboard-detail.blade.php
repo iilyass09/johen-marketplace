@@ -12,6 +12,17 @@
         <p class="lbd-hero-desc">Berikut merupakan data 10 pembelian terbanyak yang dilakukan oleh pelanggan kami.</p>
     </div>
 
+    <div class="lbd-filter" id="lbdFilter">
+        <div class="lbd-filter-label">Filter Nominal Top Up</div>
+        <div class="lbd-filter-row">
+            <input type="number" id="lbdMinNominal" min="0" step="1000" placeholder="Min Rp" class="lbd-filter-input">
+            <span class="lbd-filter-sep">–</span>
+            <input type="number" id="lbdMaxNominal" min="0" step="1000" placeholder="Maks Rp" class="lbd-filter-input">
+            <button class="lbd-filter-btn" id="lbdFilterApply">Terapkan</button>
+            <button class="lbd-filter-btn lbd-filter-btn--ghost" id="lbdFilterReset">Reset</button>
+        </div>
+    </div>
+
     <div class="lbd-layout">
         <main class="lbd-main">
             <div class="lbd-table-wrap" id="lbdTableWrap">
@@ -26,16 +37,19 @@
                         </div>
                     @endfor
                 </div>
-                <div class="lbd-table" id="lbdTable">
-                    <div class="lbd-thead">
-                        <div class="lbd-th">Peringkat</div>
-                        <div class="lbd-th">Pelanggan</div>
-                        <div class="lbd-th">Game</div>
-                        <div class="lbd-th">Total Pembelian</div>
-                        <div class="lbd-th lbd-th--time">Waktu Terakhir</div>
-                    </div>
-                    <div class="lbd-tbody" id="lbdTbody"></div>
-                </div>
+                <table class="lbd-table" id="lbdTable">
+                    <thead>
+                        <tr class="lbd-thead">
+                            <th class="lbd-th lbd-th--rank">Peringkat</th>
+                            <th class="lbd-th">Pelanggan</th>
+                            <th class="lbd-th">Game</th>
+                            <th class="lbd-th lbd-th--amount">Total Pembelian</th>
+                            <th class="lbd-th lbd-th--count">Jumlah Top Up</th>
+                            <th class="lbd-th lbd-th--time">Waktu Terakhir</th>
+                        </tr>
+                    </thead>
+                    <tbody class="lbd-tbody" id="lbdTbody"></tbody>
+                </table>
 
                 <div class="lbd-table-footer">
                     <div class="lbd-info">Menampilkan <span id="lbdInfoStart">0</span> data dari <span id="lbdInfoTotal">0</span> data</div>
@@ -56,12 +70,21 @@ document.addEventListener('DOMContentLoaded', function() {
     const paginationEl = document.getElementById('lbdPagination');
     const infoStart = document.getElementById('lbdInfoStart');
     const infoTotal = document.getElementById('lbdInfoTotal');
+    const minNominal = document.getElementById('lbdMinNominal');
+    const maxNominal = document.getElementById('lbdMaxNominal');
+    const filterApply = document.getElementById('lbdFilterApply');
+    const filterReset = document.getElementById('lbdFilterReset');
 
-    let currentPage = parseInt(new URLSearchParams(location.search).get('page')) || 1;
+    const initialParams = new URLSearchParams(location.search);
+    let currentPage = parseInt(initialParams.get('page')) || 1;
+    if (initialParams.get('min_nominal')) minNominal.value = initialParams.get('min_nominal');
+    if (initialParams.get('max_nominal')) maxNominal.value = initialParams.get('max_nominal');
 
     function updateUrl() {
         const params = new URLSearchParams();
         if (currentPage > 1) params.set('page', currentPage);
+        if (minNominal.value) params.set('min_nominal', minNominal.value);
+        if (maxNominal.value) params.set('max_nominal', maxNominal.value);
         const qs = params.toString();
         const newUrl = '/leaderboard/' + period + (qs ? '?' + qs : '');
         window.history.replaceState(null, '', newUrl);
@@ -77,6 +100,8 @@ document.addEventListener('DOMContentLoaded', function() {
             page: currentPage,
             per_page: 10
         });
+        if (minNominal.value) params.set('min_nominal', minNominal.value);
+        if (maxNominal.value) params.set('max_nominal', maxNominal.value);
 
         fetch('{{ route("api.leaderboard") }}?' + params.toString(), {
             headers: { 'Accept': 'application/json' }
@@ -97,16 +122,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function renderTable(data) {
-        tbody.innerHTML = data.data.map(u => `
-            <div class="lbd-row">
-                <div class="lbd-cell lbd-cell--rank">
+        tbody.innerHTML = data.data.map((u, i) => `
+            <tr class="lbd-row${i % 2 === 1 ? ' lbd-row--alt' : ''}">
+                <td class="lbd-cell lbd-cell--rank">
                     <span class="lbd-rank-badge lbd-rank-badge--${u.rank <= 3 ? u.rank : 'other'}">${u.rank}</span>
-                </div>
-                <div class="lbd-cell lbd-cell--name">${u.customer}</div>
-                <div class="lbd-cell lbd-cell--game">${u.game}</div>
-                <div class="lbd-cell lbd-cell--amount">Rp ${new Intl.NumberFormat('id-ID').format(u.total_purchase)}</div>
-                <div class="lbd-cell lbd-cell--time">${u.last_transaction}</div>
-            </div>
+                </td>
+                <td class="lbd-cell lbd-cell--name">${u.customer}</td>
+                <td class="lbd-cell lbd-cell--game">${u.game || 'Top Up'}</td>
+                <td class="lbd-cell lbd-cell--amount">Rp${new Intl.NumberFormat('id-ID').format(u.total_purchase)}</td>
+                <td class="lbd-cell lbd-cell--count">${u.total_transactions}x</td>
+                <td class="lbd-cell lbd-cell--time">${u.last_transaction}</td>
+            </tr>
         `).join('');
     }
 
@@ -155,6 +181,21 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     fetchData();
+
+    function resetPageAndFetch() {
+        currentPage = 1;
+        updateUrl();
+        fetchData();
+    }
+
+    filterApply.addEventListener('click', resetPageAndFetch);
+    filterReset.addEventListener('click', function() {
+        minNominal.value = '';
+        maxNominal.value = '';
+        resetPageAndFetch();
+    });
+    minNominal.addEventListener('keydown', function(e) { if (e.key === 'Enter') resetPageAndFetch(); });
+    maxNominal.addEventListener('keydown', function(e) { if (e.key === 'Enter') resetPageAndFetch(); });
 });
 </script>
 @endpush

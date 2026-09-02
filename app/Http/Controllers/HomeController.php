@@ -106,6 +106,7 @@ class HomeController extends Controller
     public function checkOrder(Request $request)
     {
         $q = trim((string) $request->input('q', ''));
+        $q = ltrim($q, '#');
 
         if ($q === '') {
             return response()->json(['message' => 'Masukkan ID transaksi atau email'], 422);
@@ -115,7 +116,8 @@ class HomeController extends Controller
                 $query->where('order_id', $q)
                     ->orWhere('customer_number', $q)
                     ->orWhere('email', $q)
-                    ->orWhereHas('user', fn ($uq) => $uq->where('email', $q));
+                    ->orWhereHas('user', fn ($uq) => $uq->where('email', $q))
+                    ->orWhereHas('transaction', fn ($tq) => $tq->where('transaction_id', $q));
             })
             ->orderByDesc('created_at')
             ->get();
@@ -151,40 +153,64 @@ class HomeController extends Controller
         $games = $popularBrands->pluck('name')->toArray();
 
         $gameFilter = $request->input('game', 'all');
+        $minNominal = $request->input('min_nominal');
+        $maxNominal = $request->input('max_nominal');
+        $period = $request->input('period');
+        $sort = $request->input('sort', 'largest');
 
-        $baseQuery = Order::select('orders.user_id', 'users.name', DB::raw('SUM(orders.price) as total_amount'))
-            ->join('users', 'orders.user_id', '=', 'users.id')
-            ->whereNotNull('orders.user_id')
-            ->where('orders.status', 'success');
+        $baseQuery = Order::select(
+                'orders.user_id',
+                'orders.email',
+                DB::raw('MAX(COALESCE(users.name, orders.customer_name, orders.email, "Guest")) as name'),
+                DB::raw('SUM(orders.price) as total_amount'),
+                DB::raw('COUNT(orders.id) as total_count')
+            )
+            ->leftJoin('users', 'orders.user_id', '=', 'users.id')
+            ->where('orders.status', 'success')
+            ->where(function ($q2) {
+                $q2->whereNotNull('orders.user_id')
+                   ->orWhereNotNull('orders.email')
+                   ->orWhereNotNull('orders.customer_name');
+            });
 
         if ($gameFilter !== 'all') {
             $baseQuery->where('orders.brand', $gameFilter);
         }
 
-        $today = (clone $baseQuery)->whereDate('orders.created_at', Carbon::today())
-            ->groupBy('orders.user_id', 'users.name')
-            ->orderByDesc('total_amount')
-            ->limit(10)
-            ->get()
-            ->map(fn($item, $i) => ['rank' => $i + 1, 'name' => $item->name, 'amount' => (int) $item->total_amount])
-            ->toArray();
+        if (is_numeric($minNominal) && $minNominal > 0) {
+            $baseQuery->where('orders.price', '>=', (float) $minNominal);
+        }
+        if (is_numeric($maxNominal) && $maxNominal > 0) {
+            $baseQuery->where('orders.price', '<=', (float) $maxNominal);
+        }
 
-        $week = (clone $baseQuery)->whereBetween('orders.created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()])
-            ->groupBy('orders.user_id', 'users.name')
-            ->orderByDesc('total_amount')
-            ->limit(10)
-            ->get()
-            ->map(fn($item, $i) => ['rank' => $i + 1, 'name' => $item->name, 'amount' => (int) $item->total_amount])
-            ->toArray();
+        $orderBy = $sort === 'most' ? 'total_count' : 'total_amount';
 
-        $month = (clone $baseQuery)->whereYear('orders.created_at', Carbon::now()->year)
-            ->whereMonth('orders.created_at', Carbon::now()->month)
-            ->groupBy('orders.user_id', 'users.name')
-            ->orderByDesc('total_amount')
-            ->limit(10)
-            ->get()
-            ->map(fn($item, $i) => ['rank' => $i + 1, 'name' => $item->name, 'amount' => (int) $item->total_amount])
-            ->toArray();
+        $run = function ($query) use ($orderBy) {
+            return $query->groupBy('orders.user_id', 'orders.email')
+                ->orderByDesc($orderBy)
+                ->limit(10)
+                ->get()
+                ->map(fn($item, $i) => ['rank' => $i + 1, 'name' => $item->name, 'amount' => (int) $item->total_amount])
+                ->toArray();
+        };
+
+        $periodMap = [
+            'daily' => ['key' => 'today', 'query' => (clone $baseQuery)->whereDate('orders.created_at', Carbon::today())],
+            'weekly' => ['key' => 'week', 'query' => (clone $baseQuery)->whereBetween('orders.created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()])],
+            'monthly' => ['key' => 'month', 'query' => (clone $baseQuery)->whereYear('orders.created_at', Carbon::now()->year)->whereMonth('orders.created_at', Carbon::now()->month)],
+        ];
+
+        if ($request->wantsJson() && array_key_exists($period, $periodMap)) {
+            return response()->json([
+                'key' => $periodMap[$period]['key'],
+                'data' => $run($periodMap[$period]['query']),
+            ]);
+        }
+
+        $today = $run($periodMap['daily']['query']);
+        $week = $run($periodMap['weekly']['query']);
+        $month = $run($periodMap['monthly']['query']);
 
         $leaderboard = compact('today', 'week', 'month');
 
@@ -220,20 +246,36 @@ class HomeController extends Controller
     {
         $period = $request->input('period', 'daily');
         $gameFilter = $request->input('game', 'all');
+        $minNominal = $request->input('min_nominal');
+        $maxNominal = $request->input('max_nominal');
 
         $query = Order::select(
                 'orders.user_id',
-                'users.name as customer',
+                'orders.email',
+                'users.name as account_name',
+                DB::raw('MAX(COALESCE(users.name, orders.customer_name, orders.email, "Guest")) as customer'),
                 'orders.brand as game',
                 DB::raw('SUM(orders.price) as total_purchase'),
+                DB::raw('COUNT(orders.id) as total_transactions'),
                 DB::raw('MAX(orders.created_at) as last_transaction')
             )
-            ->join('users', 'orders.user_id', '=', 'users.id')
-            ->whereNotNull('orders.user_id')
-            ->where('orders.status', 'success');
+            ->leftJoin('users', 'orders.user_id', '=', 'users.id')
+            ->where('orders.status', 'success')
+            ->where(function ($q2) {
+                $q2->whereNotNull('orders.user_id')
+                   ->orWhereNotNull('orders.email')
+                   ->orWhereNotNull('orders.customer_name');
+            });
 
         if ($gameFilter !== 'all') {
             $query->where('orders.brand', $gameFilter);
+        }
+
+        if (is_numeric($minNominal) && $minNominal > 0) {
+            $query->where('orders.price', '>=', (float) $minNominal);
+        }
+        if (is_numeric($maxNominal) && $maxNominal > 0) {
+            $query->where('orders.price', '<=', (float) $maxNominal);
         }
 
         if ($period === 'daily') {
@@ -245,7 +287,7 @@ class HomeController extends Controller
                   ->whereMonth('orders.created_at', Carbon::now()->month);
         }
 
-        $allData = $query->groupBy('orders.user_id', 'users.name', 'orders.brand')
+        $allData = $query->groupBy('orders.user_id', 'orders.email', 'users.name', 'orders.brand')
             ->orderByDesc('total_purchase')
             ->get()
             ->map(fn($item, $i) => [
@@ -253,6 +295,7 @@ class HomeController extends Controller
                 'customer' => $item->customer,
                 'game' => $item->game,
                 'total_purchase' => (int) $item->total_purchase,
+                'total_transactions' => (int) $item->total_transactions,
                 'last_transaction' => Carbon::parse($item->last_transaction)->format('d M Y H:i') . ' WIB',
             ])
             ->toArray();

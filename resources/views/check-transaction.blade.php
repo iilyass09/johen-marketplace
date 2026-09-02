@@ -16,7 +16,7 @@
                     ID Transaksi / Email
                 </label>
                 <div class="flex gap-3" style="display:flex;gap:.75rem">
-                    <input type="text" id="checkInput" required placeholder="TRX-XXXXXX atau email" class="input-field" style="flex:1;padding:.7rem .9rem;border-radius:10px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:.9rem;outline:none">
+                    <input type="text" id="checkInput" required placeholder="TUP-XXXXXX atau email" class="input-field" style="flex:1;padding:.7rem .9rem;border-radius:10px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:.9rem;outline:none">
                     <button type="submit" class="btn btn-solid" style="padding:.7rem 1.5rem;white-space:nowrap">
                         <i class="fas fa-search"></i> Cek
                     </button>

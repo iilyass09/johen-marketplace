@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\Order;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -35,6 +36,10 @@ class AuthenticatedSessionController extends Controller
             $request->session()->regenerateToken();
             return redirect()->route('admin.login')->with('error', 'Silakan login melalui halaman admin.');
         }
+
+        Order::whereNull('user_id')
+            ->where('email', $user->email)
+            ->update(['user_id' => $user->id]);
 
         return redirect()->intended(route('home', absolute: false));
     }

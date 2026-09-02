@@ -60,8 +60,12 @@
             <div class="lb-card-title">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 Top 10 — Hari ini
+                <select id="lbSortDaily" class="lb-filter-select lb-filter-select--inline" data-period="daily">
+                    <option value="largest">Terbesar</option>
+                    <option value="most">Terbanyak</option>
+                </select>
             </div>
-            <div class="lb-list">
+            <div class="lb-list" data-period-list="daily">
                 @foreach($leaderboard['today'] as $u)
                     <div class="lb-row">
                         <div class="lb-rank-badge lb-rank-badge--{{ $u['rank'] <= 3 ? $u['rank'] : 'other' }}">
@@ -79,8 +83,12 @@
             <div class="lb-card-title">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                 Top 10 — Minggu ini
+                <select id="lbSortWeekly" class="lb-filter-select lb-filter-select--inline" data-period="weekly">
+                    <option value="largest">Terbesar</option>
+                    <option value="most">Terbanyak</option>
+                </select>
             </div>
-            <div class="lb-list">
+            <div class="lb-list" data-period-list="weekly">
                 @foreach($leaderboard['week'] as $u)
                     <div class="lb-row">
                         <div class="lb-rank-badge lb-rank-badge--{{ $u['rank'] <= 3 ? $u['rank'] : 'other' }}">
@@ -98,8 +106,12 @@
             <div class="lb-card-title">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
                 Top 10 — Bulan ini
+                <select id="lbSortMonthly" class="lb-filter-select lb-filter-select--inline" data-period="monthly">
+                    <option value="largest">Terbesar</option>
+                    <option value="most">Terbanyak</option>
+                </select>
             </div>
-            <div class="lb-list">
+            <div class="lb-list" data-period-list="monthly">
                 @foreach($leaderboard['month'] as $u)
                     <div class="lb-row">
                         <div class="lb-rank-badge lb-rank-badge--{{ $u['rank'] <= 3 ? $u['rank'] : 'other' }}">
@@ -190,32 +202,13 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function fetchLeaderboard() {
-        const serviceType = document.querySelector('.lb-toggle--active')?.dataset.service || 'topup';
-        const game = document.querySelector('.lb-pill--active')?.dataset.game || 'all';
-
-        skeleton.style.display = 'block';
-        grid.style.display = 'none';
-
-        fetch('{{ route("leaderboard") }}?service_type=' + serviceType + '&game=' + game, {
-            headers: { 'Accept': 'application/json' }
-        })
-        .then(r => r.json())
-        .then(data => {
-            updateCard(document.querySelectorAll('.lb-card')[0], data.today);
-            updateCard(document.querySelectorAll('.lb-card')[1], data.week);
-            updateCard(document.querySelectorAll('.lb-card')[2], data.month);
-            skeleton.style.display = 'none';
-            grid.style.display = 'grid';
-        })
-        .catch(() => {
-            skeleton.style.display = 'none';
-            grid.style.display = 'grid';
-        });
+        fetchPeriod('daily');
+        fetchPeriod('weekly');
+        fetchPeriod('monthly');
     }
 
-    function updateCard(card, entries) {
-        const list = card.querySelector('.lb-list');
-        list.innerHTML = entries.map(u => `
+    function updateCard(listEl, entries) {
+        listEl.innerHTML = entries.map(u => `
             <div class="lb-row">
                 <div class="lb-rank-badge lb-rank-badge--${u.rank <= 3 ? u.rank : 'other'}">${u.rank}</div>
                 <span class="lb-name">${u.name}</span>
@@ -223,6 +216,36 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `).join('');
     }
+
+    const sortSelects = {
+        daily: document.getElementById('lbSortDaily'),
+        weekly: document.getElementById('lbSortWeekly'),
+        monthly: document.getElementById('lbSortMonthly')
+    };
+
+    function fetchPeriod(period) {
+        const serviceType = document.querySelector('.lb-toggle--active')?.dataset.service || 'topup';
+        const game = document.querySelector('.lb-pill--active')?.dataset.game || 'all';
+        const sort = sortSelects[period].value;
+        const listEl = document.querySelector(`.lb-list[data-period-list="${period}"]`);
+
+        const params = new URLSearchParams({ service_type: serviceType, game: game, period: period, sort: sort });
+
+        fetch('{{ route("leaderboard") }}?' + params.toString(), {
+            headers: { 'Accept': 'application/json' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            updateCard(listEl, data.data || []);
+        })
+        .catch(() => {});
+    }
+
+    Object.keys(sortSelects).forEach(period => {
+        sortSelects[period].addEventListener('change', function() {
+            fetchPeriod(period);
+        });
+    });
 });
 </script>
 @endpush
