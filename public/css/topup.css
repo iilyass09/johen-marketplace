@@ -1240,6 +1240,9 @@ img{max-width:100%;display:block;}
 
 /* payment */
 .gd-pay-group{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;transition:opacity .25s ease;}
+.gd-pay-group--locked{opacity:.45;pointer-events:none;filter:grayscale(.3);}
+
+.gd-step--locked{opacity:.5;pointer-events:none;filter:grayscale(.3);}
 
 /* category accordion */
 .gd-pay-category{border-bottom:1px solid var(--border);}
