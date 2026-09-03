@@ -29,6 +29,10 @@ class PaymentController extends Controller
         $isQris = $order->gateway_type === 'qris' || (!empty($order->qr_string));
         $qrString = $order->qr_string;
         $gatewayType = $order->gateway_type ?: ($isQris ? 'qris' : 'invoice');
+        $vaNumber = $order->va_number;
+        $paymentCode = $order->payment_code;
+        $checkoutUrl = $order->checkout_url;
+        $gatewayExtra = $order->gateway_extra ?: [];
         $brand = Brand::where('name', $order->brand)->first();
         $hasReviewed = \App\Models\Review::where('order_id', $order->order_id)->exists();
         $reorderProduct = Product::where('buyer_sku_code', $order->buyer_sku_code)
@@ -37,7 +41,8 @@ class PaymentController extends Controller
             ->first();
 
         return view('payment.detail', compact(
-            'order', 'invoiceUrl', 'isDemo', 'isSimulation', 'brand', 'isQris', 'qrString', 'gatewayType', 'hasReviewed', 'reorderProduct'
+            'order', 'invoiceUrl', 'isDemo', 'isSimulation', 'brand', 'isQris', 'qrString', 'gatewayType', 'hasReviewed', 'reorderProduct',
+            'vaNumber', 'paymentCode', 'checkoutUrl', 'gatewayExtra'
         ));
     }
 
@@ -81,11 +86,26 @@ class PaymentController extends Controller
 
         try {
             $payload = $request->all();
-            $event = $payload['event'] ?? '';
+            $event = (string) ($payload['event'] ?? '');
 
             // Webhook QR Code ("qr.payment") — body berisi data bersarang.
-            if ($event === 'qr.payment' || str_contains((string) $event, 'qr.')) {
+            if (str_contains($event, 'qr.')) {
                 return $this->handleQrCallback($payload);
+            }
+
+            // Webhook Virtual Account (fva.paid) — pakai payment_id/external_id di level atas.
+            if (str_contains($event, 'fva.') || isset($payload['payment_id']) && !empty($payload['account_number'])) {
+                return $this->handleVACallback($payload);
+            }
+
+            // Webhook Retail Outlet (ro_fpc.paid) — payment_id + payment_code/fixed_payment_code_id.
+            if (str_contains($event, 'ro_fpc.') || isset($payload['payment_id']) && !empty($payload['fixed_payment_code_id'])) {
+                return $this->handleRetailCallback($payload);
+            }
+
+            // Webhook E-wallet (ewallet.capture / ewallet.charge) — reference_id di dalam data.reference_id.
+            if (str_contains($event, 'ewallet.')) {
+                return $this->handleEwalletCallback($payload);
             }
 
             // Webhook Invoice (V2) — status & external_id di level teratas.
@@ -156,6 +176,118 @@ class PaymentController extends Controller
         return response()->json(['status' => 'ok']);
     }
 
+    private function handleVACallback(array $payload)
+    {
+        $externalId = $payload['external_id'] ?? $payload['payment_id'] ?? null;
+        $paymentStatus = strtoupper((string) ($payload['payment_status'] ?? ''));
+
+        $order = $this->findOrderByReference($externalId);
+
+        if (!$order) {
+            Log::warning('Xendit VA webhook: order tidak ditemukan', ['external_id' => $externalId]);
+            return response()->json(['status' => 'ok']);
+        }
+
+        $this->recordPayment($order, [
+            'transaction_id' => $payload['id'] ?? ($payload['payment_id'] ?? null),
+            'payment_type' => 'Virtual Account - ' . strtoupper((string) ($payload['bank_code'] ?? 'VA')),
+            'status' => $paymentStatus === 'PAID' ? 'paid' : 'pending',
+            'raw_response' => $payload,
+        ]);
+
+        if ($paymentStatus === 'PAID') {
+            $this->handlePaid($order);
+        }
+
+        return response()->json(['status' => 'ok']);
+    }
+
+    private function handleRetailCallback(array $payload)
+    {
+        $externalId = $payload['external_id'] ?? null;
+        $paymentStatus = strtoupper((string) ($payload['status'] ?? $payload['payment_status'] ?? ''));
+
+        $order = $this->findOrderByReference($externalId);
+
+        if (!$order) {
+            Log::warning('Xendit Retail webhook: order tidak ditemukan', ['external_id' => $externalId]);
+            return response()->json(['status' => 'ok']);
+        }
+
+        $this->recordPayment($order, [
+            'transaction_id' => $payload['id'] ?? ($payload['payment_id'] ?? null),
+            'payment_type' => 'Minimarket - ' . strtoupper((string) ($payload['retail_outlet_name'] ?? 'Retail')),
+            'status' => $paymentStatus === 'PAID' ? 'paid' : 'pending',
+            'raw_response' => $payload,
+        ]);
+
+        if ($paymentStatus === 'PAID') {
+            $this->handlePaid($order);
+        }
+
+        return response()->json(['status' => 'ok']);
+    }
+
+    private function handleEwalletCallback(array $payload)
+    {
+        $data = $payload['data'] ?? $payload;
+        $referenceId = $data['reference_id'] ?? $payload['reference_id'] ?? null;
+        $status = strtoupper((string) ($data['status'] ?? $payload['status'] ?? ''));
+        $channel = (string) ($data['channel_code'] ?? $payload['channel_code'] ?? 'E-Wallet');
+
+        $order = $this->findOrderByReference($referenceId);
+
+        if (!$order) {
+            Log::warning('Xendit E-wallet webhook: order tidak ditemukan', ['reference_id' => $referenceId]);
+            return response()->json(['status' => 'ok']);
+        }
+
+        $this->recordPayment($order, [
+            'transaction_id' => $data['id'] ?? ($payload['id'] ?? null),
+            'payment_type' => $channel . ' (E-wallet)',
+            'status' => in_array($status, ['CAPTURED', 'SUCCEEDED', 'COMPLETED', 'PAID']) ? 'paid' : 'pending',
+            'raw_response' => $payload,
+        ]);
+
+        if (in_array($status, ['CAPTURED', 'SUCCEEDED', 'COMPLETED', 'PAID'])) {
+            $this->handlePaid($order);
+        }
+
+        return response()->json(['status' => 'ok']);
+    }
+
+    /**
+     * Temukan order dari referensi yang direkam saat charge
+     * (order_id → gateway_invoice_id dikirim sebagai external_id / reference_id).
+     */
+    private function findOrderByReference(?string $reference): ?Order
+    {
+        if (!$reference) {
+            return null;
+        }
+
+        return Order::where('order_id', $reference)
+            ->orWhere('gateway_invoice_id', $reference)
+            ->first();
+    }
+
+    /**
+     * Tulis record transaksi pembayaran terbaru dari webhook/polling.
+     */
+    private function recordPayment(Order $order, array $info): void
+    {
+        if (!$order->transaction) {
+            return;
+        }
+
+        $order->transaction->update([
+            'transaction_id' => $info['transaction_id'] ?? null,
+            'payment_type' => $info['payment_type'] ?? $order->payment_method,
+            'status' => $info['status'] ?? 'pending',
+            'raw_response' => $info['raw_response'] ?? null,
+        ]);
+    }
+
     public function success(Order $order)
     {
         return view('payment.success', compact('order'));
@@ -189,8 +321,10 @@ class PaymentController extends Controller
             return;
         }
 
-        // QRIS (embedded) disinkronkan lewat Get QR Code; Invoice lewat Get Invoice.
-        if (($order->gateway_type ?? 'invoice') === 'qris' || !empty($order->qr_string)) {
+        $type = $order->gateway_type ?? 'invoice';
+
+        // QRIS (embedded) disinkronkan lewat Get QR Code.
+        if ($type === 'qris' || !empty($order->qr_string)) {
             $qr = $this->xendit->getQr($order->gateway_invoice_id);
 
             if (!$qr || empty($qr['status'])) {
@@ -199,15 +333,88 @@ class PaymentController extends Controller
 
             $status = strtoupper($qr['status']);
 
-            $order->transaction?->update([
+            $this->recordPayment($order, [
                 'transaction_id' => $qr['id'] ?? null,
                 'payment_type' => 'QRIS - ' . (($qr['channel_code'] ?? 'QRIS') ?: 'QRIS'),
+                'status' => 'pending',
                 'raw_response' => $qr,
             ]);
 
             // DYNAMIC QR yang sudah dibayar menjadi INACTIVE di sisi Xendit.
             if ($status === 'INACTIVE') {
                 $order->transaction?->update(['status' => 'paid']);
+                $this->handlePaid($order);
+            }
+
+            return;
+        }
+
+        // Virtual Account (self-hosted) — status VA INACTIVE setelah dibayar.
+        if ($type === 'va') {
+            $va = $this->xendit->getVirtualAccount($order->gateway_invoice_id);
+
+            if (!$va || empty($va['status'])) {
+                return;
+            }
+
+            $status = strtoupper($va['status']);
+
+            $this->recordPayment($order, [
+                'transaction_id' => $va['id'] ?? null,
+                'payment_type' => 'Virtual Account - ' . strtoupper((string) ($va['bank_code'] ?? 'VA')),
+                'status' => $status === 'INACTIVE' ? 'paid' : 'pending',
+                'raw_response' => $va,
+            ]);
+
+            if ($status === 'INACTIVE') {
+                $this->handlePaid($order);
+            }
+
+            return;
+        }
+
+        // Retail Outlet (self-hosted) — status ACTIVE/INACTIVE.
+        if ($type === 'retail') {
+            $retail = $this->xendit->getRetailOutlet($order->gateway_invoice_id);
+
+            if (!$retail || empty($retail['status'])) {
+                return;
+            }
+
+            $status = strtoupper($retail['status']);
+
+            $this->recordPayment($order, [
+                'transaction_id' => $retail['id'] ?? null,
+                'payment_type' => 'Minimarket - ' . strtoupper((string) ($retail['retail_outlet_name'] ?? 'Retail')),
+                'status' => $status === 'INACTIVE' ? 'paid' : 'pending',
+                'raw_response' => $retail,
+            ]);
+
+            if ($status === 'INACTIVE') {
+                $this->handlePaid($order);
+            }
+
+            return;
+        }
+
+        // E-wallet charge — status COMPLETED/CAPTURED setelah dibayar.
+        if ($type === 'ewallet') {
+            $charge = $this->xendit->getEwalletCharge($order->gateway_invoice_id);
+
+            if (!$charge || empty($charge['status'])) {
+                return;
+            }
+
+            $status = strtoupper($charge['status']);
+
+            $this->recordPayment($order, [
+                'transaction_id' => $charge['id'] ?? null,
+                'payment_type' => (string) ($charge['channel_code'] ?? 'E-Wallet') . ' (E-wallet)',
+                'status' => in_array($status, ['SUCCEEDED', 'COMPLETED', 'CAPTURED']) ? 'paid' : 'pending',
+                'raw_response' => $charge,
+            ]);
+
+            if (in_array($status, ['SUCCEEDED', 'COMPLETED', 'CAPTURED'])) {
                 $this->handlePaid($order);
             }
 

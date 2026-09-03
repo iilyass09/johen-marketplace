@@ -519,8 +519,12 @@ const isDemo = @json($isDemo);
 const isSimulation = @json($isSimulation);
 const orderId = @json($order->order_id);
 const invoiceUrl = @json($invoiceUrl);
+const gatewayType = @json($gatewayType);
 const isQris = @json($isQris);
 const qrString = @json($qrString);
+const vaNumber = @json($vaNumber);
+const paymentCode = @json($paymentCode);
+const checkoutUrl = @json($checkoutUrl);
 const statusUrl = @json(route('payment.status', $order));
 const simulateUrl = @json(route('payment.simulate', $order));
 const reviewUrl = @json(route('reviews.store', $order));
@@ -556,8 +560,20 @@ function startPayment() {
         runSimulatedPayment();
         return;
     }
-    if (isQris && qrString) {
+    if (gatewayType === 'qris' && qrString) {
         renderQris(qrString);
+        return;
+    }
+    if (gatewayType === 'va' && vaNumber) {
+        renderVa(vaNumber);
+        return;
+    }
+    if (gatewayType === 'retail' && paymentCode) {
+        renderRetail(paymentCode);
+        return;
+    }
+    if (gatewayType === 'ewallet' && checkoutUrl) {
+        window.location.href = checkoutUrl;
         return;
     }
     if (!invoiceUrl || isDemo) {
@@ -587,6 +603,50 @@ function renderQris(qrData) {
     if (payBtnEl) {
         payBtnEl.style.display = 'none';
     }
+    startPolling();
+}
+
+/* Tampilkan nomor Virtual Account di halaman sendiri. */
+function renderVa(vaNumber) {
+    const placeholder = document.getElementById('pdMethodPlaceholder');
+    const result = document.getElementById('pdMethodResult');
+    const vaWrap = document.getElementById('pdMethodVa');
+    const vaNum = document.getElementById('pdVaNumber');
+    const copyBtn = document.getElementById('pdVaCopyBtn');
+    const name = document.getElementById('pdMethodName');
+    const payBtnEl = document.getElementById('payNowBtn');
+
+    placeholder.style.display = 'none';
+    result.style.display = 'block';
+    vaWrap.style.display = 'block';
+    vaNum.textContent = vaNumber;
+    if (copyBtn) copyBtn.dataset.copy = vaNumber;
+    name.textContent = 'Virtual Account';
+    if (payBtnEl) payBtnEl.style.display = 'none';
+    startPolling();
+}
+
+/* Tampilkan kode pembayaran minimarket (Alfamart/Indomaret) di halaman sendiri. */
+function renderRetail(paymentCode) {
+    const placeholder = document.getElementById('pdMethodPlaceholder');
+    const result = document.getElementById('pdMethodResult');
+    const conv = document.getElementById('pdMethodConv');
+    const convHint = document.getElementById('pdConvHint');
+    const name = document.getElementById('pdMethodName');
+    const payBtnEl = document.getElementById('payNowBtn');
+
+    placeholder.style.display = 'none';
+    result.style.display = 'block';
+    conv.style.display = 'block';
+    conv.innerHTML =
+        '<div class="pd-va-box">' +
+        '<div class="pd-va-label">Kode Pembayaran</div>' +
+        '<div class="pd-va-number">' + paymentCode + '</div>' +
+        '<button class="pd-copy-btn" data-copy="' + paymentCode + '">Salin Kode</button>' +
+        '</div>';
+    convHint.style.display = 'none';
+    name.textContent = 'Minimarket';
+    if (payBtnEl) payBtnEl.style.display = 'none';
     startPolling();
 }
 
@@ -785,13 +845,37 @@ if (payBtn) {
 
 if (isSimulation) {
     /* Menunggu klik tombol "Simulasi Bayar" */
-} else if (isQris && qrString) {
+} else if (gatewayType === 'qris' && qrString) {
     const qrShownKey = 'xendit_qr_shown_' + orderId;
     if (!sessionStorage.getItem(qrShownKey)) {
         sessionStorage.setItem(qrShownKey, '1');
         const label = document.getElementById('pdStatusLabel');
         if (label) label.textContent = 'Silakan scan QRIS untuk membayar.';
         setTimeout(() => { renderQris(qrString); }, 400);
+    }
+} else if (gatewayType === 'va' && vaNumber) {
+    const vaShownKey = 'xendit_va_shown_' + orderId;
+    if (!sessionStorage.getItem(vaShownKey)) {
+        sessionStorage.setItem(vaShownKey, '1');
+        const label = document.getElementById('pdStatusLabel');
+        if (label) label.textContent = 'Lakukan transfer ke nomor Virtual Account.';
+        setTimeout(() => { renderVa(vaNumber); }, 400);
+    }
+} else if (gatewayType === 'retail' && paymentCode) {
+    const retailShownKey = 'xendit_retail_shown_' + orderId;
+    if (!sessionStorage.getItem(retailShownKey)) {
+        sessionStorage.setItem(retailShownKey, '1');
+        const label = document.getElementById('pdStatusLabel');
+        if (label) label.textContent = 'Bayar menggunakan kode pembayaran di gerai.';
+        setTimeout(() => { renderRetail(paymentCode); }, 400);
+    }
+} else if (gatewayType === 'ewallet' && checkoutUrl) {
+    const redirectKey = 'xendit_ewallet_' + orderId;
+    if (!sessionStorage.getItem(redirectKey)) {
+        sessionStorage.setItem(redirectKey, '1');
+        const label = document.getElementById('pdStatusLabel');
+        if (label) label.textContent = 'Mengalihkan ke pembayaran...';
+        setTimeout(() => { window.location.href = checkoutUrl; }, 800);
     }
 } else if (!isDemo && invoiceUrl) {
     const redirectKey = 'xendit_redirect_' + orderId;

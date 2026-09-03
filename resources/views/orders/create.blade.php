@@ -46,6 +46,28 @@
             @enderror
         </div>
 
+        <div class="mb-6">
+            <label class="block text-sm font-medium mb-2">Metode Pembayaran</label>
+            <div class="space-y-2">
+                @foreach($paymentMethods as $pm)
+                <label class="flex items-center gap-3 p-3 rounded-lg border border-gray-700 bg-gray-700/40 cursor-pointer hover:border-purple-500 transition payment-method-option">
+                    <input type="radio" name="payment_method" value="{{ $pm->code }}"
+                           @if(old('payment_method', 'qris') === $pm->code) checked @endif
+                           class="accent-purple-500">
+                    @if($pm->photo_light_url)
+                        <img src="{{ $pm->photo_light_url }}" alt="{{ $pm->name }}" class="h-7 object-contain">
+                    @elseif($pm->photo_url)
+                        <img src="{{ $pm->photo_url }}" alt="{{ $pm->name }}" class="h-7 object-contain">
+                    @endif
+                    <span class="text-sm text-gray-200">{{ $pm->name }}</span>
+                </label>
+                @endforeach
+            </div>
+            @error('payment_method')
+                <p class="text-red-400 text-sm mt-1">{{ $message }}</p>
+            @enderror
+        </div>
+
         <button type="submit" class="w-full bg-purple-600 py-3 rounded-xl font-semibold hover:bg-purple-700 transition">
             Lanjut ke Pembayaran
         </button>

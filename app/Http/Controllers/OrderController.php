@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Transaction;
 use App\Services\DigiflazzService;
+use App\Services\PaymentGatewayService;
 use App\Services\XenditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,16 +18,20 @@ class OrderController extends Controller
 {
     protected DigiflazzService $digiflazz;
     protected XenditService $xendit;
+    protected PaymentGatewayService $gateway;
 
-    public function __construct(DigiflazzService $digiflazz, XenditService $xendit)
+    public function __construct(DigiflazzService $digiflazz, XenditService $xendit, PaymentGatewayService $gateway)
     {
         $this->digiflazz = $digiflazz;
         $this->xendit = $xendit;
+        $this->gateway = $gateway;
     }
 
     public function create(Product $product)
     {
-        return view('orders.create', compact('product'));
+        $paymentMethods = \App\Models\PaymentMethod::where('is_active', true)->get();
+
+        return view('orders.create', compact('product', 'paymentMethods'));
     }
 
     public function store(Request $request)
@@ -38,6 +43,7 @@ class OrderController extends Controller
             'customer_name' => 'nullable|string|max:100',
             'email' => 'nullable|email',
             'quantity' => 'nullable|integer|min:1|max:99',
+            'payment_method' => 'nullable|string|max:50',
         ], [
             'zone_id.regex' => 'Zone ID hanya boleh berisi huruf dan angka.',
         ]);
@@ -72,6 +78,7 @@ class OrderController extends Controller
             'email' => $request->email,
             'quantity' => $quantity,
             'promo_code' => $request->promo_code,
+            'payment_method' => $request->payment_method,
         ]);
 
         $demo = $order->gateway_invoice_id ? false : true;
@@ -157,74 +164,12 @@ class OrderController extends Controller
         ]);
 
         if (!config('services.payment.simulation') && $this->xendit->isConfigured()) {
-            $itemName = $product->product_name;
-            if ($quantity > 1) {
-                $itemName .= ' x' . $quantity;
-            }
+            $method = !empty($input['payment_method']) ? $input['payment_method'] : config('services.payment.channel', 'qris');
 
-            $payerEmail = Auth::check()
-                ? Auth::user()->email
-                : ($email ?: 'guest@johengaming.id');
-            $payerName = Auth::check()
-                ? Auth::user()->name
-                : ($customerName ?: $customerNumber);
-
-            $expiresAt = now()->addHours(24)->toIso8601String();
-
-            if (config('services.payment.channel', 'qris') === 'qris') {
-                $qrResult = $this->xendit->createQr([
-                    'reference_id' => $orderId,
-                    'type' => 'DYNAMIC',
-                    'currency' => 'IDR',
-                    'amount' => $subtotal,
-                    'expires_at' => $expiresAt,
-                    'description' => $itemName . ' - ' . $customerNumber,
-                    'metadata' => [
-                        'order_id' => $orderId,
-                        'product' => $itemName,
-                        'customer_number' => $customerNumber,
-                    ],
-                ]);
-
-                if ($qrResult['success']) {
-                    $order->update([
-                        'gateway_type' => 'qris',
-                        'gateway_invoice_id' => $qrResult['qr_id'],
-                        'qr_string' => $qrResult['qr_string'],
-                    ]);
-                }
-            } else {
-                $invoiceResult = $this->xendit->createInvoice([
-                    'external_id' => $orderId,
-                    'amount' => $subtotal,
-                    'description' => $itemName . ' - ' . $customerNumber,
-                    'payer_email' => $payerEmail,
-                    'customer' => [
-                        'given_names' => $payerName,
-                        'email' => $payerEmail,
-                    ],
-                    'invoice_duration' => 86400,
-                    'currency' => 'IDR',
-                    'items' => [
-                        [
-                            'name' => $itemName,
-                            'quantity' => $quantity,
-                            'price' => (int) $product->selling_price,
-                            'category' => $product->category,
-                        ],
-                    ],
-                    'success_redirect_url' => route('payment.detail', $order),
-                    'failure_redirect_url' => route('payment.detail', $order),
-                ]);
-
-                if ($invoiceResult['success']) {
-                    $order->update([
-                        'gateway_type' => 'invoice',
-                        'gateway_invoice_id' => $invoiceResult['id'],
-                        'gateway_invoice_url' => $invoiceResult['invoice_url'],
-                    ]);
-                }
-            }
+            $this->gateway->charge($order, $method, [
+                'item_name' => $product->product_name,
+                'unit_price' => (int) $product->selling_price,
+            ]);
         }
 
         Transaction::create([

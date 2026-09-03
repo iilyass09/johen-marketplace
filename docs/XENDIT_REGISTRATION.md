@@ -112,7 +112,43 @@ invoice Xendit, lalu simulasikan `invoice.paid` (di dasbor test) & cek webhook `
 
 ---
 
-## 5. Catatan teknis kode (sudah diimplementasikan)
+## 5. Sinkronkan metode pembayaran (agar tampilan server sama dengan lokal)
+
+Data metode pembayaran disimpan di tabel `payment_methods` (database), bukan di kode.
+Jika di server hanya tampil satu metode (mis. hanya QRIS), artinya data `payment_methods`
+di server belum sama dengan lokal.
+
+Seeder `PaymentMethodSeeder` sudah disinkronkan dengan data lokal (10 metode:
+QRIS, GoPay, Dana, OVO, ShopeePay, BCA/BNI/Mandiri VA, Alfamart, Indomaret — lengkap
+dengan kategori & path foto). Untuk menerapkannya di **server**:
+
+```
+php artisan db:seed --class="Database\Seeders\PaymentMethodSeeder" --force
+```
+
+Seeder ini *idempotent*: meng-`updateOrCreate` 10 metode di atas dan menonaktifkan
+metode lain (tidak menghapus datanya). Jalankan berulang kali aman.
+
+### Pastikan foto metode tampil
+Metode pembayaran memakai `photo` berikut yang tersimpan di `storage/app/public/payments/`:
+```
+alfamart.svg  bca.svg  bni.svg  bri.svg(*opsional)  dana.svg
+gopay.svg  gopay-dark.png  indomaret.svg  mandiri.svg  ovo.svg
+qris.svg  qris-dark.png  shopeepay.svg
+```
+Agar foto muncul, pastikan di server:
+1. File-file di atas ikut ter-deploy (folder `storage/app/public/payments/`), dan
+2. `php artisan storage:link` sudah dijalankan (agar `/storage/...` bisa diakses publik).
+
+> ### ⚠️ Catatan penting
+> Saat ini aplikasi **hanya benar-benar memproses pembayaran via QRIS** (atau Invoice)
+> Xendit. Metode lain (Dana, GoPay, VA, minimarket) **hanya tampilan pilihan** — pembayaran
+> riil tetap dibuat sebagai QRIS Xendit. Jangan menonaktifkan QRIS, karena itu satu-satunya
+> channel yang terintegrasi.
+
+---
+
+## 6. Catatan teknis kode (sudah diimplementasikan)
 
 - `app/Services/XenditService.php` — `createInvoice`, `getInvoice`, `createQr`,
   `getQr`, `verifyCallbackToken`.

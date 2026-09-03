@@ -13,6 +13,11 @@ class Order extends Model
         'gateway_invoice_url',
         'gateway_type',
         'qr_string',
+        'va_number',
+        'payment_code',
+        'checkout_url',
+        'gateway_extra',
+        'payment_method',
         'buyer_sku_code',
         'customer_number',
         'zone_id',
@@ -28,6 +33,10 @@ class Order extends Model
     ];
 
     protected $appends = ['effective_zone_id'];
+
+    protected $casts = [
+        'gateway_extra' => 'array',
+    ];
 
     public function user()
     {

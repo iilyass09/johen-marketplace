@@ -7,25 +7,102 @@ use Illuminate\Database\Seeder;
 
 class PaymentMethodSeeder extends Seeder
 {
+    /**
+     * Sinkronkan daftar metode pembayaran dengan data lokal (idempotent).
+     *
+     * Karena aplikasi saat ini hanya benar-benar memproses pembayaran QRIS
+     * (atau Invoice) Xendit, metode lain ditampilkan sebagai pilihan namun
+     * real transaksinya tetap via gateway yang dikonfigurasi.
+     */
     public function run(): void
     {
         $methods = [
-            ['name' => 'QRIS', 'code' => 'qris', 'icon' => '▦'],
-            ['name' => 'GoPay', 'code' => 'gopay', 'icon' => '💚'],
-            ['name' => 'OVO', 'code' => 'ovo', 'icon' => '💜'],
-            ['name' => 'DANA', 'code' => 'dana', 'icon' => '💙'],
-            ['name' => 'ShopeePay', 'code' => 'shopeepay', 'icon' => '🧡'],
-            ['name' => 'BCA', 'code' => 'bca', 'icon' => '🏛️'],
-            ['name' => 'BRI', 'code' => 'bri', 'icon' => '🏦'],
-            ['name' => 'Mandiri', 'code' => 'mandiri', 'icon' => '🏛️'],
-            ['name' => 'BNI', 'code' => 'bni', 'icon' => '🏦'],
-            ['name' => 'LinkAja', 'code' => 'linkaja', 'icon' => '❤️'],
-            ['name' => 'Alfamart', 'code' => 'alfamart', 'icon' => '🔴'],
-            ['name' => 'Indomaret', 'code' => 'indomaret', 'icon' => '🔵'],
+            [
+                'name' => 'GoPay',
+                'code' => 'gopay',
+                'category' => 'ewallet',
+                'photo' => 'payments/gopay.svg',
+                'photo_light' => 'payments/gopay-dark.png',
+                'is_active' => true,
+            ],
+            [
+                'name' => 'Dana',
+                'code' => 'dana',
+                'category' => 'ewallet',
+                'photo' => 'payments/dana.svg',
+                'is_active' => true,
+            ],
+            [
+                'name' => 'ShopeePay',
+                'code' => 'shopeepay',
+                'category' => 'ewallet',
+                'photo' => 'payments/shopeepay.svg',
+                'is_active' => true,
+            ],
+            [
+                'name' => 'Ovo',
+                'code' => 'ovo',
+                'category' => 'ewallet',
+                'photo' => 'payments/ovo.svg',
+                'is_active' => true,
+            ],
+            [
+                'name' => 'QRIS',
+                'code' => 'qris',
+                'category' => 'qris',
+                'photo' => 'payments/qris.svg',
+                'photo_light' => 'payments/qris-dark.png',
+                'is_active' => true,
+            ],
+            [
+                'name' => 'BCA Virtual Account',
+                'code' => 'bca_va',
+                'category' => 'va',
+                'photo' => 'payments/bca.svg',
+                'is_active' => true,
+            ],
+            [
+                'name' => 'BNI Virtual Account',
+                'code' => 'bni_va',
+                'category' => 'va',
+                'photo' => 'payments/bni.svg',
+                'is_active' => true,
+            ],
+            [
+                'name' => 'Mandiri Virtual Account',
+                'code' => 'mandiri_va',
+                'category' => 'va',
+                'photo' => 'payments/mandiri.svg',
+                'is_active' => true,
+            ],
+            [
+                'name' => 'Alfamart',
+                'code' => 'alfamart',
+                'category' => 'convenience_store',
+                'photo' => 'payments/alfamart.svg',
+                'is_active' => true,
+            ],
+            [
+                'name' => 'Indomaret',
+                'code' => 'indomaret',
+                'category' => 'convenience_store',
+                'photo' => 'payments/indomaret.svg',
+                'is_active' => true,
+            ],
         ];
 
+        $seededCodes = [];
+
         foreach ($methods as $method) {
-            PaymentMethod::create($method);
+            PaymentMethod::updateOrCreate(
+                ['code' => $method['code']],
+                $method,
+            );
+            $seededCodes[] = $method['code'];
         }
+
+        // Nonaktifkan metode yang tidak ada di daftar (agar tampilan konsisten
+        // dengan lokal). Data tetap disimpan, hanya tidak ditampilkan.
+        PaymentMethod::whereNotIn('code', $seededCodes)->update(['is_active' => false]);
     }
 }
