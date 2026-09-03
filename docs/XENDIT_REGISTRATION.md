@@ -68,14 +68,47 @@ Buka https://dashboard.xendit.co → **Settings → Webhooks**, lalu daftarkan *
 
 Semua uji coba payment sebaiknya dilakukan di **mode development/test** Xendit
 (`XENDIT_IS_PRODUCTION=false`, key `xnd_development_...`) lewat **domain publik**
-(webhook tidak bisa menjangkau `localhost`):
+(webhook tidak bisa menjangkau `localhost`).
 
-- Buat 1 order > pilih QRIS > pastikan QR muncul.
-- Scan QR dengan QRIS test Xendit (atau bayar manual di dasbor Xendit) > cek status order dihalaman `payment/status` berubah `processing` → `success`.
-- Verifikasi webhook masuk di dasbor Xendit (log webhook) dan respons dari
-  `payment/notification` = `{"status":"ok"}`.
-- Test flow **Invoice** (`PAYMENT_CHANNEL=invoice`) sekali untuk memastikan
-  redirect + webhook `invoice.paid` juga jalan.
+> **Penting:** QRIS yang di-generate di mode test TIDAK bisa dibayar dengan aplikasi
+> QRIS/e-wallet sungguhan (QR tersebut fiktif). Ini wajar — bukan bug. Untuk memvalidasi
+> pipeline di mode test, gunakan **simulate payment** Xendit (lihat langkah 4.3) yang
+> memicu webhook `qr.payment` ke endpoint kamu tanpa pembayaran riil.
+
+### 4.1 Siapkan environment test di server
+Pastikan di `.env` server:
+```
+XENDIT_SECRET_KEY=xnd_development_...   # mode test
+XENDIT_IS_PRODUCTION=false
+PAYMENT_SIMULATION=false                # WAJIB false agar QRIS Xendit benar-benar dibuat
+PAYMENT_CHANNEL=qris
+```
+lalu `php artisan config:clear`.
+
+### 4.2 Buat order & buka halaman pembayaran
+- Buat 1 order sungguhan di `https://marketplace.johengaming.id/`, pilih QRIS.
+- Pastikan halaman payment menampilkan **QR code** (berarti `createQr` sukses → tersimpan
+  `gateway_invoice_id` = id QR `qr_...`).
+
+### 4.3 Simulasikan pembayaran QRIS (tanpa bayar sungguhan)
+Di server, jalankan command berikut (pakai **Order ID** dari order yang barusan dibuat):
+```
+php artisan xendit:simulate-qris JM2026XXXXXX
+```
+Command ini memanggil endpoint test Xendit
+`POST /qr_codes/{id}/payments/simulate` yang menandai QR sebagai bayar, dan Xendit
+langsung mengirim webhook `qr.payment` ke `https://marketplace.johengaming.id/payment/notification`.
+
+### 4.4 Verifikasi
+- Buka **https://dashboard.xendit.co/callbacks** → cari event `qr.payment` untuk order tsb →
+  status respons endpoint = **200** dan body `{"status":"ok"}`.
+- Cek status order via `GET /payment/status/{order_id}` → harus berubah
+  `pending` → `processing` (Dgiflazz topUp) → `success`.
+- Kalau webhook tidak kunjung sampai, di tab Callbacks klik **Resend**.
+
+### 4.5 Test flow Invoice (opsional, jika `PAYMENT_CHANNEL=invoice`)
+Ulangi dengan `PAYMENT_CHANNEL=invoice`, buat order, pastikan ter-redirect ke halaman
+invoice Xendit, lalu simulasikan `invoice.paid` (di dasbor test) & cek webhook `invoice.paid`.
 
 ---
 
