@@ -56,6 +56,19 @@
     <div style="border-top:1px solid var(--border);padding-top:1.5rem">
         <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.5rem">Pesan</div>
         <div style="font-size:0.9rem;line-height:1.6;white-space:pre-wrap">{{ $inquiry->message }}</div>
+        @if($inquiry->admin_reply)
+        <div style="margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid var(--border)">
+            <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#10b981;margin-bottom:0.6rem">
+                <i class="fas fa-headset"></i> Balasan CS
+            </div>
+            <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);border-radius:6px 16px 16px 16px;padding:10px 16px;font-size:0.9rem;line-height:1.6;white-space:pre-wrap">
+                {{ $inquiry->admin_reply }}
+            </div>
+            <div style="font-size:0.72rem;color:var(--text-dim);margin-top:0.5rem">
+                {{ $inquiry->responded_at ? 'Dibalas ' . $inquiry->responded_at->format('d/m/Y H:i') : '' }}
+            </div>
+        </div>
+        @endif
     </div>
 
     <div style="margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--border)">

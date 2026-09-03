@@ -60,7 +60,7 @@
                     </td>
                     <td class="text-center">
                         <button type="button" class="btn btn-ghost btn-xs"
-                            data-inquiry='{{ json_encode($inq->only(['id','name','email','phone','category','message','is_read','responded_at','created_at'])) }}'
+                            data-inquiry='{{ json_encode($inq->only(['id','name','email','phone','category','message','admin_reply','is_read','responded_at','created_at'])) }}'
                             onclick="openDetailModal(this)">
                             <i class="fas fa-eye"></i> Detail
                         </button>
@@ -124,6 +124,12 @@
             <div style="border-top:1px solid var(--border);padding-top:1.25rem;margin-bottom:1.25rem">
                 <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.5rem">Pesan</div>
                 <div id="d_message" style="font-size:0.9rem;line-height:1.6;white-space:pre-wrap"></div>
+                <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border);display:none" id="d_reply_block">
+                    <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#10b981;margin-bottom:0.6rem">
+                        <i class="fas fa-headset"></i> Balasan CS
+                    </div>
+                    <div id="d_reply" style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);border-radius:6px 16px 16px 16px;padding:10px 16px;font-size:0.9rem;line-height:1.6;white-space:pre-wrap"></div>
+                </div>
             </div>
 
             <div id="inquiryActions" style="border-top:1px solid var(--border);padding-top:1.25rem;margin-bottom:1.25rem;display:flex;gap:0.5rem">
@@ -175,6 +181,13 @@ function openDetailModal(btn) {
     document.getElementById('d_phone').textContent = d.phone || '-';
     document.getElementById('d_date').textContent = d.created_at;
     document.getElementById('d_message').textContent = d.message;
+    const replyBlock = document.getElementById('d_reply_block');
+    if (d.admin_reply) {
+      document.getElementById('d_reply').textContent = d.admin_reply;
+      replyBlock.style.display = 'block';
+    } else {
+      replyBlock.style.display = 'none';
+    }
     document.getElementById('replyEmail').textContent = d.email;
     document.getElementById('replyText').value = '';
 

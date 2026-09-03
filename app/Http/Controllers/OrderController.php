@@ -10,6 +10,7 @@ use App\Services\DigiflazzService;
 use App\Services\XenditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class OrderController extends Controller
@@ -264,7 +265,10 @@ class OrderController extends Controller
         $orders->load('transaction');
 
         $brandNames = $orders->pluck('brand')->unique()->filter();
-        $brands = Brand::whereIn('name', $brandNames)->get()->keyBy('name');
+        $brands = Brand::whereIn('name', $brandNames)
+            ->orWhereIn(DB::raw('UPPER(name)'), $brandNames->map(fn($n) => strtoupper((string) $n)))
+            ->get()
+            ->keyBy(fn($b) => strtolower($b->name));
 
         $skuCodes = $orders->pluck('buyer_sku_code')->unique()->filter();
         $products = Product::whereIn('buyer_sku_code', $skuCodes)->get()->keyBy('buyer_sku_code');

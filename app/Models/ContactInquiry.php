@@ -13,6 +13,7 @@ class ContactInquiry extends Model
         'phone',
         'category',
         'message',
+        'admin_reply',
         'is_read',
     ];
 

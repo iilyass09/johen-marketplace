@@ -1,0 +1,92 @@
+# Checklist Registrasi Xendit — Johen Marketplace
+
+Panduan ini menyiapkan apa saja yang harus diverifikasi / disetel sebelum dan saat
+mengajukan **produksi live** ke Xendit. Seluruh prasyarat teknis kode sudah tersedia;
+yang perlu dilakukan adalah konfigurasi di dashboard Xendit, deployment, dan isi `.env`.
+
+> Status integrasi otomatis bisa dipantau di **Admin → Gateway Status** (`/admin/gateway-status`).
+
+---
+
+## 1. Prasyarat yang HARUS selesai sebelum kirim aplikasi live
+
+| # | Item | Status | Cara memenuhi |
+|---|------|--------|---------------|
+| 1 | **Domain publik (bukan localhost)** | ❌ belum | `APP_URL` harus `https://domainanda.com`, bukan `http://localhost`. Deploy dulu ke hosting/VPS + pasang SSL. |
+| 2 | **Xendit API key terisi** | ✅ sudah | `XENDIT_SECRET_KEY=xnd_development_...` (masih key test — ini yang nanti diganti). |
+| 3 | **Xendit done mode test → live** | ❌ belum | Ganti `XENDIT_IS_PRODUCTION=true` + key live setelah Xendit approve. |
+| 4 | **Callback token terisi** | ✅ sudah | `XENDIT_CALLBACK_TOKEN` sudah di-generate → salin nilai yang sama ke dashboard Xendit **Settings → Webhooks** (token webhook). |
+| 5 | **CSRF dikecualikan di webhook** | ✅ sudah | `payment/notification` & `digiflazz/callback` sudah di-exclude di `bootstrap/app.php`. |
+| 6 | **Digiflazz dikonfigurasi** | ✅ sudah | Username & key terisi di `.env`. |
+| 7 | **Simulasi dimatikan** | ❌ belum | Set `PAYMENT_SIMULATION=false` saat siap produksi. |
+
+---
+
+## 2. Yang harus disetel di dashboard Xendit
+
+Buka https://dashboard.xendit.co → **Settings → Webhooks**, lalu daftarkan **Callback URL**:
+
+### Webhook 1 — QRIS (dipakai jika `PAYMENT_CHANNEL=qris`)
+- URL: `https://domainanda.com/payment/notification`
+- Token: nilai `XENDIT_CALLBACK_TOKEN` dari `.env`
+- Event: **QR Code payment** (`qr.payment`)
+- Pastikan versi API webhook = **2022-07-31** (dipakai kode `createQr`/`getQr`).
+
+### Webhook 2 — Invoice (dipakai jika `PAYMENT_CHANNEL=invoice`)
+- URL: `https://domainanda.com/payment/notification`
+- Token: nilai `XENDIT_CALLBACK_TOKEN` dari `.env`
+- Event: **Invoice** → `invoice.paid`, `invoice.expired` (dan `invoice.settled` jika ada).
+
+> Token webhook di dashboard **wajib sama persis** dengan `XENDIT_CALLBACK_TOKEN`,
+> karena `XenditService::verifyCallbackToken()` menolak jika tidak cocok.
+
+---
+
+## 3. Urutan pengaktifan produksi (setelah Xendit approve)
+
+1. Deploy app & pastikan diakses lewat `https://domainanda.com`.
+2. Di `.env` setel:
+   ```
+   APP_URL=https://domainanda.com
+   XENDIT_SECRET_KEY=xnd_production_<KEY_LIVE>
+   XENDIT_CALLBACK_TOKEN=<token live yg sama dgn dashboard>
+   XENDIT_IS_PRODUCTION=true
+   PAYMENT_CHANNEL=qris          # atau 'invoice'
+   PAYMENT_SIMULATION=false
+   ```
+3. Jangan lupa ubah status Digiflazz ke produksi: `DIGIFLAZZ_PRODUCTION=true` + key live.
+4. Flush konfigurasi:
+   ```
+   php artisan config:clear
+   php artisan config:cache
+   ```
+5. Buka **Admin → Gateway Status** → pastikan semua item hijau.
+
+---
+
+## 4. Uji coba sebelum produksi sungguhan
+
+Semua uji coba payment sebaiknya dilakukan di **mode development/test** Xendit
+(`XENDIT_IS_PRODUCTION=false`, key `xnd_development_...`) lewat **domain publik**
+(webhook tidak bisa menjangkau `localhost`):
+
+- Buat 1 order > pilih QRIS > pastikan QR muncul.
+- Scan QR dengan QRIS test Xendit (atau bayar manual di dasbor Xendit) > cek status order dihalaman `payment/status` berubah `processing` → `success`.
+- Verifikasi webhook masuk di dasbor Xendit (log webhook) dan respons dari
+  `payment/notification` = `{"status":"ok"}`.
+- Test flow **Invoice** (`PAYMENT_CHANNEL=invoice`) sekali untuk memastikan
+  redirect + webhook `invoice.paid` juga jalan.
+
+---
+
+## 5. Catatan teknis kode (sudah diimplementasikan)
+
+- `app/Services/XenditService.php` — `createInvoice`, `getInvoice`, `createQr`,
+  `getQr`, `verifyCallbackToken`.
+- `app/Http/Controllers/PaymentController.php@notificationHandler` — verifikasi
+  callback token + proses webhook QRIS & Invoice, mencakup idempotency (`handlePaid`).
+- `app/Http/Controllers/OrderController.php` — membuat QRIS/Invoice saat checkout,
+  menyimpan `gateway_type`, `gateway_invoice_id`, `qr_string`.
+- `config/xendit.php` + variabel `.env` (XENDIT_*).
+- `bootstrap/app.php` — CSRF dikecualikan untuk `payment/notification` &
+  `digiflazz/callback`.

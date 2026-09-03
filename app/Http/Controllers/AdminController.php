@@ -716,6 +716,7 @@ class AdminController extends Controller
 
         $contactInquiry->update([
             'is_read' => true,
+            'admin_reply' => $validator->validated()['reply'],
             'responded_at' => now(),
         ]);
 

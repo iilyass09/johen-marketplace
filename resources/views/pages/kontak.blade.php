@@ -3,6 +3,16 @@
 @section('title', 'Hubungi Kami - Johen Gaming')
 
 @section('content')
+@php
+  $contactWa = \App\Models\SiteSetting::get('contact_whatsapp', '');
+  $contactEmail = \App\Models\SiteSetting::get('contact_email', '');
+  $contactInstagram = \App\Models\SiteSetting::get('contact_instagram', '');
+  $waDigits = preg_replace('/\D+/', '', $contactWa);
+  if (str_starts_with($waDigits, '0')) {
+      $waDigits = '62' . substr($waDigits, 1);
+  }
+  $waHref = $waDigits ? 'https://wa.me/' . $waDigits : route('kontak');
+@endphp
 <div class="kontak-page">
   <div class="kontak-hero">
     <h1>Kirim Pesan ke CS</h1>
@@ -15,16 +25,26 @@
       <div class="kontak-form-header">
         <div class="kontak-form-info">
           <h3>CS</h3>
-          <p class="kontak-info-label">Customer Service Johen Gaming</p>
+          <p class="kontak-info-label">Customer Service {{ config('app.name') }}</p>
           <div class="kontak-info-row">
+            @if($waDigits)
             <span class="kontak-info-item">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
-              0812-3470-7070
+              <a href="{{ $waHref }}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;">{{ $contactWa }}</a>
             </span>
+            @endif
+            @if($contactEmail)
             <span class="kontak-info-item">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-              cs@johengaming.store
+              <a href="mailto:{{ $contactEmail }}" style="color:inherit;text-decoration:none;">{{ $contactEmail }}</a>
             </span>
+            @endif
+            @if($contactInstagram)
+            <span class="kontak-info-item">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+              <a href="https://instagram.com/{{ ltrim($contactInstagram, '@') }}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;">{{ $contactInstagram }}</a>
+            </span>
+            @endif
           </div>
         </div>
       </div>

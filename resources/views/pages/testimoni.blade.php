@@ -26,6 +26,11 @@
           <div class="testi-page-game">{{ $t['game'] }}</div>
         </div>
       </div>
+      <div class="testi-page-rating">
+        @for($i = 1; $i <= 5; $i++)
+          <span class="testi-page-star{{ $i <= ($t['rating'] ?? 5) ? ' filled' : '' }}">★</span>
+        @endfor
+      </div>
       <p class="testi-page-quote">"{{ $t['quote'] }}"</p>
       <div class="testi-page-time">{{ $t['date'] }}</div>
     </div>
@@ -40,9 +45,9 @@
   padding: 3rem 1.5rem 5rem;
 }
 .testi-page-filters{display:flex;gap:.5rem;justify-content:center;margin-bottom:2rem;flex-wrap:wrap}
-.testi-filter-btn{display:inline-flex;padding:.4rem 1rem;border-radius:8px;font-size:.8rem;font-weight:600;border:1px solid var(--glass-border);color:var(--text-dim);text-decoration:none;transition:all .16s ease;background:transparent}
-.testi-filter-btn:hover{border-color:var(--accent);color:var(--text)}
-.testi-filter-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 0 16px -4px rgba(157,92,245,.3)}
+.testi-filter-btn{display:inline-flex;padding:.4rem 1rem;border-radius:8px;font-size:.8rem;font-weight:600;border:1px solid var(--border-strong);color:var(--text);text-decoration:none;transition:all .16s ease;background:var(--surface)}
+.testi-filter-btn:hover{border-color:var(--purple-light);color:var(--purple-light)}
+.testi-filter-btn.active{background:var(--purple);color:#fff;border-color:var(--purple);box-shadow:0 0 16px -4px rgba(157,92,245,.3)}
 .testi-page-hero {
   text-align: center;
   margin-bottom: 3rem;
@@ -100,6 +105,19 @@
   font-size: .78rem;
   color: var(--text-mute);
   margin-top: .1rem;
+}
+.testi-page-rating {
+  display: flex;
+  gap: .1rem;
+  margin-bottom: .75rem;
+}
+.testi-page-star {
+  font-size: 1rem;
+  color: var(--text-mute);
+  line-height: 1;
+}
+.testi-page-star.filled {
+  color: #f5b301;
 }
 .testi-page-quote {
   font-size: .88rem;

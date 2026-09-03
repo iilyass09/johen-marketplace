@@ -29,6 +29,11 @@
 .inq-modal-value{font-size:.85rem;font-weight:600}
 .inq-modal-divider{border:0;border-top:1px solid var(--glass-border);margin:0 0 1.25rem}
 .inq-modal-message{font-size:.88rem;line-height:1.65;white-space:pre-wrap;color:var(--text)}
+.inq-reply-block{margin-top:.75rem;padding-top:1rem;border-top:1px solid var(--glass-border)}
+.inq-reply-label{display:flex;align-items:center;gap:.5rem;font-size:.73rem;color:var(--text-dim);margin-bottom:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.inq-reply-label i{color:#10b981}
+.inq-reply-bubble{position:relative;background:linear-gradient(135deg,rgba(16,185,129,.10),rgba(16,185,129,.04));border:1px solid rgba(16,185,129,.25);border-radius:6px 16px 16px 16px;padding:8px 14px;font-size:.88rem;line-height:1.65;white-space:pre-wrap;color:var(--text)}
+.inq-reply-time{font-size:.68rem;color:var(--text-dim);margin-top:.35rem}
 .inq-icon-wrap{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.65rem;font-weight:700;color:#fff}
 .inq-icon-wrap--topup{background:linear-gradient(135deg,#854DEA,#a575ff)}
 .inq-icon-wrap--jual-beli-akun{background:linear-gradient(135deg,#f59e0b,#fbbf24)}
@@ -99,7 +104,7 @@
           }
         @endphp
         <div class="inq-card {{ $inq->responded_at ? 'inq-card-responded' : ($inq->is_read ? 'inq-card-read' : '') }}"
-             data-inquiry='{{ json_encode($inq->only(['id','name','email','phone','category','message','is_read','responded_at','created_at'])) }}'
+             data-inquiry='{{ json_encode($inq->only(['id','name','email','phone','category','message','admin_reply','is_read','responded_at','created_at'])) }}'
              onclick="openInqModal(this)">
           <div class="inq-icon-wrap {{ $wrapClass }}">{{ $iconText }}</div>
           <div class="inq-body">
@@ -201,6 +206,11 @@
           <div class="inq-modal-label">Pesan</div>
           <div class="inq-modal-message" id="m_message"></div>
         </div>
+        <div class="inq-reply-block" id="m_reply_block" style="display:none">
+          <div class="inq-reply-label"><i class="fas fa-headset"></i> Balasan CS</div>
+          <div class="inq-reply-bubble" id="m_reply"></div>
+          <div class="inq-reply-time" id="m_reply_time"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -232,6 +242,15 @@ function openInqModal(el) {
   document.getElementById('m_phone').textContent = d.phone || '-';
   document.getElementById('m_date').textContent = d.created_at;
   document.getElementById('m_message').textContent = d.message;
+
+  const replyBlock = document.getElementById('m_reply_block');
+  if (d.admin_reply) {
+    document.getElementById('m_reply').textContent = d.admin_reply;
+    document.getElementById('m_reply_time').textContent = d.responded_at ? 'Direspon ' + d.responded_at : '';
+    replyBlock.style.display = 'block';
+  } else {
+    replyBlock.style.display = 'none';
+  }
 
   const catColors = {
     topup: { bg: 'rgba(133,77,234,0.15)', text: '#9d5cf5' },
