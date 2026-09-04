@@ -29,10 +29,12 @@ class PaymentGatewayService
     {
         return match ($method) {
             'qris' => ['gateway_type' => 'qris'],
-            'gopay', 'dana', 'ovo', 'shopeepay' => ['gateway_type' => 'ewallet', 'channel_code' => $this->ewalletChannelCode($method)],
+            'gopay', 'dana', 'ovo', 'shopeepay', 'linkaja' => ['gateway_type' => 'ewallet', 'channel_code' => $this->ewalletChannelCode($method)],
             'bca_va', 'bca' => ['gateway_type' => 'va', 'bank_code' => 'BCA', 'label' => 'BCA Virtual Account'],
+            'bri_va', 'bri' => ['gateway_type' => 'va', 'bank_code' => 'BRI', 'label' => 'BRI Virtual Account'],
             'bni_va', 'bni' => ['gateway_type' => 'va', 'bank_code' => 'BNI', 'label' => 'BNI Virtual Account'],
             'mandiri_va', 'mandiri' => ['gateway_type' => 'va', 'bank_code' => 'MANDIRI', 'label' => 'Mandiri Virtual Account'],
+            'permata_va', 'permata' => ['gateway_type' => 'va', 'bank_code' => 'PERMATA', 'label' => 'Permata Virtual Account'],
             'alfamart' => ['gateway_type' => 'retail', 'retail_outlet_name' => 'ALFAMART', 'label' => 'Alfamart'],
             'indomaret' => ['gateway_type' => 'retail', 'retail_outlet_name' => 'INDOMARET', 'label' => 'Indomaret'],
             default => ['gateway_type' => 'invoice'],
@@ -46,6 +48,7 @@ class PaymentGatewayService
             'ovo' => 'ID_OVO',
             'dana' => 'ID_DANA',
             'shopeepay' => 'ID_SHOPEEPAY',
+            'linkaja' => 'ID_LINKAJA',
             default => 'ID_DANA',
         };
     }
@@ -57,9 +60,31 @@ class PaymentGatewayService
     public function normalizeMethodCode(string $method): string
     {
         return match ($method) {
-            'bca', 'bni', 'mandiri' => $method.'_va',
+            'bca', 'bni', 'bri', 'mandiri', 'permata' => $method.'_va',
             default => $method,
         };
+    }
+
+    /**
+     * Saring koleksi PaymentMethod (Collection) hanya ke channel yang benar-benar
+     * tersedia & diaktifkan di akun Xendit. Bila Xendit tidak dikonfigurasi atau
+     * query channel gagal, kembalikan koleksi apa adanya (fallback ke is_active DB).
+     */
+    public function filterAvailableMethods($methods)
+    {
+        $available = $this->xendit->availableChannels();
+
+        if ($available === null || empty($available)) {
+            return $methods;
+        }
+
+        $avail = array_flip($available);
+
+        return collect($methods)->filter(function ($m) use ($avail) {
+            $code = is_object($m) ? $m->code : $m['code'] ?? null;
+
+            return $code !== null && isset($avail[$this->xendit->channelCodeFor($code)]);
+        })->values();
     }
 
     /**

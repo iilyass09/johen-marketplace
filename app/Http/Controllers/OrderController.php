@@ -31,6 +31,8 @@ class OrderController extends Controller
     {
         $paymentMethods = \App\Models\PaymentMethod::where('is_active', true)->get();
 
+        $paymentMethods = $this->gateway->filterAvailableMethods($paymentMethods);
+
         return view('orders.create', compact('product', 'paymentMethods'));
     }
 

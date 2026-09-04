@@ -23,7 +23,7 @@ class PaymentMethodSeeder extends Seeder
                 'category' => 'ewallet',
                 'photo' => 'payments/gopay.svg',
                 'photo_light' => 'payments/gopay-dark.png',
-                'is_active' => true,
+                'is_active' => false,
             ],
             [
                 'name' => 'Dana',
@@ -33,11 +33,19 @@ class PaymentMethodSeeder extends Seeder
                 'is_active' => true,
             ],
             [
+                'name' => 'LinkAja',
+                'code' => 'linkaja',
+                'category' => 'ewallet',
+                'photo' => null,
+                'photo_light' => null,
+                'is_active' => true,
+            ],
+            [
                 'name' => 'ShopeePay',
                 'code' => 'shopeepay',
                 'category' => 'ewallet',
                 'photo' => 'payments/shopeepay.svg',
-                'is_active' => true,
+                'is_active' => false,
             ],
             [
                 'name' => 'Ovo',
@@ -62,6 +70,13 @@ class PaymentMethodSeeder extends Seeder
                 'is_active' => true,
             ],
             [
+                'name' => 'BRI Virtual Account',
+                'code' => 'bri_va',
+                'category' => 'va',
+                'photo' => 'payments/bri.svg',
+                'is_active' => true,
+            ],
+            [
                 'name' => 'BNI Virtual Account',
                 'code' => 'bni_va',
                 'category' => 'va',
@@ -73,6 +88,14 @@ class PaymentMethodSeeder extends Seeder
                 'code' => 'mandiri_va',
                 'category' => 'va',
                 'photo' => 'payments/mandiri.svg',
+                'is_active' => true,
+            ],
+            [
+                'name' => 'Permata Virtual Account',
+                'code' => 'permata_va',
+                'category' => 'va',
+                'photo' => null,
+                'photo_light' => null,
                 'is_active' => true,
             ],
             [

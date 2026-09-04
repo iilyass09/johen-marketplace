@@ -396,4 +396,66 @@ class XenditService
 
         return hash_equals($this->callbackToken, (string) $token);
     }
+
+    /**
+     * Ambil channel pembayaran yang benar-benar tersedia & diaktifkan pada
+     * akun Xendit (GET /payment_channels). Hasil di-cache sebentar.
+     *
+     * Return array berisi channel code yang enabled, contoh: ['QRIS','DANA','OVO',...].
+     * Bila gagal / tidak dikonfigurasi, return null (pemanggil boleh pakai fallback).
+     */
+    public function availableChannels(): ?array
+    {
+        if (! $this->isConfigured()) {
+            return null;
+        }
+
+        return \Illuminate\Support\Facades\Cache::remember('xendit.available_channels', 600, function () {
+            try {
+                $response = Http::withBasicAuth($this->secretKey, '')
+                    ->acceptJson()
+                    ->get($this->baseUrl.'/payment_channels');
+
+                if (! $response->successful()) {
+                    Log::warning('Xendit get payment channels failed: '.$response->status());
+
+                    return null;
+                }
+
+                return collect($response->json())
+                    ->filter(fn ($ch) => ! empty($ch['is_enabled']))
+                    ->pluck('channel_code')
+                    ->map(fn ($c) => strtoupper((string) $c))
+                    ->values()
+                    ->all();
+            } catch (\Exception $e) {
+                Log::warning('Xendit get payment channels error: '.$e->getMessage());
+
+                return null;
+            }
+        });
+    }
+
+    /**
+     * Map code metode pembayaran internal ke channel code Xendit.
+     */
+    public function channelCodeFor(string $method): string
+    {
+        return match (strtolower($method)) {
+            'qris' => 'QRIS',
+            'gopay' => 'GOPAY',
+            'dana' => 'DANA',
+            'ovo' => 'OVO',
+            'shopeepay' => 'SHOPEEPAY',
+            'linkaja', 'link_aja' => 'LINKAJA',
+            'bca_va', 'bca' => 'BCA',
+            'bri_va', 'bri' => 'BRI',
+            'bni_va', 'bni' => 'BNI',
+            'mandiri_va', 'mandiri' => 'MANDIRI',
+            'permata_va', 'permata' => 'PERMATA',
+            'alfamart' => 'ALFAMART',
+            'indomaret' => 'INDOMARET',
+            default => strtoupper((string) $method),
+        };
+    }
 }

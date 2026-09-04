@@ -64,6 +64,8 @@ class HomeController extends Controller
 
         $paymentMethods = PaymentMethod::where('is_active', true)->get();
 
+        $paymentMethods = app(\App\Services\PaymentGatewayService::class)->filterAvailableMethods($paymentMethods);
+
         return view('game-detail', compact('brand', 'products', 'paymentMethods'));
     }
 
@@ -362,6 +364,8 @@ class HomeController extends Controller
         }
 
         $paymentMethods = PaymentMethod::where('is_active', true)->get();
+
+        $paymentMethods = app(\App\Services\PaymentGatewayService::class)->filterAvailableMethods($paymentMethods);
 
         return view('pages.jual-beli-akun-checkout', compact('listing', 'paymentMethods'));
     }

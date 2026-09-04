@@ -24,20 +24,31 @@
   }
   $selectedRegion = $regions->isNotEmpty() ? 'ID' : null;
   $firstProduct = $products->first();
+  // Mapping eksplisit channel code -> kategori. Tidak bergantung pada kolom
+  // `category` di DB (jika data hosting kategori-nya kosong/salah, grouping
+  // tetap benar). Pastikan channel code sesuai Xendit.
+  $channelCategory = function (string $code): string {
+      $code = strtolower($code);
+      if (in_array($code, ['qris'], true)) return 'qris';
+      if (in_array($code, ['gopay', 'dana', 'ovo', 'shopeepay', 'linkaja', 'gcash'], true)) return 'ewallet';
+      if (in_array($code, ['bca', 'bca_va', 'bri', 'bri_va', 'bni', 'bni_va', 'mandiri', 'mandiri_va', 'permata', 'permata_va', 'sa', 'saham', 'other_bank'], true)) return 'va';
+      if (in_array($code, ['alfamart', 'indomaret'], true)) return 'convenience_store';
+      return 'ewallet';
+  };
   $payData = $paymentMethods->map(fn($m) => [
       'key' => $m->code,
       'title' => $m->name,
-      'category' => $m->category,
+      'category' => $channelCategory($m->code),
       'photo' => $m->photo_url ?? null,
       'fee' => 0,
   ])->values();
   $categories = [
       'qris' => 'QRIS',
       'ewallet' => 'E-Wallet',
-      'va' => 'Virtual Account',
+      'va' => 'Virtual Account / Bank',
       'convenience_store' => 'Convenience Store',
   ];
-  $groupedPay = $paymentMethods->groupBy('category');
+  $groupedPay = $paymentMethods->groupBy(fn($m) => $channelCategory($m->code));
 @endphp
 
 @section('content')
