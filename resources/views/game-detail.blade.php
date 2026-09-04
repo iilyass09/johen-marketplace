@@ -236,15 +236,6 @@
         <div class="gd-pay-category" data-category="{{ $catKey }}">
           <button type="button" class="gd-pay-cat-head">
             <span class="gd-pay-cat-label">{{ $catLabel }}</span>
-            <span class="gd-pay-cat-logos">
-              @foreach($catMethods as $pm)
-                <span class="gd-pay-cat-logo">
-                  @if($pm->photo_url)
-                    <img src="{{ $pm->photo_url }}" alt="{{ $pm->name }}"@if($pm->photo_light_url) data-light="{{ $pm->photo_light_url }}"@endif>
-                  @endif
-                </span>
-              @endforeach
-            </span>
             <svg class="gd-pay-cat-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
           </button>
           <div class="gd-pay-cat-body">
@@ -793,7 +784,7 @@ function showToast(msg, ok) {
 /* theme-aware payment images */
 function swapPayImages() {
     const isLight = document.documentElement.getAttribute('data-theme') === 'light';
-    document.querySelectorAll('.gd-pay-icon img[data-light], .gd-pay-cat-logo img[data-light]').forEach(img => {
+    document.querySelectorAll('.gd-pay-icon img[data-light]').forEach(img => {
         if (isLight) {
             img.dataset.dark = img.src;
             img.src = img.dataset.light;
