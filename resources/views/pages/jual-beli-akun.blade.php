@@ -14,11 +14,11 @@
   <section class="hero-section" id="jba-hero" style="position:relative;overflow:hidden;border-radius:20px;display:flex;align-items:center;justify-content:center;background:var(--bg-soft)">
     @if(count($jbaBanners))
       <div class="hero-banner-track">
-        <img src="{{ asset('storage/'.$jbaBanners[0]) }}" alt="Hero Banner"
+        <img src="{{ asset('storage/'.$jbaBanners[0]) }}" alt=""
              data-banners='{{ json_encode(array_map(fn($b) => asset('storage/'.$b), $jbaBanners)) }}'
              class="hero-banner-img hero-banner-img-a"
              style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center">
-        <img src="" alt="Hero Banner"
+        <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt=""
              class="hero-banner-img hero-banner-img-b"
              style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center">
       </div>

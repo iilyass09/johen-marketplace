@@ -48,21 +48,38 @@
 
         <div class="mb-6">
             <label class="block text-sm font-medium mb-2">Metode Pembayaran</label>
-            <div class="space-y-2">
-                @foreach($paymentMethods as $pm)
-                <label class="flex items-center gap-3 p-3 rounded-lg border border-gray-700 bg-gray-700/40 cursor-pointer hover:border-purple-500 transition payment-method-option">
-                    <input type="radio" name="payment_method" value="{{ $pm->code }}"
-                           @if(old('payment_method', 'qris') === $pm->code) checked @endif
-                           class="accent-purple-500">
-                    @if($pm->photo_light_url)
-                        <img src="{{ $pm->photo_light_url }}" alt="{{ $pm->name }}" class="h-7 object-contain">
-                    @elseif($pm->photo_url)
-                        <img src="{{ $pm->photo_url }}" alt="{{ $pm->name }}" class="h-7 object-contain">
-                    @endif
-                    <span class="text-sm text-gray-200">{{ $pm->name }}</span>
-                </label>
-                @endforeach
-            </div>
+            @php
+                $categories = [
+                    'qris' => 'QRIS',
+                    'ewallet' => 'E-Wallet',
+                    'va' => 'Virtual Account',
+                    'convenience_store' => 'Convenience Store',
+                ];
+                $groupedPay = $paymentMethods->groupBy('category');
+            @endphp
+            @foreach($categories as $catKey => $catLabel)
+                @php $catMethods = $groupedPay->get($catKey, collect()); @endphp
+                @if($catMethods->isNotEmpty())
+                <div class="mb-3">
+                    <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{{ $catLabel }}</div>
+                    <div class="space-y-2">
+                        @foreach($catMethods as $pm)
+                        <label class="flex items-center gap-3 p-3 rounded-lg border border-gray-700 bg-gray-700/40 cursor-pointer hover:border-purple-500 transition payment-method-option">
+                            <input type="radio" name="payment_method" value="{{ $pm->code }}"
+                                   @if(old('payment_method', 'qris') === $pm->code) checked @endif
+                                   class="accent-purple-500">
+                            @if($pm->photo_light_url)
+                                <img src="{{ $pm->photo_light_url }}" alt="{{ $pm->name }}" class="h-7 object-contain">
+                            @elseif($pm->photo_url)
+                                <img src="{{ $pm->photo_url }}" alt="{{ $pm->name }}" class="h-7 object-contain">
+                            @endif
+                            <span class="text-sm text-gray-200">{{ $pm->name }}</span>
+                        </label>
+                        @endforeach
+                    </div>
+                </div>
+                @endif
+            @endforeach
             @error('payment_method')
                 <p class="text-red-400 text-sm mt-1">{{ $message }}</p>
             @enderror
