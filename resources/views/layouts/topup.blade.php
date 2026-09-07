@@ -11,7 +11,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="icon" type="image/png" href="{{ asset('logo.png') }}">
 <link rel="shortcut icon" href="{{ asset('logo.png') }}">
-<link rel="stylesheet" href="{{ asset('css/topup.css') }}?v=9">
+<link rel="stylesheet" href="{{ asset('css/topup.css') }}?v=14">
 @stack('styles')
 </head>
 <body>
@@ -212,23 +212,29 @@
 <div class="popup-overlay" id="popupOverlay">
   <div class="popup-modal" id="popupModal">
     <button class="popup-close" id="popupClose" aria-label="Tutup">&times;</button>
-    @foreach($popupBanners as $popup)
-      <div class="popup-slide {{ $loop->first ? 'active' : '' }}" data-orientation="{{ $popup->orientation }}">
-        @if($popup->link)
-          <a href="{{ $popup->link }}" class="popup-link" target="_blank" rel="noopener">
-            <img src="{{ $popup->image_url }}" alt="{{ $popup->title ?? 'Promo' }}" class="popup-image">
-          </a>
-        @else
-          <img src="{{ $popup->image_url }}" alt="{{ $popup->title ?? 'Promo' }}" class="popup-image">
-        @endif
-        @if($popup->title || $popup->description)
-          <div class="popup-caption">
-            @if($popup->title)<h3 class="popup-title">{{ $popup->title }}</h3>@endif
-            @if($popup->description)<p class="popup-desc">{{ $popup->description }}</p>@endif
+    <div class="popup-scroll">
+      @foreach($popupBanners as $popup)
+        <div class="popup-slide {{ $loop->first ? 'active' : '' }}" data-orientation="{{ $popup->orientation }}">
+          <div class="popup-media">
+            @if($popup->link)
+              <a href="{{ $popup->link }}" class="popup-link" target="_blank" rel="noopener">
+                <img src="{{ $popup->image_url }}" alt="{{ $popup->title ?? 'Promo' }}" class="popup-image"
+                     style="object-fit:{{ $popup->image_fit ?? 'contain' }};object-position:{{ $popup->image_position ?? 'center' }}">
+              </a>
+            @else
+              <img src="{{ $popup->image_url }}" alt="{{ $popup->title ?? 'Promo' }}" class="popup-image"
+                   style="object-fit:{{ $popup->image_fit ?? 'contain' }};object-position:{{ $popup->image_position ?? 'center' }}">
+            @endif
           </div>
-        @endif
-      </div>
-    @endforeach
+          @if($popup->title || $popup->description)
+            <div class="popup-caption">
+              @if($popup->title)<h3 class="popup-title">{{ $popup->title }}</h3>@endif
+              @if($popup->description)<p class="popup-desc">{{ $popup->description }}</p>@endif
+            </div>
+          @endif
+        </div>
+      @endforeach
+    </div>
     @if($popupBanners->count() > 1)
       <div class="popup-dots" id="popupDots">
         @foreach($popupBanners as $i => $popup)

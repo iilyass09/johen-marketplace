@@ -191,7 +191,7 @@ class AdminController extends Controller
         ];
 
         if ($request->hasFile('photo') && $request->file('photo')->isValid()) {
-            $data['photo'] = $request->file('photo')->store('products', 'public');
+            $data['photo'] = ImageOptimizer::storeOptimized($request->file('photo'), 'products', 800, 800);
         }
 
         Product::create($data);
@@ -248,7 +248,7 @@ class AdminController extends Controller
             if ($product->photo) {
                 Storage::disk('public')->delete($product->photo);
             }
-            $data['photo'] = $request->file('photo')->store('products', 'public');
+            $data['photo'] = ImageOptimizer::storeOptimized($request->file('photo'), 'products', 800, 800);
         }
 
         $product->update($data);
@@ -339,11 +339,11 @@ class AdminController extends Controller
         ];
 
         if ($request->hasFile('thumbnail') && $request->file('thumbnail')->isValid()) {
-            $data['thumbnail'] = $request->file('thumbnail')->store('brands', 'public');
+            $data['thumbnail'] = ImageOptimizer::storeOptimized($request->file('thumbnail'), 'brands', 640, 640);
         }
 
         if ($request->hasFile('featured_thumbnail') && $request->file('featured_thumbnail')->isValid()) {
-            $data['featured_thumbnail'] = $request->file('featured_thumbnail')->store('brands', 'public');
+            $data['featured_thumbnail'] = ImageOptimizer::storeOptimized($request->file('featured_thumbnail'), 'brands', 1280, 1280);
         }
 
         $data = array_merge($data, $this->handleFeaturedImages($request));
@@ -411,14 +411,14 @@ class AdminController extends Controller
             if ($brand->thumbnail) {
                 Storage::disk('public')->delete($brand->thumbnail);
             }
-            $data['thumbnail'] = $request->file('thumbnail')->store('brands', 'public');
+            $data['thumbnail'] = ImageOptimizer::storeOptimized($request->file('thumbnail'), 'brands', 640, 640);
         }
 
         if ($request->hasFile('featured_thumbnail') && $request->file('featured_thumbnail')->isValid()) {
             if ($brand->featured_thumbnail) {
                 Storage::disk('public')->delete($brand->featured_thumbnail);
             }
-            $data['featured_thumbnail'] = $request->file('featured_thumbnail')->store('brands', 'public');
+            $data['featured_thumbnail'] = ImageOptimizer::storeOptimized($request->file('featured_thumbnail'), 'brands', 1280, 1280);
         }
 
         $data = array_merge($data, $this->handleFeaturedImages($request, $brand));
@@ -584,11 +584,11 @@ class AdminController extends Controller
         ];
 
         if ($request->hasFile('photo') && $request->file('photo')->isValid()) {
-            $data['photo'] = $request->file('photo')->store('payments', 'public');
+            $data['photo'] = ImageOptimizer::storeOptimized($request->file('photo'), 'payments', 400, 400);
         }
 
         if ($request->hasFile('photo_light') && $request->file('photo_light')->isValid()) {
-            $data['photo_light'] = $request->file('photo_light')->store('payments', 'public');
+            $data['photo_light'] = ImageOptimizer::storeOptimized($request->file('photo_light'), 'payments', 400, 400);
         }
 
         PaymentMethod::create($data);
@@ -634,14 +634,14 @@ class AdminController extends Controller
             if ($paymentMethod->photo) {
                 Storage::disk('public')->delete($paymentMethod->photo);
             }
-            $data['photo'] = $request->file('photo')->store('payments', 'public');
+            $data['photo'] = ImageOptimizer::storeOptimized($request->file('photo'), 'payments', 400, 400);
         }
 
         if ($request->hasFile('photo_light') && $request->file('photo_light')->isValid()) {
             if ($paymentMethod->photo_light) {
                 Storage::disk('public')->delete($paymentMethod->photo_light);
             }
-            $data['photo_light'] = $request->file('photo_light')->store('payments', 'public');
+            $data['photo_light'] = ImageOptimizer::storeOptimized($request->file('photo_light'), 'payments', 400, 400);
         }
 
         $paymentMethod->update($data);
@@ -781,7 +781,7 @@ class AdminController extends Controller
             if ($oldLogo && Storage::disk('public')->exists($oldLogo)) {
                 Storage::disk('public')->delete($oldLogo);
             }
-            $path = $request->file('site_logo')->store('settings', 'public');
+            $path = ImageOptimizer::storeOptimized($request->file('site_logo'), 'settings', 512, 512);
             \App\Models\SiteSetting::set('site_logo', $path, 'image');
         }
 
@@ -792,7 +792,7 @@ class AdminController extends Controller
                 if ($oldBanner && Storage::disk('public')->exists($oldBanner)) {
                     Storage::disk('public')->delete($oldBanner);
                 }
-                $path = $request->file($key)->store('settings', 'public');
+                $path = ImageOptimizer::storeOptimized($request->file($key), 'settings', 1920, 1080);
                 \App\Models\SiteSetting::set($key, $path, 'image');
             }
         }
@@ -804,7 +804,7 @@ class AdminController extends Controller
                 if ($oldBanner && Storage::disk('public')->exists($oldBanner)) {
                     Storage::disk('public')->delete($oldBanner);
                 }
-                $path = $request->file($key)->store('settings', 'public');
+                $path = ImageOptimizer::storeOptimized($request->file($key), 'settings', 1920, 1080);
                 \App\Models\SiteSetting::set($key, $path, 'image');
             }
         }
@@ -826,7 +826,7 @@ class AdminController extends Controller
                 if ($brand && $brand->$field) {
                     Storage::disk('public')->delete($brand->$field);
                 }
-                $data[$field] = $request->file($field)->store('brands', 'public');
+                $data[$field] = ImageOptimizer::storeOptimized($request->file($field), 'brands', 1280, 1280);
             }
         }
         return $data;

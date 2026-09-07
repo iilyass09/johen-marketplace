@@ -73,7 +73,7 @@
                         <div class="flex items-center justify-center gap-1.5">
                             <button type="button" class="btn btn-ghost btn-xs"
                                 data-popup='{{ json_encode(array_merge(
-                                    $popup->only(['id','title','description','orientation','link','sort_order','is_active']),
+                                    $popup->only(['id','title','description','orientation','image_fit','image_position','link','sort_order','is_active']),
                                     ['starts_at' => $popup->starts_at?->format('Y-m-d\TH:i'),
                                      'ends_at' => $popup->ends_at?->format('Y-m-d\TH:i'),
                                      'image_url' => $popup->image_url]
@@ -154,10 +154,34 @@
                     <div class="flex-1">
                         <input type="file" name="image" id="popupImageInput" accept="image/jpeg,image/png,image/jpg,image/webp"
                                class="w-full text-sm" style="color:var(--text-muted)">
-                        <p style="color:var(--text-dim);font-size:0.72rem;margin-top:0.25rem" id="popupImageHint">Maksimal 5MB. Untuk hasil terbaik gunakan orientasi sesuai pilihan di atas.</p>
+                        <p style="color:var(--text-dim);font-size:0.72rem;margin-top:0.25rem" id="popupImageHint">Maksimal 5MB. Gambar otomatis dioptimalkan (WebP) agar jernih, tajam, dan berukuran kecil. Untuk hasil terbaik gunakan orientasi sesuai pilihan di atas.</p>
                         <p class="text-red-400 text-xs mt-1 hidden" id="err_image"></p>
                     </div>
                 </div>
+            </div>
+
+            <div class="mt-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1.5">Cara Gambar Ditampilkan</label>
+                        <select name="image_fit" id="f_image_fit" class="input-field">
+                            <option value="contain">Sesuaikan penuh (tampil utuh)</option>
+                            <option value="cover">Penuhi frame (potong pinggir)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1.5">Posisi Gambar</label>
+                        <select name="image_position" id="f_image_position" class="input-field">
+                            <option value="top">Atas</option>
+                            <option value="center">Tengah</option>
+                            <option value="bottom">Bawah</option>
+                        </select>
+                    </div>
+                </div>
+                <p style="color:var(--text-dim);font-size:0.72rem;margin-top:0.4rem">
+                    Mode <b>"Penuhi frame"</b> akan menjadikan gambar penuh memenuhi area popup (mirip Background Detail Game).
+                    Posisi menentukan bagian gambar yang tampil saat ukurannya kurang pas.
+                </p>
             </div>
 
             <div class="mt-4">
@@ -238,7 +262,19 @@ function setPreviewByOrientation() {
     const preview = document.getElementById('popupImagePreview');
     preview.style.width = isPortrait ? '72px' : '96px';
     preview.style.height = isPortrait ? '96px' : '72px';
+    applyFitToPreview();
 }
+
+function applyFitToPreview() {
+    const img = document.getElementById('popupImage');
+    const fit = document.getElementById('f_image_fit')?.value || 'contain';
+    const pos = document.getElementById('f_image_position')?.value || 'center';
+    img.style.objectFit = fit;
+    img.style.objectPosition = pos;
+}
+
+document.getElementById('f_image_fit')?.addEventListener('change', applyFitToPreview);
+document.getElementById('f_image_position')?.addEventListener('change', applyFitToPreview);
 
 function openCreateModal() {
     editPopupId = null;
@@ -249,8 +285,10 @@ function openCreateModal() {
     document.getElementById('popupForm').reset();
     document.getElementById('popupImage').classList.add('hidden');
     document.getElementById('popupImagePlaceholder').classList.remove('hidden');
-    document.getElementById('popupImageHint').textContent = 'Maksimal 5MB. Untuk hasil terbaik gunakan orientasi sesuai pilihan di atas.';
+    document.getElementById('popupImageHint').textContent = 'Maksimal 5MB. Gambar otomatis dioptimalkan (WebP) agar jernih dan berukuran kecil. Untuk hasil terbaik gunakan orientasi sesuai pilihan di atas.';
     document.getElementById('f_orientation').value = 'portrait';
+    document.getElementById('f_image_fit').value = 'contain';
+    document.getElementById('f_image_position').value = 'center';
     document.getElementById('f_is_active').checked = true;
     document.getElementById('f_sort_order').value = 0;
     setPreviewByOrientation();
@@ -268,6 +306,8 @@ function openEditModal(btn) {
     document.getElementById('f_title').value = p.title || '';
     document.getElementById('f_description').value = p.description || '';
     document.getElementById('f_orientation').value = p.orientation || 'portrait';
+    document.getElementById('f_image_fit').value = p.image_fit || 'contain';
+    document.getElementById('f_image_position').value = p.image_position || 'center';
     document.getElementById('f_link').value = p.link || '';
     document.getElementById('f_starts_at').value = p.starts_at || '';
     document.getElementById('f_ends_at').value = p.ends_at || '';
@@ -275,7 +315,7 @@ function openEditModal(btn) {
     document.getElementById('f_sort_order').value = p.sort_order || 0;
     document.getElementById('popupImage').classList.add('hidden');
     document.getElementById('popupImagePlaceholder').classList.remove('hidden');
-    document.getElementById('popupImageHint').textContent = 'Kosongkan jika tidak ingin mengubah. Maks 5MB.';
+    document.getElementById('popupImageHint').textContent = 'Kosongkan jika tidak ingin mengubah. Maks 5MB. Gambar baru otomatis dioptimalkan (WebP).';
     if (p.image_url) {
         document.getElementById('popupImage').src = p.image_url;
         document.getElementById('popupImage').classList.remove('hidden');

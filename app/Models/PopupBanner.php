@@ -10,6 +10,8 @@ class PopupBanner extends Model
         'title',
         'description',
         'image',
+        'image_fit',
+        'image_position',
         'orientation',
         'link',
         'is_active',

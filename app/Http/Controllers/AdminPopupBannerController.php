@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PopupBanner;
+use App\Services\ImageOptimizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -21,6 +22,8 @@ class AdminPopupBannerController extends Controller
             'description' => 'nullable|string|max:500',
             'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:5120',
             'orientation' => 'required|string|in:portrait,landscape',
+            'image_fit' => 'nullable|string|in:contain,cover',
+            'image_position' => 'nullable|string|in:top,center,bottom',
             'link' => 'nullable|string|max:500',
             'is_active' => 'boolean',
             'sort_order' => 'nullable|integer|min:0',
@@ -39,6 +42,8 @@ class AdminPopupBannerController extends Controller
             'title' => $request->title,
             'description' => $request->description,
             'orientation' => $request->orientation,
+            'image_fit' => $request->input('image_fit', 'contain'),
+            'image_position' => $request->input('image_position', 'center'),
             'link' => $request->link,
             'is_active' => $request->boolean('is_active', true),
             'sort_order' => $request->integer('sort_order', 0),
@@ -47,7 +52,7 @@ class AdminPopupBannerController extends Controller
         ];
 
         if ($request->hasFile('image') && $request->file('image')->isValid()) {
-            $data['image'] = $request->file('image')->store('popup-banners', 'public');
+            $data['image'] = $this->storeImage($request);
         }
 
         PopupBanner::create($data);
@@ -66,6 +71,8 @@ class AdminPopupBannerController extends Controller
             'description' => 'nullable|string|max:500',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
             'orientation' => 'required|string|in:portrait,landscape',
+            'image_fit' => 'nullable|string|in:contain,cover',
+            'image_position' => 'nullable|string|in:top,center,bottom',
             'link' => 'nullable|string|max:500',
             'is_active' => 'boolean',
             'sort_order' => 'nullable|integer|min:0',
@@ -84,6 +91,8 @@ class AdminPopupBannerController extends Controller
             'title' => $request->title,
             'description' => $request->description,
             'orientation' => $request->orientation,
+            'image_fit' => $request->input('image_fit', 'contain'),
+            'image_position' => $request->input('image_position', 'center'),
             'link' => $request->link,
             'is_active' => $request->boolean('is_active', true),
             'sort_order' => $request->integer('sort_order', 0),
@@ -95,7 +104,7 @@ class AdminPopupBannerController extends Controller
             if ($popupBanner->image) {
                 Storage::disk('public')->delete($popupBanner->image);
             }
-            $data['image'] = $request->file('image')->store('popup-banners', 'public');
+            $data['image'] = $this->storeImage($request);
         }
 
         $popupBanner->update($data);
@@ -105,6 +114,11 @@ class AdminPopupBannerController extends Controller
         }
 
         return redirect()->route('admin.popup-banners')->with('success', 'Popup banner berhasil diperbarui');
+    }
+
+    private function storeImage(Request $request): string
+    {
+        return ImageOptimizer::storeOptimized($request->file('image'), 'popup-banners', 1200, 1600);
     }
 
     public function toggle(PopupBanner $popupBanner)

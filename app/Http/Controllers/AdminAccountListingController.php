@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AccountListing;
 use App\Models\Brand;
+use App\Services\ImageOptimizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -67,7 +68,7 @@ class AdminAccountListingController extends Controller
 
         foreach (['photo', 'detail_photo_1', 'detail_photo_2', 'detail_photo_3', 'detail_photo_4'] as $field) {
             if ($request->hasFile($field) && $request->file($field)->isValid()) {
-                $data[$field] = $request->file($field)->store('account-listings', 'public');
+                $data[$field] = ImageOptimizer::storeOptimized($request->file($field), 'account-listings', 1600, 1600);
             }
         }
 
@@ -132,7 +133,7 @@ class AdminAccountListingController extends Controller
                 if ($accountListing->$field) {
                     Storage::disk('public')->delete($accountListing->$field);
                 }
-                $data[$field] = $request->file($field)->store('account-listings', 'public');
+                $data[$field] = ImageOptimizer::storeOptimized($request->file($field), 'account-listings', 1600, 1600);
             }
         }
 
