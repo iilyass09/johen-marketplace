@@ -88,6 +88,7 @@
   } else {
     $first = $featuredList->shift();
   }
+  $featuredList = $featuredList->take(6)->values();
   $badges = ['🔥 Populer', '🚀 Trending', '⭐ Favorit', '💎 Premium', '🏆 Best', '✨ Top', '🎯 Pilihan'];
   $colorPalette = [
     ['primary' => '#f59e0b', 'secondary' => '#2a1f0a'],
@@ -131,10 +132,10 @@
       @foreach($featuredList as $i => $card)
       <a href="{{ route('games.show', $card->name) }}" class="bento-card bento-small-card"
          data-featured-imgs='{{ json_encode($card->imgs) }}'>
-        <div class="bento-card-bg" style="{{ fgBgStyle($card, $colorPalette[$i + 1]) }}"></div>
+        <div class="bento-card-bg" style="{{ fgBgStyle($card, $colorPalette[($i + 1) % count($colorPalette)]) }}"></div>
         <div class="bento-overlay"></div>
         <div class="bento-small-content">
-          <span class="bento-small-badge">{{ $badges[$i] }}</span>
+          <span class="bento-small-badge">{{ $badges[$i % count($badges)] }}</span>
           <h4 class="bento-small-title">{{ $card->name }}</h4>
           <div class="bento-small-meta">
             <span>⭐ {{ $card->rating }}</span>

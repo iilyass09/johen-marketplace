@@ -530,6 +530,9 @@
                 <a href="{{ route('admin.payment-methods') }}" class="{{ request()->routeIs('admin.payment-methods*') ? 'active' : '' }}">
                     <i class="fas fa-credit-card"></i> Pembayaran
                 </a>
+                <a href="{{ route('admin.popup-banners') }}" class="{{ request()->routeIs('admin.popup-banners*') ? 'active' : '' }}">
+                    <i class="fas fa-bullhorn"></i> Popup Banner
+                </a>
                 <a href="{{ route('admin.gateway-status') }}" class="{{ request()->routeIs('admin.gateway-status*') ? 'active' : '' }}">
                     <i class="fas fa-plug"></i> Status Gateway
                 </a>

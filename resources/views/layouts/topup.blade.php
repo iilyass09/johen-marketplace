@@ -11,7 +11,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="icon" type="image/png" href="{{ asset('logo.png') }}">
 <link rel="shortcut icon" href="{{ asset('logo.png') }}">
-<link rel="stylesheet" href="{{ asset('css/topup.css') }}?v=7">
+<link rel="stylesheet" href="{{ asset('css/topup.css') }}?v=9">
 @stack('styles')
 </head>
 <body>
@@ -129,6 +129,10 @@
   </div>
 </header>
 
+@php
+    $popupBanners = \App\Models\PopupBanner::activeBanners();
+@endphp
+
 <main>
   @if(session('success') || session('error'))
     <div id="flash-data" style="display:none;">{{ json_encode(['success' => session('success'), 'error' => session('error')]) }}</div>
@@ -202,6 +206,43 @@
 
 <!-- Toast -->
 <div class="toast" id="toast"></div>
+
+<!-- ===== POPUP BANNER MODAL ===== -->
+@if($popupBanners->isNotEmpty())
+<div class="popup-overlay" id="popupOverlay">
+  <div class="popup-modal" id="popupModal">
+    <button class="popup-close" id="popupClose" aria-label="Tutup">&times;</button>
+    @foreach($popupBanners as $popup)
+      <div class="popup-slide {{ $loop->first ? 'active' : '' }}" data-orientation="{{ $popup->orientation }}">
+        @if($popup->link)
+          <a href="{{ $popup->link }}" class="popup-link" target="_blank" rel="noopener">
+            <img src="{{ $popup->image_url }}" alt="{{ $popup->title ?? 'Promo' }}" class="popup-image">
+          </a>
+        @else
+          <img src="{{ $popup->image_url }}" alt="{{ $popup->title ?? 'Promo' }}" class="popup-image">
+        @endif
+        @if($popup->title || $popup->description)
+          <div class="popup-caption">
+            @if($popup->title)<h3 class="popup-title">{{ $popup->title }}</h3>@endif
+            @if($popup->description)<p class="popup-desc">{{ $popup->description }}</p>@endif
+          </div>
+        @endif
+      </div>
+    @endforeach
+    @if($popupBanners->count() > 1)
+      <div class="popup-dots" id="popupDots">
+        @foreach($popupBanners as $i => $popup)
+          <button type="button" class="popup-dot {{ $loop->first ? 'active' : '' }}" data-index="{{ $i }}"></button>
+        @endforeach
+      </div>
+    @endif
+    <label class="popup-dont-show">
+      <input type="checkbox" id="popupDontShow">
+      <span>Jangan tampilkan lagi</span>
+    </label>
+  </div>
+</div>
+@endif
 
 <a href="{{ route('kontak') }}" class="fab-cs" aria-label="Hubungi CS">
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14h3a2 2 0 012 2v3a2 2 0 01-2 2H5a2 2 0 01-2-2v-7a9 9 0 0118 0v7a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3"/></svg>
@@ -356,6 +397,87 @@ html:not([data-theme="light"]) .mobile-theme-btn .icon-moon {
   window.ZONE_BRANDS = @json(\App\Models\Brand::where('requires_zone_id', true)->where('is_active', true)->pluck('name'));
 </script>
 <script src="{{ asset('js/topup.js') }}?v=4"></script>
+
+@if($popupBanners->isNotEmpty())
+<script>
+(function() {
+  var overlay = document.getElementById('popupOverlay');
+  var modal = document.getElementById('popupModal');
+  if (!overlay) return;
+
+  var dontShow = document.getElementById('popupDontShow');
+  var dontShowKey = 'popup_banner_dont_show_v1';
+
+  function openPopup() {
+    overlay.classList.add('show');
+    document.body.style.overflow = 'hidden';
+  }
+  function closePopup() {
+    overlay.classList.remove('show');
+    document.body.style.overflow = '';
+  }
+
+  var slides = Array.prototype.slice.call(modal.querySelectorAll('.popup-slide'));
+  var dots = Array.prototype.slice.call(modal.querySelectorAll('.popup-dot'));
+  var current = 0;
+
+  function activate(index) {
+    if (index < 0) index = slides.length - 1;
+    if (index > slides.length - 1) index = 0;
+    current = index;
+    slides.forEach(function(s, i) { s.classList.toggle('active', i === index); });
+    dots.forEach(function(d, i) {
+      d.classList.toggle('active', i === index);
+      var slide = slides[index];
+      d.classList.toggle('for-portrait', slide && slide.dataset.orientation === 'portrait');
+    });
+    handleOrientation();
+  }
+
+  function handleOrientation() {
+    var slide = slides[current];
+    if (slide) {
+      var isPortrait = slide.dataset.orientation === 'portrait';
+      modal.classList.toggle('popup-portrait', isPortrait);
+    }
+  }
+
+  if (dots.length) {
+    dots.forEach(function(d) {
+      d.addEventListener('click', function() { activate(parseInt(d.dataset.index, 10)); });
+    });
+  }
+
+  // Auto-rotate each 4s (stop when hovering)
+  var timer = null;
+  function startTimer() {
+    if (slides.length < 2) return;
+    stopTimer();
+    timer = setInterval(function() { activate(current + 1); }, 4000);
+  }
+  function stopTimer() { if (timer) { clearInterval(timer); timer = null; } }
+  modal.addEventListener('mouseenter', stopTimer);
+  modal.addEventListener('mouseleave', startTimer);
+
+  // Closing behavior
+  document.getElementById('popupClose').addEventListener('click', closePopup);
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) closePopup(); });
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closePopup(); });
+  dontShow.addEventListener('change', function() {
+    if (dontShow.checked) localStorage.setItem(dontShowKey, '1');
+    else localStorage.removeItem(dontShowKey);
+  });
+
+  // Selalu tampil setiap masuk website, kecuali user memilih "Jangan tampilkan lagi"
+  if (!localStorage.getItem(dontShowKey)) {
+    setTimeout(openPopup, 1200);
+    startTimer();
+    handleOrientation();
+  }
+})();
+</script>
+@endif
+
 @stack('scripts')
 </body>
 </html>

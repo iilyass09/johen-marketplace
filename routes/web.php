@@ -102,6 +102,12 @@ Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->gro
 
     Route::get('/gateway-status', [AdminController::class, 'gatewayStatus'])->name('gateway-status');
 
+    Route::get('/popup-banners', [App\Http\Controllers\AdminPopupBannerController::class, 'index'])->name('popup-banners');
+    Route::post('/popup-banners', [App\Http\Controllers\AdminPopupBannerController::class, 'store'])->name('popup-banners.store');
+    Route::put('/popup-banners/{popupBanner}', [App\Http\Controllers\AdminPopupBannerController::class, 'update'])->name('popup-banners.update');
+    Route::patch('/popup-banners/{popupBanner}/toggle', [App\Http\Controllers\AdminPopupBannerController::class, 'toggle'])->name('popup-banners.toggle');
+    Route::delete('/popup-banners/{popupBanner}', [App\Http\Controllers\AdminPopupBannerController::class, 'destroy'])->name('popup-banners.destroy');
+
     Route::get('/payment-methods', [AdminController::class, 'paymentMethods'])->name('payment-methods');
     Route::get('/payment-methods/create', [AdminController::class, 'paymentMethodsCreate'])->name('payment-methods.create');
     Route::post('/payment-methods', [AdminController::class, 'paymentMethodsStore'])->name('payment-methods.store');
