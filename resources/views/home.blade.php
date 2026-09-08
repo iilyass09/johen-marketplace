@@ -37,6 +37,57 @@
   </button>
 </section>
 
+<!-- ===== FLASH DEAL ===== -->
+@if(!empty($flashDeals) && $flashDeals->count())
+<section class="flash-section">
+  <div class="flash-panel">
+    <div class="flash-head">
+      <div class="flash-head-left">
+        <span class="flash-live-dot"></span>
+        <h2 class="flash-title">FLASH DEAL</h2>
+        <span class="flash-live-badge">LIVE</span>
+      </div>
+      <div class="flash-countdown">
+        <span class="flash-cd-label">Berakhir dalam</span>
+        <div class="flash-cd-boxes">
+          <span class="flash-cd-box" id="flashCdH">00</span><i class="flash-cd-sep">:</i>
+          <span class="flash-cd-box" id="flashCdM">00</span><i class="flash-cd-sep">:</i>
+          <span class="flash-cd-box" id="flashCdS">00</span>
+        </div>
+      </div>
+    </div>
+    <div class="flash-strip">
+      @foreach($flashDeals as $deal)
+        <a href="{{ route('games.show', $deal->product->brand) . '?product=' . $deal->product->id }}"
+           class="flash-s-card"
+           data-ends-at="{{ $deal->ends_at ? $deal->ends_at->getTimestamp() * 1000 : 0 }}">
+          <div class="flash-s-img">
+            @if($deal->image_url)
+              <img src="{{ $deal->image_url }}" alt="{{ $deal->product->product_name }}" loading="lazy">
+            @else
+              <span class="flash-s-fallback">⚡</span>
+            @endif
+            <span class="flash-s-disc">-{{ rtrim(rtrim(number_format($deal->discount_percent, 0), '0'), ',') }}%</span>
+          </div>
+          <div class="flash-s-body">
+            <span class="flash-s-brand">{{ $deal->product->brand }}</span>
+            <span class="flash-s-name">{{ $deal->product->product_name }}</span>
+            <div class="flash-s-price">
+              <span class="flash-s-old">Rp {{ number_format($deal->original_price, 0, ',', '.') }}</span>
+              <span class="flash-s-new">Rp {{ number_format($deal->flash_price, 0, ',', '.') }}</span>
+            </div>
+            <div class="flash-s-foot">
+              <span class="flash-s-badge">🔥 FLASH DEAL</span>
+              <span class="flash-s-stock">Tersisa : <b>{{ $deal->stock }}</b></span>
+            </div>
+          </div>
+        </a>
+      @endforeach
+    </div>
+  </div>
+</section>
+@endif
+
 <!-- ===== CATEGORY TABS ===== -->
 <section class="tabs-section">
   <div class="tabs-wrap" id="tabsWrap">
@@ -210,6 +261,39 @@
 
 @push('scripts')
 <script>
+/* ===== FLASH DEAL COUNTDOWN ===== */
+(function(){
+    const cards = Array.from(document.querySelectorAll('.flash-s-card[data-ends-at]'));
+    const cdH = document.getElementById('flashCdH');
+    const cdM = document.getElementById('flashCdM');
+    const cdS = document.getElementById('flashCdS');
+    if (!cards.length || !cdH) return;
+
+    const endsAt = Math.min.apply(null, cards.map(c => parseInt(c.dataset.endsAt, 10) || 0));
+    if (!endsAt) return;
+
+    const pad = n => String(Math.max(0, Math.floor(n))).padStart(2, '0');
+
+    function tick() {
+        let diff = Math.floor((endsAt - Date.now()) / 1000);
+        if (diff <= 0) {
+            cdH.textContent = '00'; cdM.textContent = '00'; cdS.textContent = '00';
+            clearInterval(timer);
+            setTimeout(() => location.reload(), 3000);
+            return;
+        }
+        const h = Math.floor(diff / 3600);
+        const m = Math.floor((diff % 3600) / 60);
+        const s = diff % 60;
+        cdH.textContent = pad(h);
+        cdM.textContent = pad(m);
+        cdS.textContent = pad(s);
+    }
+
+    tick();
+    const timer = setInterval(tick, 1000);
+})();
+
 let loadMoreIndex = 10;
 const step = 5;
 const allCards = Array.from(document.querySelectorAll('.game-card'));

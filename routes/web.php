@@ -108,6 +108,12 @@ Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->gro
     Route::patch('/popup-banners/{popupBanner}/toggle', [App\Http\Controllers\AdminPopupBannerController::class, 'toggle'])->name('popup-banners.toggle');
     Route::delete('/popup-banners/{popupBanner}', [App\Http\Controllers\AdminPopupBannerController::class, 'destroy'])->name('popup-banners.destroy');
 
+    Route::get('/flash-deals', [App\Http\Controllers\AdminFlashDealController::class, 'index'])->name('flash-deals');
+    Route::post('/flash-deals', [App\Http\Controllers\AdminFlashDealController::class, 'store'])->name('flash-deals.store');
+    Route::put('/flash-deals/{flashDeal}', [App\Http\Controllers\AdminFlashDealController::class, 'update'])->name('flash-deals.update');
+    Route::patch('/flash-deals/{flashDeal}/toggle', [App\Http\Controllers\AdminFlashDealController::class, 'toggle'])->name('flash-deals.toggle');
+    Route::delete('/flash-deals/{flashDeal}', [App\Http\Controllers\AdminFlashDealController::class, 'destroy'])->name('flash-deals.destroy');
+
     Route::get('/payment-methods', [AdminController::class, 'paymentMethods'])->name('payment-methods');
     Route::get('/payment-methods/create', [AdminController::class, 'paymentMethodsCreate'])->name('payment-methods.create');
     Route::post('/payment-methods', [AdminController::class, 'paymentMethodsStore'])->name('payment-methods.store');

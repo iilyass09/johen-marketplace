@@ -11,7 +11,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="icon" type="image/png" href="{{ asset('logo.png') }}">
 <link rel="shortcut icon" href="{{ asset('logo.png') }}">
-<link rel="stylesheet" href="{{ asset('css/topup.css') }}?v=14">
+<link rel="stylesheet" href="{{ asset('css/topup.css') }}?v=20">
 @stack('styles')
 </head>
 <body>

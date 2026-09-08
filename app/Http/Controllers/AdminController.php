@@ -493,7 +493,12 @@ class AdminController extends Controller
             'status' => 'required|in:pending,processing,success,failed,cancelled',
         ]);
 
+        $previous = $order->status;
         $order->update(['status' => $request->status]);
+
+        if (in_array($request->status, ['failed', 'cancelled']) && !in_array($previous, ['failed', 'cancelled'])) {
+            $order->releaseFlashQuota();
+        }
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([

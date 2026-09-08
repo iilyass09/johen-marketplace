@@ -6,6 +6,7 @@ use App\Models\AccountListing;
 use App\Models\AccountOrder;
 use App\Models\Brand;
 use App\Models\ContactInquiry;
+use App\Models\FlashDeal;
 use App\Models\Order;
 use App\Models\PaymentMethod;
 use App\Models\Product;
@@ -34,7 +35,14 @@ class HomeController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('home', compact('brands', 'popularBrands'));
+        $flashDeals = FlashDeal::with('product')
+            ->active()
+            ->orderBy('ends_at')
+            ->get()
+            ->filter(fn (FlashDeal $deal) => $deal->product && $deal->flash_price > 0)
+            ->values();
+
+        return view('home', compact('brands', 'popularBrands', 'flashDeals'));
     }
 
     public function getApiProducts(Request $request)
@@ -62,11 +70,17 @@ class HomeController extends Controller
             ->orderBy('selling_price')
             ->get();
 
+        $flashDeals = FlashDeal::active()
+            ->whereIn('product_id', $products->pluck('id'))
+            ->with('product')
+            ->get()
+            ->keyBy('product_id');
+
         $paymentMethods = PaymentMethod::where('is_active', true)->get();
 
         $paymentMethods = app(\App\Services\PaymentGatewayService::class)->filterAvailableMethods($paymentMethods);
 
-        return view('game-detail', compact('brand', 'products', 'paymentMethods'));
+        return view('game-detail', compact('brand', 'products', 'paymentMethods', 'flashDeals'));
     }
 
     public function searchBrands(Request $request)

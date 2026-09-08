@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Brand;
+use App\Models\FlashDeal;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Transaction;
@@ -138,49 +139,71 @@ class OrderController extends Controller
         $customerName = $input['customer_name'] ?? null;
         $email = $input['email'] ?? null;
 
-        $subtotal = (int) $product->selling_price * $quantity;
+        return DB::transaction(function () use ($product, $input, $quantity, $customerNumber, $zoneId, $customerName, $email) {
+            // Resolve flash deal aktif secara atomik. Jika kuota tersisa,
+            // order memakai harga flash dan kuota terkunci untuk pesanan ini.
+            $flash = FlashDeal::active()
+                ->lockForUpdate()
+                ->where('product_id', $product->id)
+                ->first();
 
-        if (!empty($input['promo_code'])) {
-            $code = strtoupper(trim((string) $input['promo_code']));
-            if ($code === 'JOHENI10' || $code === 'JOHENGAMING10') {
-                $subtotal = (int) round($subtotal * 0.9);
+            $unitPrice = (int) $product->selling_price;
+            $originalPrice = null;
+            $flashDealId = null;
+
+            if ($flash) {
+                $unitPrice = $flash->flash_price;
+                $originalPrice = (int) $product->selling_price;
+                $flashDealId = $flash->id;
+                $flash->consumeQty($quantity);
             }
-        }
 
-        $orderId = 'TUP-' . strtoupper(Str::random(10));
+            $subtotal = $unitPrice * $quantity;
 
-        $order = Order::create([
-            'user_id' => Auth::id(),
-            'order_id' => $orderId,
-            'buyer_sku_code' => $product->buyer_sku_code,
-            'customer_number' => $customerNumber,
-            'zone_id' => $zoneId,
-            'customer_name' => $customerName,
-            'email' => $email,
-            'product_name' => $product->product_name,
-            'brand' => $product->brand,
-            'category' => $product->category,
-            'price' => $subtotal,
-            'quantity' => $quantity,
-            'status' => 'pending',
-        ]);
+            if (!empty($input['promo_code'])) {
+                $code = strtoupper(trim((string) $input['promo_code']));
+                if ($code === 'JOHENI10' || $code === 'JOHENGAMING10') {
+                    $subtotal = (int) round($subtotal * 0.9);
+                }
+            }
 
-        if (!config('services.payment.simulation') && $this->xendit->isConfigured()) {
-            $method = !empty($input['payment_method']) ? $input['payment_method'] : config('services.payment.channel', 'qris');
+            $orderId = 'TUP-' . strtoupper(Str::random(10));
 
-            $this->gateway->charge($order, $method, [
-                'item_name' => $product->product_name,
-                'unit_price' => (int) $product->selling_price,
+            $order = Order::create([
+                'user_id' => Auth::id(),
+                'order_id' => $orderId,
+                'buyer_sku_code' => $product->buyer_sku_code,
+                'customer_number' => $customerNumber,
+                'zone_id' => $zoneId,
+                'customer_name' => $customerName,
+                'email' => $email,
+                'product_name' => $product->product_name,
+                'brand' => $product->brand,
+                'category' => $product->category,
+                'price' => $subtotal,
+                'original_price' => $originalPrice,
+                'flash_deal_id' => $flashDealId,
+                'quantity' => $quantity,
+                'status' => 'pending',
             ]);
-        }
 
-        Transaction::create([
-            'order_id' => $order->id,
-            'gross_amount' => $subtotal,
-            'status' => 'pending',
-        ]);
+            if (!config('services.payment.simulation') && $this->xendit->isConfigured()) {
+                $method = !empty($input['payment_method']) ? $input['payment_method'] : config('services.payment.channel', 'qris');
 
-        return $order;
+                $this->gateway->charge($order, $method, [
+                    'item_name' => $product->product_name,
+                    'unit_price' => $unitPrice,
+                ]);
+            }
+
+            Transaction::create([
+                'order_id' => $order->id,
+                'gross_amount' => $subtotal,
+                'status' => 'pending',
+            ]);
+
+            return $order;
+        });
     }
 
     public function show(Order $order)

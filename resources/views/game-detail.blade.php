@@ -135,12 +135,16 @@
         </div>
         <div class="gd-pkg-grid gd-pkg-instant" data-type="{{ Str::slug($itemType) }}" data-no-region-filter="true">
           @foreach($typeItems as $p)
+            @php $deal = $flashDeals->get($p->id); @endphp
             <button type="button"
-              class="gd-pkg-card"
+              class="gd-pkg-card{{ $deal ? ' gd-pkg-card-flash' : '' }}"
               data-id="{{ $p->id }}"
               data-label="{{ $p->product_name }}"
-              data-price="{{ $p->selling_price }}"
+              data-price="{{ $deal ? $deal->flash_price : $p->selling_price }}"
               data-region="{{ $p->region ?: 'ALL' }}">
+              @if($deal)
+                <span class="gd-pkg-flash"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg> FLASH -{{ rtrim(rtrim(number_format($deal->discount_percent, 0), '0'), ',') }}%</span>
+              @endif
               @if($p->photo_url)
                 <img class="gd-pkg-img" src="{{ $p->photo_url }}" alt="{{ $p->product_name }}">
               @else
@@ -155,7 +159,15 @@
               @endif
               <span class="gd-pkg-info">
                 <span class="gd-pkg-amt">{{ $p->product_name }}</span>
-                <span class="gd-pkg-price">Rp {{ number_format($p->selling_price, 0, ',', '.') }}</span>
+                <span class="gd-pkg-price">
+                  @if($deal)
+                    <span class="gd-pkg-price-old">Rp {{ number_format($p->selling_price, 0, ',', '.') }}</span>
+                  @endif
+                  Rp {{ number_format($deal ? $deal->flash_price : $p->selling_price, 0, ',', '.') }}
+                </span>
+                @if($deal)
+                  <span class="gd-pkg-stock"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg> Sisa {{ $deal->stock }}</span>
+                @endif
               </span>
               <span class="gd-pkg-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
             </button>
@@ -186,12 +198,16 @@
              data-type="{{ $typeKey }}"
              @if($isInstant) data-has-regions="true"@endif>
           @foreach($items as $p)
+            @php $deal = $flashDeals->get($p->id); @endphp
             <button type="button"
-              class="gd-pkg-card"
+              class="gd-pkg-card{{ $deal ? ' gd-pkg-card-flash' : '' }}"
                 data-id="{{ $p->id }}"
                 data-label="{{ $p->product_name }}"
-              data-price="{{ $p->selling_price }}"
+              data-price="{{ $deal ? $deal->flash_price : $p->selling_price }}"
               @if($isInstant) data-region="{{ $p->region ?: 'ALL' }}"@endif>
+              @if($deal)
+                <span class="gd-pkg-flash"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg> FLASH -{{ rtrim(rtrim(number_format($deal->discount_percent, 0), '0'), ',') }}%</span>
+              @endif
               @if($p->photo_url)
                 <img class="gd-pkg-img" src="{{ $p->photo_url }}" alt="{{ $p->product_name }}">
               @else
@@ -206,7 +222,15 @@
               @endif
               <span class="gd-pkg-info">
                 <span class="gd-pkg-amt">{{ $p->product_name }}</span>
-                <span class="gd-pkg-price">Rp {{ number_format($p->selling_price, 0, ',', '.') }}</span>
+                <span class="gd-pkg-price">
+                  @if($deal)
+                    <span class="gd-pkg-price-old">Rp {{ number_format($p->selling_price, 0, ',', '.') }}</span>
+                  @endif
+                  Rp {{ number_format($deal ? $deal->flash_price : $p->selling_price, 0, ',', '.') }}
+                </span>
+                @if($deal)
+                  <span class="gd-pkg-stock"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg> Sisa {{ $deal->stock }}</span>
+                @endif
               </span>
               <span class="gd-pkg-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
             </button>

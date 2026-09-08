@@ -27,6 +27,8 @@ class Order extends Model
         'brand',
         'category',
         'price',
+        'original_price',
+        'flash_deal_id',
         'quantity',
         'status',
         'note',
@@ -65,5 +67,31 @@ class Order extends Model
     public function transaction()
     {
         return $this->hasOne(Transaction::class);
+    }
+
+    public function flashDeal()
+    {
+        return $this->belongsTo(FlashDeal::class);
+    }
+
+    /**
+     * Kembalikan kuota flash deal saat pesanan dibatalkan/gagal.
+     * Idempotent: flash_deal_id di-null-kan setelah kuota dikembalikan
+     * sehingga webhook/permintaan berulang tidak menggandakan kuota.
+     */
+    public function releaseFlashQuota(): void
+    {
+        $dealId = $this->flash_deal_id;
+        $qty = (int) ($this->quantity ?? 1);
+
+        if (!$dealId || $qty < 1) {
+            return;
+        }
+
+        $this->update(['flash_deal_id' => null]);
+
+        if ($deal = FlashDeal::find($dealId)) {
+            $deal->restockQty($qty);
+        }
     }
 }

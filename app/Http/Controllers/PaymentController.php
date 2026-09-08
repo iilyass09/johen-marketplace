@@ -133,6 +133,7 @@ class PaymentController extends Controller
             } elseif ($status === 'EXPIRED') {
                 $order->update(['status' => 'failed']);
                 $orderTransaction?->update(['status' => 'failed']);
+                $order->releaseFlashQuota();
             }
 
             return response()->json(['status' => 'ok']);
@@ -171,6 +172,7 @@ class PaymentController extends Controller
         } elseif (in_array($status, ['FAILED', 'EXPIRED'])) {
             $order->update(['status' => 'failed']);
             $orderTransaction?->update(['status' => 'failed']);
+            $order->releaseFlashQuota();
         }
 
         return response()->json(['status' => 'ok']);
@@ -441,6 +443,7 @@ class PaymentController extends Controller
         } elseif ($status === 'EXPIRED') {
             $order->update(['status' => 'failed']);
             $order->transaction?->update(['status' => 'failed']);
+            $order->releaseFlashQuota();
         }
     }
 
@@ -501,6 +504,7 @@ class PaymentController extends Controller
                 'note' => $data['message'] ?? ($data['status'] ?? 'Gagal diproses Digiflazz'),
             ]);
             $order->transaction?->update(['status' => 'failed', 'raw_response' => $result]);
+            $order->releaseFlashQuota();
         }
     }
 
