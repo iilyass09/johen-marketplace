@@ -102,7 +102,7 @@
         <div class="gd-card">
           <div class="gd-field-row">
             <div class="gd-field">
-              <label for="userId">Email atau User ID</label>
+              <label for="userId">User ID</label>
               <input type="text" id="userId" placeholder="12345678" autocomplete="off">
               <div class="gd-field-ok" id="userIdOk"></div>
               <div class="gd-field-error" id="userIdError">User ID wajib diisi.</div>
