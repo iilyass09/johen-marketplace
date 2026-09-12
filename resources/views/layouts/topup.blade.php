@@ -1,5 +1,12 @@
+@php
+    $themeEventSlug = !empty($activeTheme) && $activeTheme ? $activeTheme->slug : null;
+    $themeLogo = $activeThemeLogoUrl
+        ?? (\App\Models\SiteSetting::get('site_logo') ? asset('storage/'.\App\Models\SiteSetting::get('site_logo')) : null)
+        ?? asset('logo.png');
+    $themeFavicon = $activeThemeLogoUrl ?? asset('logo.png');
+@endphp
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-event-theme="{{ $themeEventSlug }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,18 +16,23 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
-<link rel="icon" type="image/png" href="{{ asset('logo.png') }}">
-<link rel="shortcut icon" href="{{ asset('logo.png') }}">
-<link rel="stylesheet" href="{{ asset('css/topup.css') }}?v=20">
+<link rel="icon" type="image/png" href="{{ $themeFavicon }}">
+<link rel="shortcut icon" href="{{ $themeFavicon }}">
+<link rel="stylesheet" href="{{ asset('css/topup.css') }}?v=21">
+@if(!empty($activeThemeCss))
+<style>:root{{{ $activeThemeCss }}}</style>
+@endif
 @stack('styles')
 </head>
 <body>
+@include('partials.floating-decoration')
+@include('partials.particle-effect')
 
 <!-- ===== HEADER ===== -->
 <header class="site-header" id="siteHeader">
   <div class="header-inner">
     <a href="{{ route('home') }}" class="logo">
-      <img src="{{ asset('logo.png') }}" alt="Johen Gaming" class="logo-img">
+      <img src="{{ $themeLogo }}" alt="Johen Gaming" class="logo-img">
     </a>
 
     <div class="search-wrap">
@@ -145,7 +157,7 @@
   <div class="footer-inner">
     <div class="footer-brand">
       <div class="logo">
-        <img src="{{ asset('logo.png') }}" alt="Johen Gaming" class="logo-img">
+        <img src="{{ $themeLogo }}" alt="Johen Gaming" class="logo-img">
         <span class="logo-text">JOHEN<span>GAMING</span></span>
       </div>
       <p>Top up game & voucher terlaris, murah, aman legal 100% buka 24 jam dengan payment terlengkap Indonesia.</p>
@@ -256,21 +268,21 @@
 
 <style>
 [data-theme="light"] {
-  --bg: #f4f1fa;
-  --bg-soft: #e9e4f2;
+  --bg: color-mix(in srgb, var(--theme-primary, #7c3aed) 9%, #ffffff);
+  --bg-soft: color-mix(in srgb, var(--theme-primary, #7c3aed) 6%, #f4f1fa);
   --surface: #ffffff;
-  --surface-2: #f0ecf7;
-  --surface-3: #e4def0;
+  --surface-2: color-mix(in srgb, var(--theme-primary, #7c3aed) 5%, #ffffff);
+  --surface-3: color-mix(in srgb, var(--theme-primary, #7c3aed) 9%, #ffffff);
   --border: rgba(0,0,0,.08);
   --border-strong: rgba(0,0,0,.14);
-  --text: #1e1136;
-  --text-dim: #5d4a82;
-  --text-mute: #8e7ab3;
-  --purple-glow: rgba(124,58,237,.25);
-  --shadow-purple: 0 8px 30px -8px rgba(124,58,237,.35);
-  --header-bg: rgba(244,241,250,.85);
-  --header-bg-scrolled: rgba(244,241,250,.97);
-  --nav-active-text:#4c1d95;
+  --text: color-mix(in srgb, var(--theme-primary, #7c3aed) 42%, #000000);
+  --text-dim: color-mix(in srgb, var(--text) 58%, var(--surface));
+  --text-mute: color-mix(in srgb, var(--text) 38%, var(--surface));
+  --purple-glow: color-mix(in srgb, var(--theme-primary, #7c3aed) 25%, transparent);
+  --shadow-purple: 0 8px 30px -8px color-mix(in srgb, var(--theme-primary, #7c3aed) 35%, transparent);
+  --header-bg: color-mix(in srgb, var(--theme-primary, #7c3aed) 4%, rgba(255,255,255,.9));
+  --header-bg-scrolled: color-mix(in srgb, var(--theme-primary, #7c3aed) 6%, rgba(255,255,255,.97));
+  --nav-active-text: color-mix(in srgb, var(--theme-primary-dark, #4c1d95) 85%, #000000);
   --bg-card:#ffffff;
 }
 .nav-theme-btn {

@@ -148,6 +148,11 @@
             font-size: 0.85rem; color: #fff;
             box-shadow: 0 4px 12px -4px rgba(9,135,245,0.4);
         }
+        .sidebar-logo .brand-logo-img {
+            width: 34px; height: 34px;
+            border-radius: 10px;
+            object-fit: contain;
+        }
         .sidebar-logo .brand-highlight { color: var(--accent); }
 
         .sidebar-nav { padding: 0.75rem; flex: 1; }
@@ -509,8 +514,8 @@
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-logo">
                 <a href="{{ route('admin.dashboard') }}">
-                    <div class="brand-icon"><i class="fas fa-crown"></i></div>
-                    <span>JOHEN<span class="brand-highlight">PANEL</span></span>
+                    <img src="{{ asset('logo.png') }}" alt="Johen Gaming" class="brand-logo-img">
+                    <span>Admin <span class="brand-highlight">Marketplace</span></span>
                 </a>
             </div>
             <nav class="sidebar-nav">
@@ -536,11 +541,17 @@
                 <a href="{{ route('admin.flash-deals') }}" class="{{ request()->routeIs('admin.flash-deals*') ? 'active' : '' }}">
                     <i class="fas fa-bolt"></i> Flash Deal
                 </a>
+                <a href="{{ route('admin.event-themes') }}" class="{{ request()->routeIs('admin.event-themes*') ? 'active' : '' }}">
+                    <i class="fas fa-palette"></i> Tema Event
+                </a>
                 <a href="{{ route('admin.gateway-status') }}" class="{{ request()->routeIs('admin.gateway-status*') ? 'active' : '' }}">
                     <i class="fas fa-plug"></i> Status Gateway
                 </a>
                 <a href="{{ route('admin.orders') }}" class="{{ request()->routeIs('admin.orders*') ? 'active' : '' }}">
                     <i class="fas fa-shopping-cart"></i> Pesanan
+                </a>
+                <a href="{{ route('admin.account-orders') }}" class="{{ request()->routeIs('admin.account-orders*') ? 'active' : '' }}">
+                    <i class="fas fa-file-invoice-dollar"></i> Pesanan Akun
                 </a>
                 <a href="{{ route('admin.users') }}" class="{{ request()->routeIs('admin.users*') ? 'active' : '' }}">
                     <i class="fas fa-users"></i> Pengguna

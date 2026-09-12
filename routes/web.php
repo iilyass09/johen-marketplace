@@ -23,10 +23,14 @@ Route::get('/api/account/check', [HomeController::class, 'checkAccount'])
 Route::get('/games/{brand:name}', [HomeController::class, 'gameDetail'])->name('games.show');
 Route::get('/cek-transaksi', [HomeController::class, 'checkTransaction'])->name('check.transaction');
 Route::get('/jual-beli-akun', [App\Http\Controllers\HomeController::class, 'jualBeliAkun'])->name('jual-beli-akun');
+Route::get('/jual-beli-akun/pesanan-saya', [App\Http\Controllers\HomeController::class, 'jualBeliAkunOrders'])
+    ->name('jual-beli-akun.orders')
+    ->middleware('auth:web');
 Route::get('/jual-beli-akun/{listing}', [App\Http\Controllers\HomeController::class, 'jualBeliAkunDetail'])->name('jual-beli-akun.detail');
 Route::get('/jual-beli-akun/{listing}/checkout', [App\Http\Controllers\HomeController::class, 'jualBeliAkunCheckout'])->name('jual-beli-akun.checkout');
 Route::post('/jual-beli-akun/{listing}/checkout', [App\Http\Controllers\HomeController::class, 'jualBeliAkunCheckoutStore'])->name('jual-beli-akun.checkout.store');
 Route::get('/jual-beli-akun/order/{accountOrder}/payment', [App\Http\Controllers\HomeController::class, 'jualBeliAkunPayment'])->name('jual-beli-akun.payment');
+Route::get('/jual-beli-akun/order/{accountOrder}/status', [App\Http\Controllers\HomeController::class, 'jualBeliAkunPaymentStatus'])->name('jual-beli-akun.payment.status');
 Route::get('/testimoni', [HomeController::class, 'testimoni'])->name('testimoni');
 Route::get('/faq', [HomeController::class, 'faq'])->name('faq');
 Route::get('/kebijakan-privasi', [HomeController::class, 'privacy'])->name('privacy');
@@ -114,6 +118,17 @@ Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->gro
     Route::patch('/flash-deals/{flashDeal}/toggle', [App\Http\Controllers\AdminFlashDealController::class, 'toggle'])->name('flash-deals.toggle');
     Route::delete('/flash-deals/{flashDeal}', [App\Http\Controllers\AdminFlashDealController::class, 'destroy'])->name('flash-deals.destroy');
 
+    Route::get('/event-themes', [App\Http\Controllers\Admin\EventThemeController::class, 'index'])->name('event-themes');
+    Route::get('/event-themes/create', [App\Http\Controllers\Admin\EventThemeController::class, 'create'])->name('event-themes.create');
+    Route::post('/event-themes', [App\Http\Controllers\Admin\EventThemeController::class, 'store'])->name('event-themes.store');
+    Route::get('/event-themes/{theme}/edit', [App\Http\Controllers\Admin\EventThemeController::class, 'edit'])->name('event-themes.edit');
+    Route::put('/event-themes/{theme}', [App\Http\Controllers\Admin\EventThemeController::class, 'update'])->name('event-themes.update');
+    Route::patch('/event-themes/{theme}/toggle', [App\Http\Controllers\Admin\EventThemeController::class, 'toggle'])->name('event-themes.toggle');
+    Route::post('/event-themes/{theme}/set-default', [App\Http\Controllers\Admin\EventThemeController::class, 'setDefault'])->name('event-themes.set-default');
+    Route::post('/event-themes/reset-default', [App\Http\Controllers\Admin\EventThemeController::class, 'resetDefault'])->name('event-themes.reset-default');
+    Route::get('/event-themes/{theme}/preview', [App\Http\Controllers\Admin\EventThemeController::class, 'preview'])->name('event-themes.preview');
+    Route::delete('/event-themes/{theme}', [App\Http\Controllers\Admin\EventThemeController::class, 'destroy'])->name('event-themes.destroy');
+
     Route::get('/payment-methods', [AdminController::class, 'paymentMethods'])->name('payment-methods');
     Route::get('/payment-methods/create', [AdminController::class, 'paymentMethodsCreate'])->name('payment-methods.create');
     Route::post('/payment-methods', [AdminController::class, 'paymentMethodsStore'])->name('payment-methods.store');
@@ -125,6 +140,10 @@ Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->gro
     Route::get('/orders', [AdminController::class, 'orders'])->name('orders');
     Route::get('/orders/{order}', [AdminController::class, 'ordersShow'])->name('orders.show');
     Route::patch('/orders/{order}/status', [AdminController::class, 'ordersUpdateStatus'])->name('orders.status');
+
+    Route::get('/account-orders', [AdminController::class, 'accountOrders'])->name('account-orders');
+    Route::get('/account-orders/{accountOrder}', [AdminController::class, 'accountOrdersShow'])->name('account-orders.show');
+    Route::patch('/account-orders/{accountOrder}/status', [AdminController::class, 'accountOrdersUpdateStatus'])->name('account-orders.status');
 
     Route::get('/users', [AdminController::class, 'users'])->name('users');
     Route::get('/users/{user}/edit', [AdminController::class, 'usersEdit'])->name('users.edit');

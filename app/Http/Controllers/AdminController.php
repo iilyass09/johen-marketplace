@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Mail\ContactReplyMail;
+use App\Models\AccountOrder;
 use App\Models\Brand;
 use App\Models\ContactInquiry;
 use App\Models\Order;
@@ -43,7 +44,18 @@ class AdminController extends Controller
 
         $recentOrders = Order::with('user')->latest()->take(10)->get();
 
-        return view('admin.dashboard', compact('stats', 'recentOrders'));
+        $stats['account_total'] = AccountOrder::count();
+        $stats['account_pending'] = AccountOrder::where('status', 'pending')->count();
+        $stats['account_success'] = AccountOrder::where('status', 'success')->count();
+        $stats['account_revenue'] = AccountOrder::where('status', 'success')->sum('total_price');
+        $stats['account_processing'] = AccountOrder::where('status', 'processing')->count();
+
+        $recentAccountOrders = AccountOrder::with('listing')
+            ->latest()
+            ->take(6)
+            ->get();
+
+        return view('admin.dashboard', compact('stats', 'recentOrders', 'recentAccountOrders'));
     }
 
     public function gatewayStatus()
@@ -511,6 +523,65 @@ class AdminController extends Controller
         return back()->with('success', 'Status pesanan berhasil diperbarui menjadi ' . $request->status);
     }
 
+    // ---- ACCOUNT ORDERS (Jual Beli Akun) ----
+    public function accountOrders(Request $request)
+    {
+        $query = AccountOrder::with('user', 'listing');
+
+        if ($request->filled('status') && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('order_ref', 'like', "%{$search}%")
+                    ->orWhere('customer_name', 'like', "%{$search}%")
+                    ->orWhereHas('listing', function ($l) use ($search) {
+                        $l->where('product_name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $orders = $query->latest()->paginate(20)->withQueryString();
+
+        return view('admin.account-orders.index', compact('orders'));
+    }
+
+    public function accountOrdersShow(AccountOrder $accountOrder)
+    {
+        $accountOrder->load('user', 'listing');
+        return view('admin.account-orders.show', compact('accountOrder'));
+    }
+
+    public function accountOrdersUpdateStatus(Request $request, AccountOrder $accountOrder)
+    {
+        $request->validate([
+            'status' => 'required|in:pending,processing,success,failed,cancelled',
+        ]);
+
+        $newStatus = $request->status;
+
+        $accountOrder->update(['status' => $newStatus]);
+
+        // Sinkronkan status penjualan listing.
+        if ($newStatus === 'success') {
+            $accountOrder->listing?->update(['is_sold' => true]);
+        } elseif (in_array($newStatus, ['failed', 'cancelled'])) {
+            $accountOrder->listing?->update(['is_sold' => false]);
+        }
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Status berhasil diperbarui menjadi ' . $newStatus,
+                'status' => $newStatus,
+            ]);
+        }
+
+        return back()->with('success', 'Status pesanan akun berhasil diperbarui menjadi ' . $newStatus);
+    }
+
     // ---- USERS ----
     public function users()
     {
@@ -802,17 +873,27 @@ class AdminController extends Controller
             }
         }
 
-        $jbaBannerKeys = ['jba_hero_banner', 'jba_hero_banner_2', 'jba_hero_banner_3'];
-        foreach ($jbaBannerKeys as $key) {
-            if ($request->hasFile($key) && $request->file($key)->isValid()) {
-                $oldBanner = \App\Models\SiteSetting::get($key);
-                if ($oldBanner && Storage::disk('public')->exists($oldBanner)) {
-                    Storage::disk('public')->delete($oldBanner);
-                }
-                $path = ImageOptimizer::storeOptimized($request->file($key), 'settings', 1920, 1080);
-                \App\Models\SiteSetting::set($key, $path, 'image');
+$jbaBannerKeys = ['jba_hero_banner', 'jba_hero_banner_2', 'jba_hero_banner_3'];
+    foreach ($jbaBannerKeys as $key) {
+        if ($request->hasFile($key) && $request->file($key)->isValid()) {
+            $oldBanner = \App\Models\SiteSetting::get($key);
+            if ($oldBanner && Storage::disk('public')->exists($oldBanner)) {
+                Storage::disk('public')->delete($oldBanner);
             }
+            $path = ImageOptimizer::storeOptimized($request->file($key), 'settings', 1920, 1080);
+            \App\Models\SiteSetting::set($key, $path, 'image');
         }
+    }
+
+    // QRIS statis untuk pembayaran Jual Beli Akun.
+    if ($request->hasFile('qris_image') && $request->file('qris_image')->isValid()) {
+        $oldQris = \App\Models\SiteSetting::get('qris_image');
+        if ($oldQris && Storage::disk('public')->exists($oldQris)) {
+            Storage::disk('public')->delete($oldQris);
+        }
+        $path = ImageOptimizer::storeOptimized($request->file('qris_image'), 'settings', 800, 800);
+        \App\Models\SiteSetting::set('qris_image', $path, 'image');
+    }
 
         return redirect()->route('admin.settings')->with('success', 'Pengaturan berhasil disimpan');
     }

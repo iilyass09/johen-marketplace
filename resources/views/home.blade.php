@@ -6,11 +6,21 @@
   $banner2 = \App\Models\SiteSetting::get('site_hero_banner_2');
   $banner3 = \App\Models\SiteSetting::get('site_hero_banner_3');
   $banners = array_filter([$banner, $banner2, $banner3]);
+  $themeBannerUrl = null;
+  if (!empty($activeTheme) && $activeTheme->banner_image) {
+      $themeBannerUrl = asset('storage/'.$activeTheme->banner_image);
+  }
 @endphp
 
 <!-- ===== HERO BANNER ===== -->
 <section class="hero-section" id="joki" style="position:relative;overflow:hidden;border-radius:20px;display:flex;align-items:center;justify-content:center;background:var(--bg-soft)">
-  @if(count($banners))
+  @if($themeBannerUrl)
+    <div class="hero-banner-track">
+      <img src="{{ $themeBannerUrl }}" alt=""
+           class="hero-banner-img hero-banner-img-a"
+           style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center">
+    </div>
+  @elseif(count($banners))
     <div class="hero-banner-track">
       <img src="{{ asset('storage/'.$banners[0]) }}" alt=""
            data-banners='{{ json_encode(array_map(fn($b) => asset('storage/'.$b), $banners)) }}'
@@ -29,12 +39,14 @@
     </div>
   @endif
 
+  @if(!$themeBannerUrl)
   <button class="hero-arrow hero-arrow-left" data-banner-prev aria-label="Sebelumnya">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
   </button>
   <button class="hero-arrow hero-arrow-right" data-banner-next aria-label="Selanjutnya">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
   </button>
+  @endif
 </section>
 
 <!-- ===== FLASH DEAL ===== -->
@@ -156,6 +168,7 @@
     return "background:linear-gradient(160deg,{$color['primary']},{$color['secondary']})";
   }
 @endphp
+@if($first)
 <section class="featured-grid-section" id="topup">
   <div class="featured-grid-inner">
     <a href="{{ route('games.show', $first->name) }}" class="bento-card bento-featured"
@@ -199,6 +212,7 @@
     </div>
   </div>
 </section>
+@endif
 
 <!-- ===== SECTION HEADER PRODUK LAINNYA ===== -->
 <section class="section-heading">

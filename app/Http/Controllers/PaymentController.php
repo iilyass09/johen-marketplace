@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AccountOrder;
 use App\Models\Brand;
 use App\Models\Order;
 use App\Models\Product;
@@ -152,29 +153,46 @@ class PaymentController extends Controller
 
         $order = Order::where('order_id', $referenceId)->first();
 
-        if (!$order) {
-            Log::warning('Xendit QR webhook: order tidak ditemukan', ['reference_id' => $referenceId]);
+        if ($order) {
+            $orderTransaction = $order->transaction;
+
+            $orderTransaction?->update([
+                'transaction_id' => $data['id'] ?? ($payload['id'] ?? null),
+                'payment_type' => 'QRIS - ' . (($data['payment_detail']['source'] ?? $data['channel_code'] ?? 'QRIS') ?: 'QRIS'),
+                'status' => strtolower($status),
+                'raw_response' => $payload,
+            ]);
+
+            // QR Code dibayar → status SUCCEEDED pada QR webhook / COMPLETED pada v1.
+            if (in_array($status, ['SUCCEEDED', 'COMPLETED', 'PAID', 'SETTLED'])) {
+                $this->handlePaid($order);
+            } elseif (in_array($status, ['FAILED', 'EXPIRED'])) {
+                $order->update(['status' => 'failed']);
+                $orderTransaction?->update(['status' => 'failed']);
+                $order->releaseFlashQuota();
+            }
+
             return response()->json(['status' => 'ok']);
         }
 
-        $orderTransaction = $order->transaction;
+        // Order jual-beli-akun (reference = order_ref).
+        $accountOrder = AccountOrder::where('order_ref', $referenceId)->first();
 
-        $orderTransaction?->update([
-            'transaction_id' => $data['id'] ?? ($payload['id'] ?? null),
-            'payment_type' => 'QRIS - ' . (($data['payment_detail']['source'] ?? $data['channel_code'] ?? 'QRIS') ?: 'QRIS'),
-            'status' => strtolower($status),
-            'raw_response' => $payload,
-        ]);
+        if ($accountOrder) {
+            if ($accountOrder->status === 'pending'
+                && in_array($status, ['SUCCEEDED', 'COMPLETED', 'PAID', 'SETTLED'])) {
+                $accountOrder->update(['status' => 'success']);
+                $accountOrder->listing?->update(['is_sold' => true]);
+                Log::info('Account order lunas via webhook QRIS', ['order_ref' => $accountOrder->order_ref]);
+            } elseif ($accountOrder->status === 'pending'
+                && in_array($status, ['FAILED', 'EXPIRED'])) {
+                $accountOrder->update(['status' => 'failed']);
+            }
 
-        // QR Code dibayar → status SUCCEEDED pada QR webhook / COMPLETED pada v1.
-        if (in_array($status, ['SUCCEEDED', 'COMPLETED', 'PAID', 'SETTLED'])) {
-            $this->handlePaid($order);
-        } elseif (in_array($status, ['FAILED', 'EXPIRED'])) {
-            $order->update(['status' => 'failed']);
-            $orderTransaction?->update(['status' => 'failed']);
-            $order->releaseFlashQuota();
+            return response()->json(['status' => 'ok']);
         }
 
+        Log::warning('Xendit QR webhook: order tidak ditemukan', ['reference_id' => $referenceId]);
         return response()->json(['status' => 'ok']);
     }
 

@@ -11,10 +11,14 @@ use App\Models\Order;
 use App\Models\PaymentMethod;
 use App\Models\Product;
 use App\Services\GameAccountService;
+use App\Services\PaymentGatewayService;
+use App\Services\XenditService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class HomeController extends Controller
 {
@@ -352,6 +356,24 @@ class HomeController extends Controller
         return view('pages.jual-beli-akun', compact('popularGames', 'listings', 'testimonials'));
     }
 
+    /**
+     * Pesanan Saya untuk pembelian akun (Jual Beli Akun).
+     */
+    public function jualBeliAkunOrders()
+    {
+        $user = Auth::user();
+
+        $orders = AccountOrder::with('listing')
+            ->where(function ($q) use ($user) {
+                $q->where('user_id', $user?->id)
+                    ->orWhere('customer_email', $user?->email);
+            })
+            ->latest()
+            ->paginate(10);
+
+        return view('pages.jual-beli-akun-orders', compact('orders'));
+    }
+
     public function jualBeliAkunDetail(AccountListing $listing)
     {
         if (!$listing->is_active && !$listing->is_sold) {
@@ -377,9 +399,11 @@ class HomeController extends Controller
                 ->with('error', 'Produk ini sudah tidak tersedia.');
         }
 
-        $paymentMethods = PaymentMethod::where('is_active', true)->get();
+        $paymentMethods = PaymentMethod::where('is_active', true)
+            ->where('code', 'qris')
+            ->get();
 
-        $paymentMethods = app(\App\Services\PaymentGatewayService::class)->filterAvailableMethods($paymentMethods);
+        $paymentMethods = app(PaymentGatewayService::class)->filterAvailableMethods($paymentMethods);
 
         return view('pages.jual-beli-akun-checkout', compact('listing', 'paymentMethods'));
     }
@@ -395,21 +419,57 @@ class HomeController extends Controller
             'customer_name' => 'required|string|max:255',
             'customer_email' => 'required|email|max:255',
             'customer_phone' => 'required|string|max:20',
-            'payment_method' => 'required|string|max:100',
+            'payment_method' => 'required|string|in:QRIS,qris',
             'notes' => 'nullable|string|max:1000',
         ]);
+
+        $totalPrice = (float) $listing->price;
+        $isSimulation = (bool) config('services.payment.simulation');
+        // Dynamic QRIS hanya dibuat saat Xendit LIVE (nominal otomatis terisi saat scan).
+        $isXenditLive = (bool) config('xendit.is_production');
 
         $order = AccountOrder::create([
             'account_listing_id' => $listing->id,
             'user_id' => auth()->id(),
+            'order_ref' => 'JBA-' . strtoupper(Str::random(10)),
             'customer_name' => $validated['customer_name'],
             'customer_email' => $validated['customer_email'],
             'customer_phone' => $validated['customer_phone'],
-            'payment_method' => $validated['payment_method'],
+            'payment_method' => 'QRIS',
             'status' => 'pending',
-            'total_price' => $listing->price,
+            // Nominal dihitung otomatis dari harga listing; user tidak input manual.
+            'total_price' => $totalPrice,
             'notes' => $validated['notes'] ?? null,
         ]);
+
+        // Dynamic QRIS via Xendit → nominal otomatis terisi saat scan.
+        // Hanya aktif saat Xendit LIVE; jika test/gagal, otomatis fallback ke QRIS statis (gambar QR milik toko).
+        if (!$isSimulation && $isXenditLive && app(XenditService::class)->isConfigured()) {
+            $result = app(XenditService::class)->createQr([
+                'reference_id' => $order->order_ref,
+                'type' => 'DYNAMIC',
+                'currency' => 'IDR',
+                'amount' => (int) round($totalPrice),
+                'expires_at' => now()->addHours(24)->toIso8601String(),
+                'description' => 'Pembelian Akun - ' . $listing->product_name,
+                'metadata' => [
+                    'order_id' => $order->order_ref,
+                    'product' => $listing->product_name,
+                    'account_listing_id' => $listing->id,
+                    'customer_name' => $validated['customer_name'],
+                ],
+            ]);
+
+            if ($result['success']) {
+                $order->update([
+                    'gateway_type' => 'qris',
+                    'gateway_invoice_id' => $result['qr_id'],
+                    'qr_string' => $result['qr_string'],
+                ]);
+            } else {
+                Log::warning('QRIS dynamic account order gagal, fallback statis', ['order_ref' => $order->order_ref, 'error' => $result]);
+            }
+        }
 
         return redirect()->route('jual-beli-akun.payment', $order)
             ->with('success', 'Pesanan berhasil dibuat! Silakan lakukan pembayaran.');
@@ -423,7 +483,51 @@ class HomeController extends Controller
             abort(404);
         }
 
-        return view('pages.jual-beli-akun-payment', compact('accountOrder', 'listing'));
+        $isSimulation = (bool) config('services.payment.simulation');
+        // QRIS dinamis (Xendit) hanya dianggap aktif bila Xendit LIVE & qr_string terisi
+        // → nominal otomatis saat scan. Selain itu pakai QRIS statis (gambar QR milik toko).
+        $isDynamic = !empty($accountOrder->qr_string) && (bool) config('xendit.is_production');
+        $qrString = $accountOrder->qr_string;
+        // QRIS statis (gambar QR milik toko) sebagai fallback.
+        $qrisImage = (string) \App\Models\SiteSetting::get('qris_image', '');
+
+        return view('pages.jual-beli-akun-payment', compact(
+            'accountOrder', 'listing', 'isSimulation', 'isDynamic', 'qrString', 'qrisImage'
+        ));
+    }
+
+    /**
+     * Polling status untuk halaman pembayaran.
+     * Untuk QRIS dinamis: status dicek ke gateway; jika lunas → sukses otomatis.
+     * Untuk fallback statis: status hanya berubah saat admin konfirmasi manual.
+     */
+    public function jualBeliAkunPaymentStatus(AccountOrder $accountOrder)
+    {
+        // Polling gateway hanya saat Xendit LIVE (QRIS dinamis).
+        if ($accountOrder->status === 'pending'
+            && (bool) config('xendit.is_production')
+            && !empty($accountOrder->gateway_invoice_id)) {
+            $xendit = app(XenditService::class);
+
+            if ($xendit->isConfigured()) {
+                $qr = $xendit->getQr($accountOrder->gateway_invoice_id);
+
+                if ($qr && !empty($qr['status'])) {
+                    $status = strtoupper($qr['status']);
+
+                    // QRIS dynamic lunas → status berubah ke INACTIVE/COMPLETED.
+                    if (in_array($status, ['INACTIVE', 'COMPLETED'])) {
+                        $accountOrder->update(['status' => 'success']);
+                        $accountOrder->listing?->update(['is_sold' => true]);
+                        Log::info('Account order lunas via polling Xendit', ['order_ref' => $accountOrder->order_ref]);
+                    } elseif (in_array($status, ['FAILED', 'EXPIRED'])) {
+                        $accountOrder->update(['status' => 'failed']);
+                    }
+                }
+            }
+        }
+
+        return response()->json(['status' => $accountOrder->status]);
     }
 
     public static function getTestimonials(): array

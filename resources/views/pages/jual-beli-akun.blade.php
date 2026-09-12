@@ -47,6 +47,15 @@
     </div>
   </div>
 
+  @auth
+  <div style="display:flex;justify-content:flex-end;margin-top:1.25rem">
+    <a href="{{ route('jual-beli-akun.orders') }}" class="jba-orders-btn">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      Pesanan Saya
+    </a>
+  </div>
+  @endauth
+
   <div class="jba-hero">
     <h1>Jual Beli Akun Game</h1>
     <p>Temukan akun game terbaik dengan harga terbaik. Semua akun sudah diverifikasi.</p>
@@ -100,6 +109,7 @@
 <style>
 :root {
   --jba-accent: #9d5cf5;
+  --jba-accent-glow: rgba(157, 92, 245, .35);
 }
 .jba-page {
   max-width: 1400px;
@@ -139,6 +149,24 @@
 }
 .jba-transfer-text strong {
   color: var(--text);
+}
+.jba-orders-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .55rem 1.15rem;
+  border-radius: 10px;
+  background: var(--jba-accent);
+  color: #fff;
+  font-size: .8rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all .2s;
+  box-shadow: 0 4px 14px -4px var(--jba-accent-glow);
+}
+.jba-orders-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
 }
 .jba-hero {
   text-align: left;

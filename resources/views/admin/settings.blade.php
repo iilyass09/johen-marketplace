@@ -136,6 +136,30 @@
                     <input type="text" name="footer_text" value="{{ old('footer_text', $settings['footer_text'] ?? '') }}" class="input-field text-sm">
                 </div>
             </div>
+
+            <!-- QRIS -->
+            <div class="card-glass p-4">
+                <h3 class="font-semibold mb-3 flex items-center gap-2" style="font-size:0.9rem">
+                    <i class="fas fa-qrcode" style="color:#7c3aed;font-size:0.85rem"></i>
+                    <span>QRIS Pembayaran (Jual Beli Akun)</span>
+                </h3>
+                <p style="color:var(--text-dim);font-size:0.72rem;margin-bottom:0.75rem">
+                    Gambar QRIS statis milikmu. Pelanggan scan & bayar sesuai nominal otomatis, admin konfirmasi manual di menu Pesanan Akun.
+                </p>
+                <div class="flex items-center gap-3">
+                    <div style="width:96px;height:96px;border-radius:10px;background:#fff;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
+                        @if(!empty($settings['qris_image']))
+                            <img src="{{ asset('storage/'.$settings['qris_image']) }}" alt="QRIS" style="width:100%;height:100%;object-fit:contain">
+                        @else
+                            <span style="font-size:0.6rem;color:var(--text-dim);text-align:center">Belum upload</span>
+                        @endif
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <label class="block text-xs font-medium mb-0.5">Gambar QRIS</label>
+                        <input type="file" name="qris_image" accept="image/jpeg,image/png,image/webp" class="text-sm w-full" style="color:var(--text-muted)">
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
