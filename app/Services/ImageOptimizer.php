@@ -29,6 +29,8 @@ class ImageOptimizer
             Storage::disk('public')->delete($path);
         }
 
+        MediaStore::import($optimized);
+
         return $optimized;
     }
 
@@ -184,7 +186,10 @@ class ImageOptimizer
     ): string {
         $src = self::open($file);
         if (!$src) {
-            return $file->store('brands/bg', 'public');
+            $fallback = $file->store('brands/bg', 'public');
+            MediaStore::import($fallback);
+
+            return $fallback;
         }
 
         $src = self::flattenAlpha($src);
@@ -233,6 +238,9 @@ class ImageOptimizer
         imagejpeg($canvas, $dir . DIRECTORY_SEPARATOR . $name, $quality);
         imagedestroy($canvas);
 
-        return 'brands/bg/' . $name;
+        $path = 'brands/bg/' . $name;
+        MediaStore::import($path);
+
+        return $path;
     }
 }

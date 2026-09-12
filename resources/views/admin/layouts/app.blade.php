@@ -538,6 +538,9 @@
                 <a href="{{ route('admin.popup-banners') }}" class="{{ request()->routeIs('admin.popup-banners*') ? 'active' : '' }}">
                     <i class="fas fa-bullhorn"></i> Popup Banner
                 </a>
+                <a href="{{ route('admin.flash-sale-banners') }}" class="{{ request()->routeIs('admin.flash-sale-banners*') ? 'active' : '' }}">
+                    <i class="fas fa-fire"></i> Banner Flash Sale
+                </a>
                 <a href="{{ route('admin.flash-deals') }}" class="{{ request()->routeIs('admin.flash-deals*') ? 'active' : '' }}">
                     <i class="fas fa-bolt"></i> Flash Deal
                 </a>

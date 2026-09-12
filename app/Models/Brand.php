@@ -38,7 +38,7 @@ class Brand extends Model
     public function getThumbnailUrlAttribute(): ?string
     {
         if ($this->thumbnail) {
-            return asset('storage/' . $this->thumbnail);
+            return media_url($this->thumbnail);
         }
         return null;
     }
@@ -46,7 +46,7 @@ class Brand extends Model
     public function getFeaturedThumbnailUrlAttribute(): ?string
     {
         if ($this->featured_thumbnail) {
-            return asset('storage/' . $this->featured_thumbnail);
+            return media_url($this->featured_thumbnail);
         }
         return null;
     }
@@ -56,7 +56,7 @@ class Brand extends Model
         $urls = [];
         foreach (['featured_img_1', 'featured_img_2', 'featured_img_3'] as $col) {
             if ($this->$col) {
-                $urls[] = asset('storage/' . $this->$col);
+                $urls[] = media_url($this->$col);
             }
         }
         return $urls;
@@ -65,7 +65,7 @@ class Brand extends Model
     public function getCarouselBgUrlAttribute(): ?string
     {
         if ($this->carousel_bg) {
-            return asset('storage/' . $this->carousel_bg);
+            return media_url($this->carousel_bg);
         }
         return null;
     }
@@ -73,7 +73,7 @@ class Brand extends Model
     public function getDetailBgUrlAttribute(): ?string
     {
         if ($this->detail_bg) {
-            return asset('storage/' . $this->detail_bg);
+            return media_url($this->detail_bg);
         }
         return null;
     }

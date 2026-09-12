@@ -36,7 +36,7 @@ class Product extends Model
     public function getPhotoUrlAttribute(): ?string
     {
         if ($this->photo) {
-            return asset('storage/' . $this->photo);
+            return media_url($this->photo);
         }
         return null;
     }

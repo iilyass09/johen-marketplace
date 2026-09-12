@@ -2,17 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
-class PopupBanner extends Model
+class FlashSaleBanner extends Model
 {
     protected $fillable = [
         'title',
-        'description',
         'image',
-        'image_fit',
-        'image_position',
-        'orientation',
         'link',
         'is_active',
         'sort_order',
@@ -37,7 +34,7 @@ class PopupBanner extends Model
 
     public static function flushCache(): void
     {
-        cache()->forget('popup_banners_active_ids');
+        cache()->forget('flash_sale_banners_active_ids');
     }
 
     public function getImageUrlAttribute(): ?string
@@ -48,7 +45,7 @@ class PopupBanner extends Model
         return null;
     }
 
-    public function scopeActive($query)
+    public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true)
             ->where(function ($q) {
@@ -61,7 +58,7 @@ class PopupBanner extends Model
 
     public static function activeBanners()
     {
-        $ids = cache()->remember('popup_banners_active_ids', 3600, function () {
+        $ids = cache()->remember('flash_sale_banners_active_ids', 3600, function () {
             return static::active()
                 ->orderBy('sort_order')
                 ->orderBy('id')
@@ -76,10 +73,5 @@ class PopupBanner extends Model
         return static::whereIn('id', $ids)
             ->orderByRaw('FIELD(id, ' . implode(',', $ids) . ')')
             ->get();
-    }
-
-    public function isScheduled(): bool
-    {
-        return $this->starts_at !== null && $this->ends_at !== null;
     }
 }

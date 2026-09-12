@@ -2,29 +2,24 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\PopupBanner;
+use App\Models\FlashSaleBanner;
 use App\Services\ImageOptimizer;
 use App\Services\MediaStore;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
-class AdminPopupBannerController extends Controller
+class AdminFlashSaleBannerController extends Controller
 {
     public function index()
     {
-        $popupBanners = PopupBanner::orderBy('sort_order')->orderBy('id')->paginate(20);
-        return view('admin.popup-banners.index', compact('popupBanners'));
+        $flashSaleBanners = FlashSaleBanner::orderBy('sort_order')->orderBy('id')->paginate(20);
+        return view('admin.flash-sale-banners.index', compact('flashSaleBanners'));
     }
 
     public function store(Request $request)
     {
         $validator = validator($request->all(), [
             'title' => 'nullable|string|max:255',
-            'description' => 'nullable|string|max:500',
             'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:5120',
-            'orientation' => 'required|string|in:portrait,landscape',
-            'image_fit' => 'nullable|string|in:contain,cover',
-            'image_position' => 'nullable|string|in:top,center,bottom',
             'link' => 'nullable|string|max:500',
             'is_active' => 'boolean',
             'sort_order' => 'nullable|integer|min:0',
@@ -41,10 +36,6 @@ class AdminPopupBannerController extends Controller
 
         $data = [
             'title' => $request->title,
-            'description' => $request->description,
-            'orientation' => $request->orientation,
-            'image_fit' => $request->input('image_fit', 'contain'),
-            'image_position' => $request->input('image_position', 'center'),
             'link' => $request->link,
             'is_active' => $request->boolean('is_active', true),
             'sort_order' => $request->integer('sort_order', 0),
@@ -56,24 +47,20 @@ class AdminPopupBannerController extends Controller
             $data['image'] = $this->storeImage($request);
         }
 
-        PopupBanner::create($data);
+        FlashSaleBanner::create($data);
 
         if ($request->ajax() || $request->wantsJson()) {
-            return response()->json(['success' => true, 'message' => 'Popup banner berhasil ditambahkan']);
+            return response()->json(['success' => true, 'message' => 'Banner flash sale berhasil ditambahkan']);
         }
 
-        return redirect()->route('admin.popup-banners')->with('success', 'Popup banner berhasil ditambahkan');
+        return redirect()->route('admin.flash-sale-banners')->with('success', 'Banner flash sale berhasil ditambahkan');
     }
 
-    public function update(Request $request, PopupBanner $popupBanner)
+    public function update(Request $request, FlashSaleBanner $flashSaleBanner)
     {
         $validator = validator($request->all(), [
             'title' => 'nullable|string|max:255',
-            'description' => 'nullable|string|max:500',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
-            'orientation' => 'required|string|in:portrait,landscape',
-            'image_fit' => 'nullable|string|in:contain,cover',
-            'image_position' => 'nullable|string|in:top,center,bottom',
             'link' => 'nullable|string|max:500',
             'is_active' => 'boolean',
             'sort_order' => 'nullable|integer|min:0',
@@ -90,10 +77,6 @@ class AdminPopupBannerController extends Controller
 
         $data = [
             'title' => $request->title,
-            'description' => $request->description,
-            'orientation' => $request->orientation,
-            'image_fit' => $request->input('image_fit', 'contain'),
-            'image_position' => $request->input('image_position', 'center'),
             'link' => $request->link,
             'is_active' => $request->boolean('is_active', true),
             'sort_order' => $request->integer('sort_order', 0),
@@ -102,38 +85,38 @@ class AdminPopupBannerController extends Controller
         ];
 
         if ($request->hasFile('image') && $request->file('image')->isValid()) {
-            if ($popupBanner->image) {
-                MediaStore::delete($popupBanner->image);
+            if ($flashSaleBanner->image) {
+                MediaStore::delete($flashSaleBanner->image);
             }
             $data['image'] = $this->storeImage($request);
         }
 
-        $popupBanner->update($data);
+        $flashSaleBanner->update($data);
 
         if ($request->ajax() || $request->wantsJson()) {
-            return response()->json(['success' => true, 'message' => 'Popup banner berhasil diperbarui']);
+            return response()->json(['success' => true, 'message' => 'Banner flash sale berhasil diperbarui']);
         }
 
-        return redirect()->route('admin.popup-banners')->with('success', 'Popup banner berhasil diperbarui');
+        return redirect()->route('admin.flash-sale-banners')->with('success', 'Banner flash sale berhasil diperbarui');
     }
 
     private function storeImage(Request $request): string
     {
-        return ImageOptimizer::storeOptimized($request->file('image'), 'popup-banners', 1200, 1600);
+        return ImageOptimizer::storeOptimized($request->file('image'), 'flash-sale-banners', 1600, 800);
     }
 
-    public function toggle(PopupBanner $popupBanner)
+    public function toggle(FlashSaleBanner $flashSaleBanner)
     {
-        $popupBanner->update(['is_active' => !$popupBanner->is_active]);
-        return back()->with('success', 'Status popup banner berhasil diubah');
+        $flashSaleBanner->update(['is_active' => !$flashSaleBanner->is_active]);
+        return back()->with('success', 'Status banner flash sale berhasil diubah');
     }
 
-    public function destroy(PopupBanner $popupBanner)
+    public function destroy(FlashSaleBanner $flashSaleBanner)
     {
-        if ($popupBanner->image) {
-            MediaStore::delete($popupBanner->image);
+        if ($flashSaleBanner->image) {
+            MediaStore::delete($flashSaleBanner->image);
         }
-        $popupBanner->delete();
-        return redirect()->route('admin.popup-banners')->with('success', 'Popup banner berhasil dihapus');
+        $flashSaleBanner->delete();
+        return redirect()->route('admin.flash-sale-banners')->with('success', 'Banner flash sale berhasil dihapus');
     }
 }

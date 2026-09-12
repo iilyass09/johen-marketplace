@@ -113,6 +113,27 @@
                                placeholder="cth: 25">
                         @error('discount_percent') <p class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
                     </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">Tier Kolektor (MLBB)</label>
+                        <select name="collector_tier"
+                                class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-purple-500">
+                            <option value="" {{ old('collector_tier') === '' || old('collector_tier') === null ? 'selected' : '' }}>Tidak Ada</option>
+                            <option value="ternama" {{ old('collector_tier') === 'ternama' ? 'selected' : '' }}>Kolektor Ternama</option>
+                            <option value="terhormat" {{ old('collector_tier') === 'terhormat' ? 'selected' : '' }}>Kolektor Terhormat</option>
+                            <option value="juragan" {{ old('collector_tier') === 'juragan' ? 'selected' : '' }}>Kolektor Juragan</option>
+                            <option value="sultan" {{ old('collector_tier') === 'sultan' ? 'selected' : '' }}>Kolektor Sultan</option>
+                        </select>
+                        @error('collector_tier') <p class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">Jenis Deal</label>
+                        <select name="deal_type"
+                                class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-purple-500">
+                            <option value="normal" {{ old('deal_type', 'normal') === 'normal' ? 'selected' : '' }}>Normal Deal</option>
+                            <option value="bundle" {{ old('deal_type') === 'bundle' ? 'selected' : '' }}>Bundle Deal</option>
+                        </select>
+                        @error('deal_type') <p class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
+                    </div>
                 </div>
             </div>
 

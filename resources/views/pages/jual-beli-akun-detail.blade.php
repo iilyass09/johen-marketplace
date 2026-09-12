@@ -133,7 +133,7 @@
             </div>
           @endif
           @if($item->is_sold)
-            <div class="jba-ribbon jba-ribbon--sold">SOLD</div>
+            <div class="jba-sold-badge">SOLD</div>
           @elseif($item->promo_type && $item->promo_type !== 'none')
             <div class="jba-ribbon">
               @if($item->promo_type === 'diskon' && $item->discount_percent)
@@ -164,7 +164,13 @@
             @if($item->original_price)
               <span class="jba-card-original">Rp {{ number_format($item->original_price, 0, ',', '.') }}</span>
             @endif
-            <span class="jba-card-price">Rp {{ number_format($item->price, 0, ',', '.') }}</span>
+            <div class="jba-card-price-row">
+              <span class="jba-card-price">Rp {{ number_format($item->price, 0, ',', '.') }}</span>
+              @if($item->original_price > $item->price)
+                <?php $save = $item->original_price - $item->price; ?>
+                <span class="jba-card-save">Hemat @if($save >= 1000000000) {{ rtrim(rtrim(number_format($save/1000000000, 1, ',', '.'), '0'), ',') }}M @elseif($save >= 1000000) {{ rtrim(rtrim(number_format($save/1000000, 1, ',', '.'), '0'), ',') }}jt @elseif($save >= 1000) {{ rtrim(rtrim(number_format($save/1000, 1, ',', '.'), '0'), ',') }}rb @else {{ number_format($save, 0, ',', '.') }} @endif</span>
+              @endif
+            </div>
           </div>
         </div>
       </a>
@@ -196,6 +202,7 @@
 @media (max-width: 768px) {
   .jba-detail-wrap { grid-template-columns: 1fr; }
   .jba-detail-gallery { position: static; }
+  .jba-grid { grid-template-columns: repeat(3, 1fr); }
 }
 @media (max-width: 640px) {
   .jba-grid { grid-template-columns: repeat(2, 1fr); }
@@ -206,18 +213,21 @@
 }
 .jba-detail-main-photo {
   width: 100%;
-  aspect-ratio: 4/3;
   border-radius: 16px;
   overflow: hidden;
   background: var(--bg-soft);
   border: 1px solid var(--glass-border);
   position: relative;
   cursor: zoom-in;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .jba-detail-main-photo img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
+  display: block;
+  object-fit: contain;
   transition: transform .3s ease;
 }
 .jba-detail-main-photo:hover img {
@@ -346,14 +356,14 @@
   pointer-events: none;
 }
 .jba-detail-video {
-  position: absolute;
-  inset: 0;
+  position: relative;
   z-index: 2;
+  width: 100%;
 }
 .jba-detail-video-wrap {
   position: relative;
   width: 100%;
-  height: 100%;
+  aspect-ratio: 16 / 9;
   border-radius: 16px;
   overflow: hidden;
   background: #000;
@@ -366,7 +376,7 @@
 }
 .jba-detail-photo-fallback {
   width: 100%;
-  height: 100%;
+  min-height: 320px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -379,15 +389,18 @@
   flex-wrap: wrap;
 }
 .jba-thumb {
-  width: 64px;
+  width: 88px;
   height: 64px;
   border-radius: 10px;
   overflow: hidden;
   border: 2px solid transparent;
-  background: var(--bg-soft);
+  background: #111;
   cursor: pointer;
   padding: 0;
   transition: border-color .2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .jba-thumb.active {
   border-color: var(--jba-accent);
@@ -395,7 +408,7 @@
 .jba-thumb img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 .jba-detail-info {}
 .jba-detail-game {
@@ -557,8 +570,9 @@
 }
 .jba-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 1rem;
+  align-items: start;
 }
 .jba-card {
   background: var(--bg-card);
@@ -576,10 +590,12 @@
 }
 .jba-card-thumb {
   width: 100%;
-  aspect-ratio: 4/3;
   overflow: hidden;
   background: var(--bg-soft);
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .jba-card-thumb::before {
   content: '';
@@ -633,8 +649,9 @@
 }
 .jba-card-thumb img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
+  display: block;
+  object-fit: contain;
 }
 .jba-card--sold {
   pointer-events: none;
@@ -671,9 +688,43 @@
 .jba-ribbon--sold::after {
   border-color: #111 #111 transparent transparent;
 }
+.jba-sold-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-14deg);
+  z-index: 3;
+  width: 116px;
+  height: 116px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ff6b6b;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 1.12rem;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  text-indent: .16em;
+  text-shadow: 0 1px 3px rgba(0,0,0,.25);
+  background: rgba(239,68,68,.13);
+  border: 2px solid rgba(239,68,68,.55);
+  backdrop-filter: blur(3px);
+  box-shadow: 0 0 0 5px rgba(239,68,68,.1), inset 0 0 0 2px rgba(239,68,68,.18), 0 12px 28px -12px rgba(0,0,0,.35);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.jba-sold-badge::before {
+  content: '';
+  position: absolute;
+  inset: -7px;
+  border-radius: 50%;
+  border: 2px dashed rgba(239,68,68,.4);
+}
 .jba-card-thumb-fallback {
   width: 100%;
-  height: 100%;
+  min-height: 170px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -709,20 +760,40 @@
 }
 .jba-card-prices {
   display: flex;
-  align-items: center;
-  gap: .4rem;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: .25rem;
 }
 .jba-card-original {
   font-size: .75rem;
-  color: #ef4444;
+  color: #f87171;
   text-decoration: line-through;
-  opacity: .7;
+  opacity: .75;
+  line-height: 1.2;
+}
+.jba-card-price-row {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  flex-wrap: wrap;
 }
 .jba-card-price {
   font-size: .92rem;
   font-weight: 700;
   color: var(--jba-accent);
+}
+.jba-card-save {
+  display: inline-flex;
+  align-items: center;
+  font-size: .64rem;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(135deg, #22c55e, #15803d);
+  padding: .18rem .5rem;
+  border-radius: 999px;
+  letter-spacing: .02em;
+  white-space: nowrap;
+  box-shadow: 0 4px 10px -4px rgba(34, 197, 94, .6);
 }
 </style>
 

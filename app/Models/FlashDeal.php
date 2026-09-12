@@ -40,7 +40,7 @@ class FlashDeal extends Model
     public function getImageUrlAttribute(): ?string
     {
         if ($this->image) {
-            return asset('storage/'.$this->image);
+            return media_url($this->image);
         }
 
         $brand = Brand::where('name', $this->product?->brand)->first();

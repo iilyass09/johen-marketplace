@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AuthController as AdminAuthController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\MediaController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfileController;
@@ -12,6 +13,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/products/by-brand', [HomeController::class, 'getProductsByBrand'])->name('products.by-brand');
+
+Route::get('/media/{path}', [MediaController::class, 'show'])
+    ->where('path', '.*')
+    ->name('media.show');
 
 Route::get('/api/products', [HomeController::class, 'getApiProducts'])->name('api.products');
 Route::get('/api/brands/search', [HomeController::class, 'searchBrands'])->name('api.brands.search');
@@ -23,6 +28,9 @@ Route::get('/api/account/check', [HomeController::class, 'checkAccount'])
 Route::get('/games/{brand:name}', [HomeController::class, 'gameDetail'])->name('games.show');
 Route::get('/cek-transaksi', [HomeController::class, 'checkTransaction'])->name('check.transaction');
 Route::get('/jual-beli-akun', [App\Http\Controllers\HomeController::class, 'jualBeliAkun'])->name('jual-beli-akun');
+Route::get('/jual-beli-akun/{game}', [App\Http\Controllers\HomeController::class, 'jualBeliAkunGame'])
+    ->where('game', 'mlbb|pubg|efootball|fcm|ff|roblox|valorant')
+    ->name('jual-beli-akun.game');
 Route::get('/jual-beli-akun/pesanan-saya', [App\Http\Controllers\HomeController::class, 'jualBeliAkunOrders'])
     ->name('jual-beli-akun.orders')
     ->middleware('auth:web');
@@ -117,6 +125,12 @@ Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->gro
     Route::put('/flash-deals/{flashDeal}', [App\Http\Controllers\AdminFlashDealController::class, 'update'])->name('flash-deals.update');
     Route::patch('/flash-deals/{flashDeal}/toggle', [App\Http\Controllers\AdminFlashDealController::class, 'toggle'])->name('flash-deals.toggle');
     Route::delete('/flash-deals/{flashDeal}', [App\Http\Controllers\AdminFlashDealController::class, 'destroy'])->name('flash-deals.destroy');
+
+    Route::get('/flash-sale-banners', [App\Http\Controllers\AdminFlashSaleBannerController::class, 'index'])->name('flash-sale-banners');
+    Route::post('/flash-sale-banners', [App\Http\Controllers\AdminFlashSaleBannerController::class, 'store'])->name('flash-sale-banners.store');
+    Route::put('/flash-sale-banners/{flashSaleBanner}', [App\Http\Controllers\AdminFlashSaleBannerController::class, 'update'])->name('flash-sale-banners.update');
+    Route::patch('/flash-sale-banners/{flashSaleBanner}/toggle', [App\Http\Controllers\AdminFlashSaleBannerController::class, 'toggle'])->name('flash-sale-banners.toggle');
+    Route::delete('/flash-sale-banners/{flashSaleBanner}', [App\Http\Controllers\AdminFlashSaleBannerController::class, 'destroy'])->name('flash-sale-banners.destroy');
 
     Route::get('/event-themes', [App\Http\Controllers\Admin\EventThemeController::class, 'index'])->name('event-themes');
     Route::get('/event-themes/create', [App\Http\Controllers\Admin\EventThemeController::class, 'create'])->name('event-themes.create');

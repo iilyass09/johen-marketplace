@@ -64,7 +64,7 @@
                   @if($isDynamic && $qrString)
                     <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data={{ urlencode($qrString) }}" alt="QRIS" width="220" height="220" style="display:block;border-radius:6px;background:#fff" loading="lazy">
                   @elseif($qrisImage)
-                    <img src="{{ asset('storage/'.$qrisImage) }}" alt="QRIS" width="220" height="220" style="display:block;border-radius:6px;">
+                    <img src="{{ media_url($qrisImage) }}" alt="QRIS" width="220" height="220" style="display:block;border-radius:6px;">
                   @else
                     <div class="jpay-qr-empty">
                       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text-mute)" stroke-width="1.2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>

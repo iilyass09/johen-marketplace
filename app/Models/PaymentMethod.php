@@ -25,7 +25,7 @@ class PaymentMethod extends Model
     public function getPhotoUrlAttribute(): ?string
     {
         if ($this->photo) {
-            return asset('storage/' . $this->photo);
+            return media_url($this->photo);
         }
         return null;
     }
@@ -33,7 +33,7 @@ class PaymentMethod extends Model
     public function getPhotoLightUrlAttribute(): ?string
     {
         if ($this->photo_light) {
-            return asset('storage/' . $this->photo_light);
+            return media_url($this->photo_light);
         }
         return null;
     }

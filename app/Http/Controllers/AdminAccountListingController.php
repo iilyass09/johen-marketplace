@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AccountListing;
 use App\Models\Brand;
+use App\Services\MediaStore;
 use App\Services\ImageOptimizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -35,6 +36,8 @@ class AdminAccountListingController extends Controller
             'whatsapp' => 'nullable|string',
             'promo_type' => 'nullable|string|in:none,promo,flash_sale,diskon,best_seller,hot,new,limited',
             'discount_percent' => 'nullable|integer|min:1|max:100',
+            'collector_tier' => 'nullable|string|in:ternama,terhormat,juragan,sultan',
+            'deal_type' => 'nullable|string|in:normal,bundle',
             'is_sold' => 'boolean',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'detail_photo_1' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
@@ -61,6 +64,8 @@ class AdminAccountListingController extends Controller
             'whatsapp' => $request->whatsapp,
             'promo_type' => $request->promo_type ?? 'none',
             'discount_percent' => $request->promo_type === 'diskon' ? $request->discount_percent : null,
+            'collector_tier' => $request->collector_tier ?: null,
+            'deal_type' => $request->deal_type ?: 'normal',
             'is_sold' => $request->boolean('is_sold', false),
             'is_active' => true,
             'video_url' => $request->video_url,
@@ -99,6 +104,8 @@ class AdminAccountListingController extends Controller
             'whatsapp' => 'nullable|string',
             'promo_type' => 'nullable|string|in:none,promo,flash_sale,diskon,best_seller,hot,new,limited',
             'discount_percent' => 'nullable|integer|min:1|max:100',
+            'collector_tier' => 'nullable|string|in:ternama,terhormat,juragan,sultan',
+            'deal_type' => 'nullable|string|in:normal,bundle',
             'is_sold' => 'boolean',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'detail_photo_1' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
@@ -123,6 +130,8 @@ class AdminAccountListingController extends Controller
             'whatsapp' => $request->whatsapp,
             'promo_type' => $request->promo_type ?? 'none',
             'discount_percent' => $request->promo_type === 'diskon' ? $request->discount_percent : null,
+            'collector_tier' => $request->collector_tier ?: null,
+            'deal_type' => $request->deal_type ?: 'normal',
             'is_sold' => $request->boolean('is_sold', false),
             'is_active' => $request->boolean('is_active', true),
             'video_url' => $request->video_url,
@@ -131,7 +140,7 @@ class AdminAccountListingController extends Controller
         foreach (['photo', 'detail_photo_1', 'detail_photo_2', 'detail_photo_3', 'detail_photo_4'] as $field) {
             if ($request->hasFile($field) && $request->file($field)->isValid()) {
                 if ($accountListing->$field) {
-                    Storage::disk('public')->delete($accountListing->$field);
+                    MediaStore::delete($accountListing->$field);
                 }
                 $data[$field] = ImageOptimizer::storeOptimized($request->file($field), 'account-listings', 1600, 1600);
             }
@@ -152,7 +161,7 @@ class AdminAccountListingController extends Controller
     {
         foreach (['photo', 'detail_photo_1', 'detail_photo_2', 'detail_photo_3', 'detail_photo_4'] as $field) {
             if ($accountListing->$field) {
-                Storage::disk('public')->delete($accountListing->$field);
+                MediaStore::delete($accountListing->$field);
             }
         }
         $accountListing->delete();

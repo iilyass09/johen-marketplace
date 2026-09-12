@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\EventTheme;
+use App\Services\MediaStore;
 use App\Services\ThemeResolverService;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -65,11 +66,11 @@ class EventThemeController extends Controller
         $data = $this->validated($request, $theme->id);
 
         if ($request->boolean('remove_logo') && $theme->logo_override) {
-            Storage::disk('public')->delete($theme->logo_override);
+            MediaStore::delete($theme->logo_override);
             $data['logo_override'] = null;
         }
         if ($request->boolean('remove_banner') && $theme->banner_image) {
-            Storage::disk('public')->delete($theme->banner_image);
+            MediaStore::delete($theme->banner_image);
             $data['banner_image'] = null;
         }
 
@@ -82,7 +83,7 @@ class EventThemeController extends Controller
                 continue;
             }
             if (in_array($idx, $remove, true)) {
-                Storage::disk('public')->delete($img);
+                MediaStore::delete($img);
             } else {
                 $kept[] = $img;
             }
@@ -94,7 +95,7 @@ class EventThemeController extends Controller
             if (count($kept) >= 3) {
                 break;
             }
-            $kept[] = $file->store(self::UPLOAD_DIR, 'public');
+            $kept[] = $this->storeThemeImage($file);
         }
         $data['decorative_images'] = $kept;
 
@@ -204,10 +205,10 @@ class EventThemeController extends Controller
         $data['particle_effect'] = empty($data['particle_effect']) ? null : $data['particle_effect'];
 
         if ($request->hasFile('logo_override')) {
-            $data['logo_override'] = $request->file('logo_override')->store(self::UPLOAD_DIR, 'public');
+            $data['logo_override'] = $this->storeThemeImage($request->file('logo_override'));
         }
         if ($request->hasFile('banner_image')) {
-            $data['banner_image'] = $request->file('banner_image')->store(self::UPLOAD_DIR, 'public');
+            $data['banner_image'] = $this->storeThemeImage($request->file('banner_image'));
         }
 
         return $data;
@@ -223,22 +224,30 @@ class EventThemeController extends Controller
             if (count($paths) >= 3) {
                 break;
             }
-            $paths[] = $file->store(self::UPLOAD_DIR, 'public');
+            $paths[] = $this->storeThemeImage($file);
         }
 
         return $paths;
+    }
+
+    protected function storeThemeImage(UploadedFile $file): string
+    {
+        $path = $file->store(self::UPLOAD_DIR, 'public');
+        MediaStore::import($path);
+
+        return $path;
     }
 
     protected function deleteFiles(EventTheme $theme): void
     {
         foreach (['logo_override', 'banner_image'] as $field) {
             if ($theme->{$field}) {
-                Storage::disk('public')->delete($theme->{$field});
+                MediaStore::delete($theme->{$field});
             }
         }
         foreach ((array) ($theme->decorative_images ?: []) as $img) {
             if ($img) {
-                Storage::disk('public')->delete($img);
+                MediaStore::delete($img);
             }
         }
     }

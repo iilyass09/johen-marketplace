@@ -101,7 +101,7 @@
                 <div class="flex items-center gap-4">
                     <div id="logoPreview" style="width:88px;height:56px;border-radius:12px;background:var(--bg-input);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
                         @if($theme->logo_override)
-                            <img src="{{ asset('storage/'.$theme->logo_override) }}" style="width:100%;height:100%;object-fit:contain" alt="logo">
+                            <img src="{{ media_url($theme->logo_override) }}" style="width:100%;height:100%;object-fit:contain" alt="logo">
                         @else
                             <span style="font-size:.7rem;color:var(--text-dim)">Preview</span>
                         @endif
@@ -127,7 +127,7 @@
                 <div class="flex items-center gap-4">
                     <div id="bannerPreview" style="width:140px;height:64px;border-radius:12px;background:var(--bg-input);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
                         @if($theme->banner_image)
-                            <img src="{{ asset('storage/'.$theme->banner_image) }}" style="width:100%;height:100%;object-fit:cover" alt="banner">
+                            <img src="{{ media_url($theme->banner_image) }}" style="width:100%;height:100%;object-fit:cover" alt="banner">
                         @else
                             <span style="font-size:.7rem;color:var(--text-dim)">Preview</span>
                         @endif
@@ -155,7 +155,7 @@
                         @foreach($theme->decorative_images as $idx => $img)
                             @if(!is_string($img)) @continue @endif
                             <div class="card-glass p-3" style="border:1px solid var(--glass-border)">
-                                <img src="{{ asset('storage/'.$img) }}" alt="Dekorasi {{ $idx+1 }}" style="width:100%;height:72px;object-fit:contain">
+                                <img src="{{ media_url($img) }}" alt="Dekorasi {{ $idx+1 }}" style="width:100%;height:72px;object-fit:contain">
                                 <label class="flex items-center gap-1.5 mt-2" style="cursor:pointer;font-size:.78rem">
                                     <input type="checkbox" name="remove_deco[]" value="{{ $idx }}" style="accent-color:var(--error)"> Hapus
                                 </label>

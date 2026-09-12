@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\FlashDeal;
 use App\Models\Product;
 use App\Services\ImageOptimizer;
+use App\Services\MediaStore;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -69,11 +70,11 @@ class AdminFlashDealController extends Controller
 
         if ($request->hasFile('image') && $request->file('image')->isValid()) {
             if ($flashDeal->image) {
-                Storage::disk('public')->delete($flashDeal->image);
+                MediaStore::delete($flashDeal->image);
             }
             $data['image'] = ImageOptimizer::storeOptimized($request->file('image'), 'flash-deals', 640, 640);
         } elseif ($request->boolean('remove_image') && $flashDeal->image) {
-            Storage::disk('public')->delete($flashDeal->image);
+            MediaStore::delete($flashDeal->image);
             $data['image'] = null;
         }
 
@@ -92,7 +93,7 @@ class AdminFlashDealController extends Controller
     public function destroy(FlashDeal $flashDeal)
     {
         if ($flashDeal->image) {
-            Storage::disk('public')->delete($flashDeal->image);
+            MediaStore::delete($flashDeal->image);
         }
 
         $flashDeal->delete();

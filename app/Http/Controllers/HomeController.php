@@ -7,6 +7,7 @@ use App\Models\AccountOrder;
 use App\Models\Brand;
 use App\Models\ContactInquiry;
 use App\Models\FlashDeal;
+use App\Models\FlashSaleBanner;
 use App\Models\Order;
 use App\Models\PaymentMethod;
 use App\Models\Product;
@@ -22,6 +23,90 @@ use Illuminate\Support\Str;
 
 class HomeController extends Controller
 {
+    private const JBA_GAME_SLUGS = [
+        'mlbb' => 'Mobile Legends',
+        'pubg' => 'PUBG Mobile',
+        'efootball' => 'E-Football',
+        'fcm' => 'FC Mobile',
+        'ff' => 'Free Fire',
+        'roblox' => 'Roblox',
+        'valorant' => 'Valorant',
+    ];
+
+    private static function jbaPageData(): array
+    {
+        $listings = AccountListing::where(function ($q) {
+                $q->where('is_active', true)->orWhere('is_sold', true);
+            })
+            ->orderBy('is_sold', 'asc')
+            ->orderBy('game')
+            ->orderBy('product_name')
+            ->get()
+            ->groupBy('game');
+
+        $popularGames = Brand::where('is_popular', true)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        $testimonials = array_values(array_filter(static::getTestimonials(), fn($t) => ($t['layanan'] ?? '') === 'jual-beli-akun'));
+
+        $flashSaleBanners = FlashSaleBanner::activeBanners();
+
+        $budgetBanners = collect([
+            [
+                'id' => 'pelajar',
+                'label' => 'Budget Pelajar',
+                'sub' => '300rb – 1.999jt',
+                'min' => 300000,
+                'max' => 1999000,
+                'image' => \App\Models\SiteSetting::get('jba_budget_pelajar_banner'),
+            ],
+            [
+                'id' => 'umr',
+                'label' => 'Budget UMR',
+                'sub' => '2jt – 5.9jt',
+                'min' => 2000000,
+                'max' => 5900000,
+                'image' => \App\Models\SiteSetting::get('jba_budget_umr_banner'),
+            ],
+            [
+                'id' => 'sultan',
+                'label' => 'Budget Sultan',
+                'sub' => '6jt – 19.9jt',
+                'min' => 6000000,
+                'max' => 19900000,
+                'image' => \App\Models\SiteSetting::get('jba_budget_sultan_banner'),
+            ],
+            [
+                'id' => 'freedom',
+                'label' => 'Financial Freedom',
+                'sub' => '20jt – 50jt',
+                'min' => 20000000,
+                'max' => 50000000,
+                'image' => \App\Models\SiteSetting::get('jba_budget_freedom_banner'),
+            ],
+        ])->map(function ($b) {
+            $b['image_url'] = $b['image'] ? media_url($b['image']) : null;
+
+            return $b;
+        })->all();
+
+        $gameSlugs = array_flip(static::JBA_GAME_SLUGS);
+
+        $gameBanners = [];
+        foreach (static::JBA_GAME_SLUGS as $slug => $game) {
+            $path = \App\Models\SiteSetting::get('jba_game_banner_' . $slug);
+            $gameBanners[$slug] = $path ? media_url($path) : null;
+        }
+
+        $jbaTestis = static::getTestimonials();
+        $jbaRating = collect($jbaTestis)->filter(fn($t) => ($t['layanan'] ?? '') === 'jual-beli-akun')->avg('rating');
+        $jbaRating = $jbaRating ? round((float) $jbaRating, 1) : 4.9;
+
+        return compact('popularGames', 'listings', 'testimonials', 'flashSaleBanners', 'budgetBanners', 'gameSlugs', 'gameBanners', 'jbaRating');
+    }
+
     public function index()
     {
         if (Auth::guard('admin')->check() && !Auth::guard('web')->check()) {
@@ -337,23 +422,26 @@ class HomeController extends Controller
 
     public function jualBeliAkun()
     {
-        $listings = AccountListing::where(function($q) {
-                $q->where('is_active', true)->orWhere('is_sold', true);
-            })
-            ->orderBy('is_sold', 'asc')
-            ->orderBy('game')
-            ->orderBy('product_name')
-            ->get()
-            ->groupBy('game');
+        $data = static::jbaPageData();
+        $data['activeGame'] = null;
+        $data['activeSlug'] = null;
 
-        $popularGames = Brand::where('is_popular', true)
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get();
+        return view('pages.jual-beli-akun', $data);
+    }
 
-        $testimonials = array_values(array_filter(static::getTestimonials(), fn($t) => ($t['layanan'] ?? '') === 'jual-beli-akun'));
+    public function jualBeliAkunGame(string $game)
+    {
+        $map = static::JBA_GAME_SLUGS;
 
-        return view('pages.jual-beli-akun', compact('popularGames', 'listings', 'testimonials'));
+        if (!isset($map[$game])) {
+            abort(404);
+        }
+
+        $data = static::jbaPageData();
+        $data['activeGame'] = $map[$game];
+        $data['activeSlug'] = $game;
+
+        return view('pages.jual-beli-akun', $data);
     }
 
     /**

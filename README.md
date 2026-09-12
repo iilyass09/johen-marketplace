@@ -56,3 +56,20 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+## Penyimpanan Gambar di Database (Media)
+
+Setiap gambar yang diunggah (produk, game/brand, metode pembayaran, flash deal, popup banner, tema event, logo & banner pengaturan) otomatis disimpan juga ke tabel `media` di database sebagai base64, selain disimpan sebagai file di `storage/app/public`.
+
+Karena itu ketika proyek di-clone ke perangkat lain:
+
+1. Impor dump database (mis. `johen_marketplace.sql`) — gambar ikut terbawa karena sudah ada di tabel `media`.
+2. Jalankan `php artisan migrate` (jika tabel `media` belum ada).
+3. Berkas gambar di `storage/app/public` tidak wajib ada lagi — gambar tampil langsung dari database lewat route `/media/{path}`.
+4. `php artisan storage:link` juga tidak wajib, karena gambar tidak lagi dilayani dari folder `storage`.
+
+Perintah tersedia:
+
+- `php artisan media:sync` — mengimpor semua file gambar yang ada di `storage/app/public` (atau yang masih dirujuk database) ke tabel `media`. Jalankan di perangkat yang masih memiliki file gambar, lalu ekspor ulang database-nya agar ikut terbawa.
+- `php artisan media:sync --prune` — selain sinkron, menghapus record media yang tidak dipakai dan file-nya sudah tidak ada.
+- `php artisan images:optimize` — tetap berfungsi; mulai sekarang hasil optimasi otomatis ikut disimpan ke tabel `media`.

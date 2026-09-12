@@ -8,7 +8,7 @@
   $banners = array_filter([$banner, $banner2, $banner3]);
   $themeBannerUrl = null;
   if (!empty($activeTheme) && $activeTheme->banner_image) {
-      $themeBannerUrl = asset('storage/'.$activeTheme->banner_image);
+      $themeBannerUrl = media_url($activeTheme->banner_image);
   }
 @endphp
 
@@ -22,8 +22,8 @@
     </div>
   @elseif(count($banners))
     <div class="hero-banner-track">
-      <img src="{{ asset('storage/'.$banners[0]) }}" alt=""
-           data-banners='{{ json_encode(array_map(fn($b) => asset('storage/'.$b), $banners)) }}'
+      <img src="{{ media_url($banners[0]) }}" alt=""
+           data-banners='{{ json_encode(array_map(fn($b) => media_url($b), $banners)) }}'
            class="hero-banner-img hero-banner-img-a"
            style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center">
       <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt=""

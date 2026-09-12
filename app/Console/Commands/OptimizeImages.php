@@ -9,6 +9,7 @@ use App\Models\PopupBanner;
 use App\Models\Product;
 use App\Models\SiteSetting;
 use App\Services\ImageOptimizer;
+use App\Services\MediaStore;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
@@ -49,6 +50,8 @@ class OptimizeImages extends Command
                     if (!$disk->exists($path)) {
                         continue;
                     }
+
+                    MediaStore::import($path);
 
                     if ($this->isAlreadyOptimized($disk->path($path), $disk->size($path), $maxWidth, $maxHeight)) {
                         $skipped++;
@@ -94,11 +97,12 @@ class OptimizeImages extends Command
                     }
 
                     if (Str::replace('.webp', '', $newPath) !== Str::replace('.webp', '', $path)) {
-                        $disk->delete($path);
+                        MediaStore::delete($path);
                     }
 
                     $remap[$path] = $newPath;
                     $row->update([$attr => $newPath]);
+                    MediaStore::import($newPath);
 
                     if ($row instanceof SiteSetting) {
                         Cache::forget("setting_{$row->key}");

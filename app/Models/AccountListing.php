@@ -24,6 +24,8 @@ class AccountListing extends Model
         'is_active',
         'promo_type',
         'discount_percent',
+        'collector_tier',
+        'deal_type',
         'is_sold',
     ];
 
@@ -45,7 +47,7 @@ class AccountListing extends Model
     public function getThumbnailUrlAttribute(): ?string
     {
         if ($this->thumbnail) {
-            return asset('storage/' . $this->thumbnail);
+            return media_url($this->thumbnail);
         }
         return null;
     }
@@ -53,7 +55,7 @@ class AccountListing extends Model
     public function getPhotoUrlAttribute(): ?string
     {
         if ($this->photo) {
-            return asset('storage/' . $this->photo);
+            return media_url($this->photo);
         }
         return null;
     }
@@ -64,7 +66,7 @@ class AccountListing extends Model
         for ($i = 1; $i <= 4; $i++) {
             $col = "detail_photo_{$i}";
             if ($this->$col) {
-                $urls[] = asset('storage/' . $this->$col);
+                $urls[] = media_url($this->$col);
             }
         }
         return $urls;

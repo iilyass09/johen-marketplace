@@ -1,7 +1,7 @@
 @php
     $themeEventSlug = !empty($activeTheme) && $activeTheme ? $activeTheme->slug : null;
     $themeLogo = $activeThemeLogoUrl
-        ?? (\App\Models\SiteSetting::get('site_logo') ? asset('storage/'.\App\Models\SiteSetting::get('site_logo')) : null)
+        ?? (\App\Models\SiteSetting::get('site_logo') ? media_url(\App\Models\SiteSetting::get('site_logo')) : null)
         ?? asset('logo.png');
     $themeFavicon = $activeThemeLogoUrl ?? asset('logo.png');
 @endphp
@@ -18,7 +18,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="icon" type="image/png" href="{{ $themeFavicon }}">
 <link rel="shortcut icon" href="{{ $themeFavicon }}">
-<link rel="stylesheet" href="{{ asset('css/topup.css') }}?v=21">
+<link rel="stylesheet" href="{{ asset('css/topup.css') }}?v=22">
 @if(!empty($activeThemeCss))
 <style>:root{{{ $activeThemeCss }}}</style>
 @endif

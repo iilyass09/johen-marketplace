@@ -89,11 +89,11 @@
                     <div class="flex items-center gap-3">
                         <div style="width:44px;height:44px;border-radius:10px;background:var(--bg-input);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
                             @if(!empty($settings['site_logo']))
-                                <img src="{{ asset('storage/'.$settings['site_logo']) }}" alt="Logo" style="width:100%;height:100%;object-fit:contain">
+                                <img src="{{ media_url($settings['site_logo']) }}" alt="Logo" style="width:100%;height:100%;object-fit:contain">
                             @else
                                 <span style="font-size:0.65rem;color:var(--text-dim)">Logo</span>
                             @endif
-                        </div>
+</div>
                         <input type="file" name="site_logo" accept="image/jpeg,image/png,image/svg+xml" class="text-sm w-full" style="color:var(--text-muted)">
                     </div>
                 </div>
@@ -149,7 +149,7 @@
                 <div class="flex items-center gap-3">
                     <div style="width:96px;height:96px;border-radius:10px;background:#fff;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
                         @if(!empty($settings['qris_image']))
-                            <img src="{{ asset('storage/'.$settings['qris_image']) }}" alt="QRIS" style="width:100%;height:100%;object-fit:contain">
+                            <img src="{{ media_url($settings['qris_image']) }}" alt="QRIS" style="width:100%;height:100%;object-fit:contain">
                         @else
                             <span style="font-size:0.6rem;color:var(--text-dim);text-align:center">Belum upload</span>
                         @endif
@@ -181,7 +181,7 @@
             <div class="flex items-center gap-3 {{ $i > 0 ? 'mt-3 pt-3 border-t' : '' }}" style="border-color:var(--border)">
                 <div style="width:88px;height:50px;border-radius:8px;background:var(--bg-input);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
                     @if(!empty($settings[$bannerKeys[$i]]))
-                        <img src="{{ asset('storage/'.$settings[$bannerKeys[$i]]) }}" alt="{{ $label }}" style="width:100%;height:100%;object-fit:cover">
+                        <img src="{{ media_url($settings[$bannerKeys[$i]]) }}" alt="{{ $label }}" style="width:100%;height:100%;object-fit:cover">
                     @else
                         <span style="font-size:0.6rem;color:var(--text-dim);text-align:center">Kosong</span>
                     @endif
@@ -209,7 +209,7 @@
             <div class="flex items-center gap-3 {{ $i > 0 ? 'mt-3 pt-3 border-t' : '' }}" style="border-color:var(--border)">
                 <div style="width:88px;height:50px;border-radius:8px;background:var(--bg-input);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
                     @if(!empty($settings[$jbaBannerKeys[$i]]))
-                        <img src="{{ asset('storage/'.$settings[$jbaBannerKeys[$i]]) }}" alt="{{ $label }}" style="width:100%;height:100%;object-fit:cover">
+                        <img src="{{ media_url($settings[$jbaBannerKeys[$i]]) }}" alt="{{ $label }}" style="width:100%;height:100%;object-fit:cover">
                     @else
                         <span style="font-size:0.6rem;color:var(--text-dim);text-align:center">Kosong</span>
                     @endif
@@ -217,6 +217,73 @@
                 <div class="flex-1 min-w-0">
                     <label class="block text-xs font-medium mb-0.5">{{ $label }}</label>
                     <input type="file" name="{{ $jbaBannerKeys[$i] }}" accept="image/jpeg,image/png,image/webp" class="text-sm w-full" style="color:var(--text-muted)">
+                </div>
+            </div>
+            @endforeach
+        </div>
+
+        <!-- BANNER GRUP HARGA MLBB -->
+        <div class="card-glass p-4">
+            <h3 class="font-semibold mb-3 flex items-center gap-2" style="font-size:0.9rem">
+                <i class="fas fa-tags" style="color:#f59e0b;font-size:0.85rem"></i>
+                <span>Banner Grup Harga Mobile Legends</span>
+            </h3>
+            <p style="color:var(--text-dim);font-size:0.72rem;margin-bottom:0.75rem">Foto banner untuk filter pengelompokan budget (Budget Pelajar, UMR, Sultan, Financial Freedom) di halaman Jual Beli Akun &mdash; Mobile Legends.</p>
+            @php
+                $jbaBudgetLabels = [
+                    'jba_budget_pelajar_banner' => 'Budget Pelajar (300rb - 1.999jt)',
+                    'jba_budget_umr_banner' => 'Budget UMR (2jt - 5.9jt)',
+                    'jba_budget_sultan_banner' => 'Budget Sultan (6jt - 19.9jt)',
+                    'jba_budget_freedom_banner' => 'Financial Freedom (20jt - 50jt)',
+                ];
+            @endphp
+            @foreach($jbaBudgetLabels as $key => $label)
+            <div class="flex items-center gap-3 {{ $loop->first ? '' : 'mt-3 pt-3 border-t' }}" style="border-color:var(--border)">
+                <div style="width:88px;height:50px;border-radius:8px;background:var(--bg-input);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
+                    @if(!empty($settings[$key]))
+                        <img src="{{ media_url($settings[$key]) }}" alt="{{ $label }}" style="width:100%;height:100%;object-fit:cover">
+                    @else
+                        <span style="font-size:0.6rem;color:var(--text-dim);text-align:center">Kosong</span>
+                    @endif
+                </div>
+                <div class="flex-1 min-w-0">
+                    <label class="block text-xs font-medium mb-0.5">{{ $label }}</label>
+                    <input type="file" name="{{ $key }}" accept="image/jpeg,image/png,image/webp" class="text-sm w-full" style="color:var(--text-muted)">
+                </div>
+            </div>
+            @endforeach
+        </div>
+
+        <!-- BANNER HEADER HALAMAN GAME JBA -->
+        <div class="card-glass p-4">
+            <h3 class="font-semibold mb-3 flex items-center gap-2" style="font-size:0.9rem">
+                <i class="fas fa-gamepad" style="color:#f59e0b;font-size:0.85rem"></i>
+                <span>Header Banner Halaman Game (Jual Beli Akun)</span>
+            </h3>
+            <p style="color:var(--text-dim);font-size:0.72rem;margin-bottom:0.75rem">Banner di bagian paling atas halaman game (/jual-beli-akun/mlbb, /pubg, dst). Teks nama game &amp; tombol Kembali tampil di atas banner.</p>
+            @php
+                $jbaGameBannerLabels = [
+                    'jba_game_banner_mlbb' => 'Mobile Legends',
+                    'jba_game_banner_pubg' => 'PUBG Mobile',
+                    'jba_game_banner_efootball' => 'E-Football',
+                    'jba_game_banner_fcm' => 'FC Mobile',
+                    'jba_game_banner_ff' => 'Free Fire',
+                    'jba_game_banner_roblox' => 'Roblox',
+                    'jba_game_banner_valorant' => 'Valorant',
+                ];
+            @endphp
+            @foreach($jbaGameBannerLabels as $key => $label)
+            <div class="flex items-center gap-3 {{ $loop->first ? '' : 'mt-3 pt-3 border-t' }}" style="border-color:var(--border)">
+                <div style="width:88px;height:50px;border-radius:8px;background:var(--bg-input);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
+                    @if(!empty($settings[$key]))
+                        <img src="{{ media_url($settings[$key]) }}" alt="{{ $label }}" style="width:100%;height:100%;object-fit:cover">
+                    @else
+                        <span style="font-size:0.6rem;color:var(--text-dim);text-align:center">Kosong</span>
+                    @endif
+                </div>
+                <div class="flex-1 min-w-0">
+                    <label class="block text-xs font-medium mb-0.5">{{ $label }}</label>
+                    <input type="file" name="{{ $key }}" accept="image/jpeg,image/png,image/webp" class="text-sm w-full" style="color:var(--text-muted)">
                 </div>
             </div>
             @endforeach

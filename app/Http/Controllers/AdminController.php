@@ -13,6 +13,7 @@ use App\Models\SiteSetting;
 use App\Models\User;
 use App\Services\DigiflazzService;
 use App\Services\ImageOptimizer;
+use App\Services\MediaStore;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
@@ -258,7 +259,7 @@ class AdminController extends Controller
 
         if ($request->hasFile('photo') && $request->file('photo')->isValid()) {
             if ($product->photo) {
-                Storage::disk('public')->delete($product->photo);
+                MediaStore::delete($product->photo);
             }
             $data['photo'] = ImageOptimizer::storeOptimized($request->file('photo'), 'products', 800, 800);
         }
@@ -421,14 +422,14 @@ class AdminController extends Controller
 
         if ($request->hasFile('thumbnail') && $request->file('thumbnail')->isValid()) {
             if ($brand->thumbnail) {
-                Storage::disk('public')->delete($brand->thumbnail);
+                MediaStore::delete($brand->thumbnail);
             }
             $data['thumbnail'] = ImageOptimizer::storeOptimized($request->file('thumbnail'), 'brands', 640, 640);
         }
 
         if ($request->hasFile('featured_thumbnail') && $request->file('featured_thumbnail')->isValid()) {
             if ($brand->featured_thumbnail) {
-                Storage::disk('public')->delete($brand->featured_thumbnail);
+                MediaStore::delete($brand->featured_thumbnail);
             }
             $data['featured_thumbnail'] = ImageOptimizer::storeOptimized($request->file('featured_thumbnail'), 'brands', 1280, 1280);
         }
@@ -437,14 +438,14 @@ class AdminController extends Controller
 
         if ($request->hasFile('carousel_bg') && $request->file('carousel_bg')->isValid()) {
             if ($brand->carousel_bg) {
-                Storage::disk('public')->delete($brand->carousel_bg);
+                MediaStore::delete($brand->carousel_bg);
             }
             $data['carousel_bg'] = ImageOptimizer::optimizeAndCrop($request->file('carousel_bg'), '2:1');
         }
 
         if ($request->hasFile('detail_bg') && $request->file('detail_bg')->isValid()) {
             if ($brand->detail_bg) {
-                Storage::disk('public')->delete($brand->detail_bg);
+                MediaStore::delete($brand->detail_bg);
             }
             $data['detail_bg'] = ImageOptimizer::optimizeAndCrop($request->file('detail_bg'), '21:9');
         }
@@ -469,18 +470,18 @@ class AdminController extends Controller
     public function brandsDestroy(Brand $brand)
     {
         if ($brand->thumbnail) {
-            Storage::disk('public')->delete($brand->thumbnail);
+            MediaStore::delete($brand->thumbnail);
         }
         if ($brand->featured_thumbnail) {
-            Storage::disk('public')->delete($brand->featured_thumbnail);
+            MediaStore::delete($brand->featured_thumbnail);
         }
         foreach (['featured_img_1', 'featured_img_2', 'featured_img_3'] as $f) {
             if ($brand->$f) {
-                Storage::disk('public')->delete($brand->$f);
+                MediaStore::delete($brand->$f);
             }
         }
         if ($brand->detail_bg) {
-            Storage::disk('public')->delete($brand->detail_bg);
+            MediaStore::delete($brand->detail_bg);
         }
         $brand->delete();
         return redirect()->route('admin.brands')->with('success', 'Game berhasil dihapus');
@@ -708,14 +709,14 @@ class AdminController extends Controller
 
         if ($request->hasFile('photo') && $request->file('photo')->isValid()) {
             if ($paymentMethod->photo) {
-                Storage::disk('public')->delete($paymentMethod->photo);
+                MediaStore::delete($paymentMethod->photo);
             }
             $data['photo'] = ImageOptimizer::storeOptimized($request->file('photo'), 'payments', 400, 400);
         }
 
         if ($request->hasFile('photo_light') && $request->file('photo_light')->isValid()) {
             if ($paymentMethod->photo_light) {
-                Storage::disk('public')->delete($paymentMethod->photo_light);
+                MediaStore::delete($paymentMethod->photo_light);
             }
             $data['photo_light'] = ImageOptimizer::storeOptimized($request->file('photo_light'), 'payments', 400, 400);
         }
@@ -855,7 +856,7 @@ class AdminController extends Controller
         if ($request->hasFile('site_logo') && $request->file('site_logo')->isValid()) {
             $oldLogo = \App\Models\SiteSetting::get('site_logo');
             if ($oldLogo && Storage::disk('public')->exists($oldLogo)) {
-                Storage::disk('public')->delete($oldLogo);
+                MediaStore::delete($oldLogo);
             }
             $path = ImageOptimizer::storeOptimized($request->file('site_logo'), 'settings', 512, 512);
             \App\Models\SiteSetting::set('site_logo', $path, 'image');
@@ -866,7 +867,7 @@ class AdminController extends Controller
             if ($request->hasFile($key) && $request->file($key)->isValid()) {
                 $oldBanner = \App\Models\SiteSetting::get($key);
                 if ($oldBanner && Storage::disk('public')->exists($oldBanner)) {
-                    Storage::disk('public')->delete($oldBanner);
+                    MediaStore::delete($oldBanner);
                 }
                 $path = ImageOptimizer::storeOptimized($request->file($key), 'settings', 1920, 1080);
                 \App\Models\SiteSetting::set($key, $path, 'image');
@@ -878,7 +879,44 @@ $jbaBannerKeys = ['jba_hero_banner', 'jba_hero_banner_2', 'jba_hero_banner_3'];
         if ($request->hasFile($key) && $request->file($key)->isValid()) {
             $oldBanner = \App\Models\SiteSetting::get($key);
             if ($oldBanner && Storage::disk('public')->exists($oldBanner)) {
-                Storage::disk('public')->delete($oldBanner);
+                MediaStore::delete($oldBanner);
+            }
+            $path = ImageOptimizer::storeOptimized($request->file($key), 'settings', 1920, 1080);
+            \App\Models\SiteSetting::set($key, $path, 'image');
+        }
+    }
+
+$jbaBudgetKeys = [
+        'jba_budget_pelajar_banner',
+        'jba_budget_umr_banner',
+        'jba_budget_sultan_banner',
+        'jba_budget_freedom_banner',
+    ];
+    foreach ($jbaBudgetKeys as $key) {
+        if ($request->hasFile($key) && $request->file($key)->isValid()) {
+            $oldBanner = \App\Models\SiteSetting::get($key);
+            if ($oldBanner && Storage::disk('public')->exists($oldBanner)) {
+                MediaStore::delete($oldBanner);
+            }
+            $path = ImageOptimizer::storeOptimized($request->file($key), 'settings', 960, 480);
+            \App\Models\SiteSetting::set($key, $path, 'image');
+        }
+    }
+
+$jbaGameBannerKeys = [
+        'jba_game_banner_mlbb',
+        'jba_game_banner_pubg',
+        'jba_game_banner_efootball',
+        'jba_game_banner_fcm',
+        'jba_game_banner_ff',
+        'jba_game_banner_roblox',
+        'jba_game_banner_valorant',
+    ];
+    foreach ($jbaGameBannerKeys as $key) {
+        if ($request->hasFile($key) && $request->file($key)->isValid()) {
+            $oldBanner = \App\Models\SiteSetting::get($key);
+            if ($oldBanner && Storage::disk('public')->exists($oldBanner)) {
+                MediaStore::delete($oldBanner);
             }
             $path = ImageOptimizer::storeOptimized($request->file($key), 'settings', 1920, 1080);
             \App\Models\SiteSetting::set($key, $path, 'image');
@@ -889,7 +927,7 @@ $jbaBannerKeys = ['jba_hero_banner', 'jba_hero_banner_2', 'jba_hero_banner_3'];
     if ($request->hasFile('qris_image') && $request->file('qris_image')->isValid()) {
         $oldQris = \App\Models\SiteSetting::get('qris_image');
         if ($oldQris && Storage::disk('public')->exists($oldQris)) {
-            Storage::disk('public')->delete($oldQris);
+            MediaStore::delete($oldQris);
         }
         $path = ImageOptimizer::storeOptimized($request->file('qris_image'), 'settings', 800, 800);
         \App\Models\SiteSetting::set('qris_image', $path, 'image');
@@ -910,7 +948,7 @@ $jbaBannerKeys = ['jba_hero_banner', 'jba_hero_banner_2', 'jba_hero_banner_3'];
         foreach (['featured_img_1', 'featured_img_2', 'featured_img_3'] as $field) {
             if ($request->hasFile($field) && $request->file($field)->isValid()) {
                 if ($brand && $brand->$field) {
-                    Storage::disk('public')->delete($brand->$field);
+                    MediaStore::delete($brand->$field);
                 }
                 $data[$field] = ImageOptimizer::storeOptimized($request->file($field), 'brands', 1280, 1280);
             }
