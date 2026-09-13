@@ -7,10 +7,11 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'username', 'email', 'password', 'is_admin', 'google_id', 'avatar'])]
+#[Fillable(['name', 'username', 'email', 'password', 'is_admin', 'is_live_chat_admin', 'google_id', 'avatar'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -23,11 +24,37 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_admin' => 'boolean',
+            'is_live_chat_admin' => 'boolean',
         ];
     }
 
     public function isAdmin(): bool
     {
         return $this->is_admin;
+    }
+
+    public function isLiveChatAdmin(): bool
+    {
+        return $this->is_live_chat_admin && !$this->is_admin;
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->is_admin;
+    }
+
+    public function liveChatConversations(): HasMany
+    {
+        return $this->hasMany(LiveChatConversation::class, 'user_id');
+    }
+
+    public function liveChatMessages(): HasMany
+    {
+        return $this->hasMany(LiveChatMessage::class, 'sender_id');
+    }
+
+    public function assignedOperators(): HasMany
+    {
+        return $this->hasMany(LiveChatOperator::class, 'user_id');
     }
 }

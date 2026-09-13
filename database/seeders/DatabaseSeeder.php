@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             PaymentMethodSeeder::class,
             BrandSeeder::class,
             SiteSettingSeeder::class,
+            LiveChatChannelSeeder::class,
         ]);
     }
 }

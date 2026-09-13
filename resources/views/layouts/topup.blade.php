@@ -11,7 +11,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token() }}">
-<title>@yield('title', 'Johen Gaming — Top Up & Joki Termurah')</title>
+<title>@yield('title', 'Johen Gaming â€” Top Up & Joki Termurah')</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -180,7 +180,7 @@
       <a href="{{ route('terms') }}">Syarat & Ketentuan</a>
     </div>
   </div>
-  <div class="footer-bottom">© {{ date('Y') }} Johen Gaming. All Rights Reserved.</div>
+  <div class="footer-bottom">Â© {{ date('Y') }} Johen Gaming. All Rights Reserved.</div>
 </footer>
 
 <!-- ===== MODALS ===== -->
@@ -189,7 +189,7 @@
   <div class="modal-box modal-box-wide">
     <button class="modal-close" data-close-modal>&times;</button>
     <div class="topup-header">
-      <div class="topup-icon" id="topupIcon">🎮</div>
+      <div class="topup-icon" id="topupIcon">ðŸŽ®</div>
       <div>
         <h3 id="topupGameName">Nama Game</h3>
         <p class="modal-sub">Isi data akun dan pilih nominal top up.</p>
@@ -262,9 +262,7 @@
 </div>
 @endif
 
-<a href="{{ route('kontak') }}" class="fab-cs" aria-label="Hubungi CS">
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14h3a2 2 0 012 2v3a2 2 0 01-2 2H5a2 2 0 01-2-2v-7a9 9 0 0118 0v7a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3"/></svg>
-</a>
+@include('partials.livechat')
 
 <style>
 [data-theme="light"] {
@@ -370,27 +368,7 @@ html:not([data-theme="light"]) .mobile-theme-btn .icon-moon {
 .mobile-theme-btn .icon-wrap .icon-moon {
   position: absolute;
 }
-.fab-cs {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  z-index: 9999;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: var(--purple-light, #9d5cf5);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 20px rgba(157, 92, 245, .45);
-  transition: transform .2s, box-shadow .2s;
-  text-decoration: none;
-}
-.fab-cs:hover {
-  transform: scale(1.1);
-  box-shadow: 0 6px 28px rgba(157, 92, 245, .55);
-}
+
 </style>
 
 <script>
@@ -499,3 +477,5 @@ html:not([data-theme="light"]) .mobile-theme-btn .icon-moon {
 @stack('scripts')
 </body>
 </html>
+
+

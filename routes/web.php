@@ -1,8 +1,15 @@
 <?php
 
 use App\Http\Controllers\Admin\AuthController as AdminAuthController;
+use App\Http\Controllers\Admin\LiveChatChannelController;
+use App\Http\Controllers\Admin\LiveChatAdminController;
+use App\Http\Controllers\Admin\LiveChatChatController;
+use App\Http\Controllers\Admin\LiveChatConversationController;
+use App\Http\Controllers\Admin\LiveChatDashboardController;
+use App\Http\Controllers\Admin\LiveChatOperatorController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\LiveChatController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
@@ -173,6 +180,43 @@ Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->gro
     Route::delete('/contact-inquiries/{contactInquiry}', [AdminController::class, 'contactInquiriesDestroy'])->name('contact-inquiries.destroy');
 
     Route::get('/digiflazz/test', [AdminController::class, 'digiflazzTest'])->name('digiflazz.test');
+});
+
+Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/live-chat', [LiveChatDashboardController::class, 'index'])->name('live-chat.dashboard');
+
+    Route::get('/live-chat/channels', [LiveChatChannelController::class, 'index'])->name('live-chat.channels');
+    Route::put('/live-chat/channels/{channel}', [LiveChatChannelController::class, 'update'])->name('live-chat.channels.update');
+    Route::patch('/live-chat/channels/{channel}/toggle', [LiveChatChannelController::class, 'toggle'])->name('live-chat.channels.toggle');
+
+    Route::get('/live-chat/conversations', [LiveChatConversationController::class, 'index'])->name('live-chat.conversations');
+    Route::get('/live-chat/conversations/{conversation}', [LiveChatConversationController::class, 'show'])->name('live-chat.conversations.show');
+    Route::get('/live-chat/conversations/{conversation}/poll', [LiveChatConversationController::class, 'poll'])->name('live-chat.conversations.poll');
+    Route::post('/live-chat/conversations/{conversation}/reply', [LiveChatConversationController::class, 'reply'])->name('live-chat.conversations.reply');
+    Route::patch('/live-chat/conversations/{conversation}/close', [LiveChatConversationController::class, 'close'])->name('live-chat.conversations.close');
+    Route::patch('/live-chat/conversations/{conversation}/reopen', [LiveChatConversationController::class, 'reopen'])->name('live-chat.conversations.reopen');
+    Route::delete('/live-chat/messages/{message}', [LiveChatChatController::class, 'deleteMessage'])->name('live-chat.messages.delete');
+
+    Route::get('/live-chat/operators', [LiveChatOperatorController::class, 'index'])->name('live-chat.operators');
+    Route::post('/live-chat/operators', [LiveChatOperatorController::class, 'store'])->name('live-chat.operators.store');
+    Route::patch('/live-chat/operators/{operator}/toggle', [LiveChatOperatorController::class, 'toggle'])->name('live-chat.operators.toggle');
+    Route::delete('/live-chat/operators/{operator}', [LiveChatOperatorController::class, 'destroy'])->name('live-chat.operators.destroy');
+    Route::put('/live-chat/operators/{operator}/schedule', [LiveChatOperatorController::class, 'schedule'])->name('live-chat.operators.schedule');
+
+    Route::get('/live-chat/admins', [LiveChatAdminController::class, 'index'])->name('live-chat.admins');
+    Route::get('/live-chat/admins/{channel}/edit', [LiveChatAdminController::class, 'edit'])->name('live-chat.admins.edit');
+    Route::put('/live-chat/admins/{channel}', [LiveChatAdminController::class, 'update'])->name('live-chat.admins.update');
+});
+
+Route::middleware(['auth:web'])->prefix('api')->name('api.')->group(function () {
+    Route::get('/live-chat/channels', [LiveChatController::class, 'channels'])->name('live-chat.channels');
+    Route::get('/live-chat/conversation/{channelSlug}', [LiveChatController::class, 'getConversation'])->name('live-chat.conversation');
+    Route::get('/live-chat/messages/{conversation}', [LiveChatController::class, 'messages'])->name('live-chat.messages');
+    Route::post('/live-chat/messages', [LiveChatController::class, 'sendMessage'])->name('live-chat.messages.store');
+    Route::post('/live-chat/media/upload', [LiveChatController::class, 'uploadMedia'])->name('live-chat.media.upload');
+    Route::patch('/live-chat/conversation/{conversation}/read', [LiveChatController::class, 'markRead'])->name('live-chat.mark-read');
+    Route::get('/live-chat/unread', [LiveChatController::class, 'unreadCount'])->name('live-chat.unread');
+    Route::delete('/live-chat/messages/{message}', [LiveChatController::class, 'deleteMessage'])->name('live-chat.messages.delete');
 });
 
 Route::get('/admin/login', [AdminAuthController::class, 'showLoginForm'])

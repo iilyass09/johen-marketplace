@@ -179,7 +179,7 @@
             box-shadow: 0 4px 14px -4px rgba(9,135,245,0.4);
         }
         .sidebar-nav a.active i { color: #fff; }
-        .sidebar-nav .nav-section { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); padding: 1rem 0.9rem 0.35rem; font-weight: 600; }
+        .sidebar-nav .nav-section { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); padding: 0.7rem 0.9rem; font-weight: 600; }
         .sidebar-nav .nav-divider { border: none; border-top: 1px solid var(--glass-border); margin: 0.6rem 0; }
 
         /* HEADER */
@@ -562,6 +562,9 @@
                 <a href="{{ route('admin.contact-inquiries') }}" class="{{ request()->routeIs('admin.contact-inquiries*') ? 'active' : '' }}">
                     <i class="fas fa-inbox"></i> Pesan Masuk
                 </a>
+                <a href="{{ route('admin.live-chat.admins') }}" class="{{ request()->routeIs('admin.live-chat.admins*') ? 'active' : '' }}">
+                    <i class="fas fa-user-shield"></i> Kelola Admin
+                </a>
                 <a href="{{ route('admin.settings') }}" class="{{ request()->routeIs('admin.settings*') ? 'active' : '' }}">
                     <i class="fas fa-cog"></i> Pengaturan
                 </a>
@@ -748,6 +751,7 @@
             document.getElementById('modalOverlay').classList.remove('show');
             deleteForm = null;
         });
+
     </script>
     @stack('scripts')
 </body>
