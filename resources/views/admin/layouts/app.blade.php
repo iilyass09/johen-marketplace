@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         :root {
@@ -55,7 +55,8 @@
         html { scroll-behavior: smooth; }
 
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
             background: var(--bg-main);
             color: var(--text);
             min-height: 100vh;
@@ -94,19 +95,7 @@
             75% { transform: translate(40px,30px) scale(1.02); }
         }
 
-        .grid-lines {
-            position: fixed; inset: 0;
-            background-image:
-                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-            background-size: 60px 60px;
-            pointer-events: none; z-index: 0;
-        }
-        [data-theme="light"] .grid-lines {
-            background-image:
-                linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px);
-        }
+
 
         .app-layout {
             position: relative; z-index: 1;
@@ -117,70 +106,123 @@
         .sidebar {
             width: 260px;
             flex-shrink: 0;
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-right: 1px solid var(--glass-border);
+            background: linear-gradient(180deg, #032D52 0%, #1E1050 100%);
+            border-right: 1px solid rgba(255,255,255,0.08);
             display: flex;
             flex-direction: column;
             position: fixed; top: 0; left: 0; bottom: 0;
             z-index: 100;
-            transition: transform 0.3s cubic-bezier(.22,1,.36,1), background 0.3s ease;
-            overflow-y: auto;
+            transition: transform 0.3s cubic-bezier(.22,1,.36,1);
+            overflow: hidden;
         }
-        .sidebar-logo {
-            padding: 1.25rem 1.25rem;
-            border-bottom: 1px solid var(--glass-border);
-            display: flex; align-items: center; justify-content: space-between;
+        .sidebar-brand {
+            padding: 18px 20px;
+            display: flex; align-items: center; gap: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            flex-shrink: 0;
         }
-        .sidebar-logo a {
-            font-family: 'Sora', sans-serif;
-            font-weight: 800; font-size: 1.1rem;
-            color: var(--text);
-            text-decoration: none;
-            display: flex; align-items: center; gap: 0.6rem;
-        }
-        .sidebar-logo .brand-icon {
-            width: 34px; height: 34px;
-            background: linear-gradient(135deg, var(--accent), #6366f1);
-            border-radius: 10px;
+        .sidebar-brand .brand-logo-box {
+            width: 42px; height: 42px;
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.20);
+            border-radius: 11px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 0.85rem; color: #fff;
-            box-shadow: 0 4px 12px -4px rgba(9,135,245,0.4);
+            flex-shrink: 0;
         }
-        .sidebar-logo .brand-logo-img {
-            width: 34px; height: 34px;
-            border-radius: 10px;
+        .sidebar-brand .brand-logo-box img {
+            width: 28px; height: 28px;
+            border-radius: 6px;
             object-fit: contain;
         }
-        .sidebar-logo .brand-highlight { color: var(--accent); }
+        .sidebar-brand .brand-text { display: flex; flex-direction: column; }
+        .sidebar-brand .brand-name {
+            font-family: 'Poppins', sans-serif;
+            font-size: 15px; font-weight: 700; color: #FFFFFF;
+            line-height: 1.2;
+        }
+        .sidebar-brand .brand-sub {
+            font-family: 'Poppins', sans-serif;
+            font-size: 11px; font-weight: 400;
+            color: rgba(255,255,255,0.55);
+            margin-top: 1px;
+        }
 
-        .sidebar-nav { padding: 0.75rem; flex: 1; }
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 12px;
+        }
+        .sidebar-nav::-webkit-scrollbar { width: 3px; }
+        .sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+        .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+        .sidebar-nav .nav-section {
+            font-size: 10px; text-transform: uppercase;
+            letter-spacing: 0.08em; font-weight: 700;
+            color: rgba(255,255,255,0.35);
+            padding: 14px 12px 5px;
+        }
+        .sidebar-nav .nav-section:first-child { padding-top: 2px; }
+
         .sidebar-nav a, .sidebar-nav form button {
-            display: flex; align-items: center; gap: 0.75rem;
-            padding: 0.7rem 0.9rem;
+            display: flex; align-items: center; gap: 10px;
+            padding: 0 12px; height: 38px;
             border-radius: 10px;
-            color: var(--text-muted);
+            color: rgba(255,255,255,0.85);
             text-decoration: none;
-            font-size: 0.88rem; font-weight: 500;
-            transition: all 0.2s ease;
+            font-size: 13px; font-weight: 500;
+            transition: background 150ms ease;
             width: 100%; text-align: left;
             background: none; border: none; cursor: pointer;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Poppins', sans-serif;
+            position: relative;
+            margin-bottom: 2px;
         }
-        .sidebar-nav a i, .sidebar-nav form button i { width: 18px; text-align: center; font-size: 0.95rem; }
+        .sidebar-nav a i, .sidebar-nav form button i {
+            width: 18px; text-align: center;
+            font-size: 15px; opacity: 0.8;
+        }
         .sidebar-nav a:hover, .sidebar-nav form button:hover {
-            background: var(--sidebar-hover);
-            color: var(--text);
+            background: rgba(255,255,255,0.06);
         }
         .sidebar-nav a.active {
-            background: linear-gradient(135deg, var(--accent), #6366f1);
-            color: #fff;
-            box-shadow: 0 4px 14px -4px rgba(9,135,245,0.4);
+            background: linear-gradient(90deg, #263F98, #432B9B);
+            color: #fff; font-weight: 700;
+            box-shadow: 0 4px 12px -2px rgba(38,63,152,0.3);
         }
-        .sidebar-nav a.active i { color: #fff; }
-        .sidebar-nav .nav-section { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); padding: 0.7rem 0.9rem; font-weight: 600; }
-        .sidebar-nav .nav-divider { border: none; border-top: 1px solid var(--glass-border); margin: 0.6rem 0; }
+        .sidebar-nav a.active i { color: #fff; opacity: 1; }
+        .sidebar-nav a.active::before {
+            content: '';
+            position: absolute; left: -12px; top: 50%; transform: translateY(-50%);
+            width: 3px; height: 22px;
+            background: #2196FF;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .sidebar-footer {
+            flex-shrink: 0;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            padding: 14px 12px 16px;
+        }
+        .sidebar-footer .logout-btn {
+            display: flex; align-items: center; gap: 10px;
+            padding: 0 12px; height: 38px;
+            border-radius: 10px;
+            background: rgba(72, 69, 160, 0.45);
+            color: rgba(255,255,255,0.85);
+            text-decoration: none;
+            font-size: 13px; font-weight: 500;
+            transition: background 150ms ease;
+            width: 100%; text-align: left;
+            border: none; cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+        }
+        .sidebar-footer .logout-btn i {
+            width: 18px; text-align: center; font-size: 15px; opacity: 0.8;
+        }
+        .sidebar-footer .logout-btn:hover {
+            background: rgba(72, 69, 160, 0.65);
+        }
 
         /* HEADER */
         .main-area {
@@ -199,11 +241,11 @@
             transition: background 0.3s ease;
         }
         .header-left { display: flex; align-items: center; gap: 1rem; }
-        .header-left .page-title { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1.1rem; }
+        .header-left .page-title { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1rem; }
         .hamburger {
             display: none; background: none; border: none;
             color: var(--text-muted); cursor: pointer;
-            font-size: 1.2rem; padding: 0.25rem;
+            font-size: 1rem; padding: 0.25rem;
         }
         .header-right { display: flex; align-items: center; gap: 0.75rem; }
 
@@ -233,7 +275,7 @@
         .user-avatar {
             width: 30px; height: 30px;
             border-radius: 8px;
-            background: linear-gradient(135deg, var(--accent), #6366f1);
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
             display: flex; align-items: center; justify-content: center;
             font-size: 0.72rem; font-weight: 700; color: #fff;
         }
@@ -259,7 +301,7 @@
             transition: all 0.15s ease;
             width: 100%; text-align: left;
             background: none; border: none; cursor: pointer;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Poppins', sans-serif;
         }
         .user-dropdown a:hover, .user-dropdown button:hover { background: var(--sidebar-hover); color: var(--text); }
         .user-dropdown .dropdown-divider { border: none; border-top: 1px solid var(--glass-border); margin: 0.3rem 0; }
@@ -320,11 +362,11 @@
             width: 64px; height: 64px;
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            font-size: 1.6rem; margin: 0 auto 1rem;
+            font-size: 1.3rem; margin: 0 auto 1rem;
         }
         .modal-icon.success { background: rgba(16,185,129,0.15); color: var(--success); }
         .modal-icon.error { background: rgba(239,68,68,0.15); color: var(--error); }
-        .modal-title { font-weight: 800; font-size: 1.2rem; margin-bottom: 0.4rem; }
+        .modal-title { font-weight: 800; font-size: 1.05rem; margin-bottom: 0.4rem; }
         .modal-title.success { color: var(--success); }
         .modal-title.error { color: var(--error); }
         .modal-message { color: var(--text-muted); font-size: 0.88rem; line-height: 1.5; margin-bottom: 1.5rem; }
@@ -386,7 +428,7 @@
             padding: 0.65rem 0.9rem;
             color: var(--text);
             font-size: 0.88rem;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Poppins', sans-serif;
             transition: all 0.2s ease;
             outline: none;
         }
@@ -426,12 +468,12 @@
             font-size: 0.82rem; font-weight: 600;
             border: none; cursor: pointer;
             transition: all 0.2s ease;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Poppins', sans-serif;
             text-decoration: none;
         }
         .btn:hover { transform: translateY(-1px); }
         .btn:active { transform: translateY(0); }
-        .btn-primary { background: linear-gradient(135deg, var(--accent), #6366f1); color: #fff; box-shadow: 0 4px 14px -4px rgba(9,135,245,0.4); }
+        .btn-primary { background: linear-gradient(135deg, var(--accent), #8b5cf6); color: #fff; box-shadow: 0 4px 14px -4px rgba(9,135,245,0.4); }
         .btn-primary:hover { box-shadow: 0 6px 20px -4px rgba(9,135,245,0.5); }
         .btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--glass-border); }
         .btn-ghost:hover { background: var(--sidebar-hover); color: var(--text); }
@@ -456,7 +498,7 @@
         .stat-card .stat-icon {
             width: 42px; height: 42px; border-radius: 12px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 1.1rem;
+            font-size: 1rem;
         }
 
         /* PAGINATION */
@@ -474,7 +516,7 @@
             transition: all 0.15s ease;
         }
         .pagination-wrap a:hover { background: var(--sidebar-hover); color: var(--text); }
-        .pagination-wrap span:not(.dots) { background: linear-gradient(135deg, var(--accent), #6366f1); color: #fff; border-color: transparent; }
+        .pagination-wrap span:not(.dots) { background: linear-gradient(135deg, var(--accent), #8b5cf6); color: #fff; border-color: transparent; }
         .pagination-wrap .dots { border: none; }
 
         /* SEARCH INPUT */
@@ -490,8 +532,8 @@
 
         /* EMPTY STATE */
         .empty-state { text-align: center; padding: 3rem 1rem; }
-        .empty-state i { font-size: 3rem; color: var(--text-dim); margin-bottom: 1rem; display: block; }
-        .empty-state p { color: var(--text-muted); font-size: 0.9rem; }
+        .empty-state i { font-size: 2.2rem; color: var(--text-dim); margin-bottom: 1rem; display: block; }
+        .empty-state p { color: var(--text-muted); font-size: 0.82rem; }
 
         /* SCROLLBAR */
         ::-webkit-scrollbar { width: 6px; }
@@ -505,24 +547,27 @@
     <div class="orb orb-1"></div>
     <div class="orb orb-2"></div>
     <div class="orb orb-3"></div>
-    <div class="grid-lines"></div>
-
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <div class="app-layout">
         <!-- SIDEBAR -->
         <aside class="sidebar" id="sidebar">
-            <div class="sidebar-logo">
-                <a href="{{ route('admin.dashboard') }}">
-                    <img src="{{ asset('logo.png') }}" alt="Johen Gaming" class="brand-logo-img">
-                    <span>Admin <span class="brand-highlight">Marketplace</span></span>
-                </a>
+            <div class="sidebar-brand">
+                <div class="brand-logo-box">
+                    <img src="{{ asset('logo.png') }}" alt="Johen Gaming">
+                </div>
+                <div class="brand-text">
+                    <div class="brand-name">Johen Marketplace</div>
+                    <div class="brand-sub">Admin Panel</div>
+                </div>
             </div>
             <nav class="sidebar-nav">
-                <div class="nav-section">Menu</div>
+                <div class="nav-section">Beranda</div>
                 <a href="{{ route('admin.dashboard') }}" class="{{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
                     <i class="fas fa-chart-pie"></i> Dashboard
                 </a>
+
+                <div class="nav-section">Produk</div>
                 <a href="{{ route('admin.products') }}" class="{{ request()->routeIs('admin.products*') ? 'active' : '' }}">
                     <i class="fas fa-box"></i> Produk
                 </a>
@@ -535,6 +580,8 @@
                 <a href="{{ route('admin.payment-methods') }}" class="{{ request()->routeIs('admin.payment-methods*') ? 'active' : '' }}">
                     <i class="fas fa-credit-card"></i> Pembayaran
                 </a>
+
+                <div class="nav-section">Event</div>
                 <a href="{{ route('admin.popup-banners') }}" class="{{ request()->routeIs('admin.popup-banners*') ? 'active' : '' }}">
                     <i class="fas fa-bullhorn"></i> Popup Banner
                 </a>
@@ -547,38 +594,42 @@
                 <a href="{{ route('admin.event-themes') }}" class="{{ request()->routeIs('admin.event-themes*') ? 'active' : '' }}">
                     <i class="fas fa-palette"></i> Tema Event
                 </a>
-                <a href="{{ route('admin.gateway-status') }}" class="{{ request()->routeIs('admin.gateway-status*') ? 'active' : '' }}">
-                    <i class="fas fa-plug"></i> Status Gateway
-                </a>
+
+                <div class="nav-section">Pesanan</div>
                 <a href="{{ route('admin.orders') }}" class="{{ request()->routeIs('admin.orders*') ? 'active' : '' }}">
                     <i class="fas fa-shopping-cart"></i> Pesanan
                 </a>
                 <a href="{{ route('admin.account-orders') }}" class="{{ request()->routeIs('admin.account-orders*') ? 'active' : '' }}">
                     <i class="fas fa-file-invoice-dollar"></i> Pesanan Akun
                 </a>
+
+                <div class="nav-section">Pengguna</div>
                 <a href="{{ route('admin.users') }}" class="{{ request()->routeIs('admin.users*') ? 'active' : '' }}">
-                    <i class="fas fa-users"></i> Pengguna
-                </a>
-                <a href="{{ route('admin.contact-inquiries') }}" class="{{ request()->routeIs('admin.contact-inquiries*') ? 'active' : '' }}">
-                    <i class="fas fa-inbox"></i> Pesan Masuk
+                    <i class="fas fa-users"></i> Kelola Akun
                 </a>
                 <a href="{{ route('admin.live-chat.admins') }}" class="{{ request()->routeIs('admin.live-chat.admins*') ? 'active' : '' }}">
                     <i class="fas fa-user-shield"></i> Kelola Admin
                 </a>
+                <a href="{{ route('admin.contact-inquiries') }}" class="{{ request()->routeIs('admin.contact-inquiries*') ? 'active' : '' }}">
+                    <i class="fas fa-inbox"></i> Pesan Masuk
+                </a>
+
+                <div class="nav-section">Sistem</div>
+                <a href="{{ route('admin.gateway-status') }}" class="{{ request()->routeIs('admin.gateway-status*') ? 'active' : '' }}">
+                    <i class="fas fa-plug"></i> Status Gateway
+                </a>
                 <a href="{{ route('admin.settings') }}" class="{{ request()->routeIs('admin.settings*') ? 'active' : '' }}">
                     <i class="fas fa-cog"></i> Pengaturan
                 </a>
-                <hr class="nav-divider">
-                <a href="{{ route('home') }}">
-                    <i class="fas fa-arrow-left"></i> Kembali ke Toko
-                </a>
+            </nav>
+            <div class="sidebar-footer">
                 <form method="POST" action="{{ route('admin.logout') }}">
                     @csrf
-                    <button type="submit">
+                    <button type="submit" class="logout-btn">
                         <i class="fas fa-sign-out-alt"></i> Logout
                     </button>
                 </form>
-            </nav>
+            </div>
         </aside>
 
         <!-- MAIN -->

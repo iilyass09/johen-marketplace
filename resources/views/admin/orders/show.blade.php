@@ -48,7 +48,7 @@
 
         <div style="border-top:1px solid var(--glass-border);padding-top:1rem;display:flex;justify-content:space-between;align-items:center">
             <p style="color:var(--text-muted)">Total Pembayaran</p>
-            <p style="font-size:1.6rem;font-weight:800;background:linear-gradient(135deg,var(--accent),#6366f1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Rp {{ number_format($order->price, 0, ',', '.') }}</p>
+            <p style="font-size:1.6rem;font-weight:800;background:linear-gradient(135deg,var(--accent),#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Rp {{ number_format($order->price, 0, ',', '.') }}</p>
         </div>
     </div>
 

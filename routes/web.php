@@ -10,6 +10,8 @@ use App\Http\Controllers\Admin\LiveChatOperatorController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LiveChatController;
+use App\Http\Controllers\LCAdmin\LCAdminDashboardController;
+use App\Http\Controllers\LCAdmin\LCAdminConversationController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
@@ -85,6 +87,10 @@ Route::post('/digiflazz/callback', [PaymentController::class, 'digiflazzCallback
 
 Route::get('/admin', function () {
     if (Auth::guard('admin')->check()) {
+        $user = Auth::guard('admin')->user();
+        if ($user->isLiveChatAdmin()) {
+            return redirect()->route('lcadmin.conversations');
+        }
         return redirect()->route('admin.dashboard');
     }
     return view('admin.auth.login');
@@ -167,6 +173,7 @@ Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->gro
     Route::patch('/account-orders/{accountOrder}/status', [AdminController::class, 'accountOrdersUpdateStatus'])->name('account-orders.status');
 
     Route::get('/users', [AdminController::class, 'users'])->name('users');
+    Route::post('/users', [AdminController::class, 'usersStore'])->name('users.store');
     Route::get('/users/{user}/edit', [AdminController::class, 'usersEdit'])->name('users.edit');
     Route::put('/users/{user}', [AdminController::class, 'usersUpdate'])->name('users.update');
 
@@ -208,6 +215,20 @@ Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->gro
     Route::put('/live-chat/admins/{channel}', [LiveChatAdminController::class, 'update'])->name('live-chat.admins.update');
 });
 
+Route::middleware(['auth:admin', 'live-chat-admin'])->prefix('lcadmin')->name('lcadmin.')->group(function () {
+    Route::get('/dashboard', [LCAdminDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/conversations', [LCAdminConversationController::class, 'index'])->name('conversations');
+    Route::get('/conversations/{conversation}', [LCAdminConversationController::class, 'show'])->name('conversations.show');
+    Route::get('/conversations/{conversation}/poll', [LCAdminConversationController::class, 'poll'])->name('conversations.poll');
+    Route::post('/conversations/{conversation}/reply', [LCAdminConversationController::class, 'reply'])->name('conversations.reply');
+    Route::patch('/conversations/{conversation}/close', [LCAdminConversationController::class, 'close'])->name('conversations.close');
+    Route::patch('/conversations/{conversation}/reopen', [LCAdminConversationController::class, 'reopen'])->name('conversations.reopen');
+            Route::patch('/conversations/{conversation}/favorite', [LCAdminConversationController::class, 'toggleFavorite'])->name('conversations.favorite');
+            Route::delete('/conversations/{conversation}', [LCAdminConversationController::class, 'deleteConversation'])->name('conversations.delete');
+            Route::get('/conversations/{conversation}/messages', [LCAdminConversationController::class, 'loadMessages'])->name('conversations.messages');
+    Route::delete('/messages/{message}', [LCAdminConversationController::class, 'deleteMessage'])->name('messages.delete');
+});
+
 Route::middleware(['auth:web'])->prefix('api')->name('api.')->group(function () {
     Route::get('/live-chat/channels', [LiveChatController::class, 'channels'])->name('live-chat.channels');
     Route::get('/live-chat/conversation/{channelSlug}', [LiveChatController::class, 'getConversation'])->name('live-chat.conversation');
@@ -217,6 +238,9 @@ Route::middleware(['auth:web'])->prefix('api')->name('api.')->group(function () 
     Route::patch('/live-chat/conversation/{conversation}/read', [LiveChatController::class, 'markRead'])->name('live-chat.mark-read');
     Route::get('/live-chat/unread', [LiveChatController::class, 'unreadCount'])->name('live-chat.unread');
     Route::delete('/live-chat/messages/{message}', [LiveChatController::class, 'deleteMessage'])->name('live-chat.messages.delete');
+    Route::post('/live-chat/messages/{message}/hide', [LiveChatController::class, 'hideMessage'])->name('live-chat.messages.hide');
+    Route::post('/live-chat/messages/{message}/reaction', [LiveChatController::class, 'toggleReaction'])->name('live-chat.messages.reaction');
+    Route::post('/live-chat/messages/{message}/star', [LiveChatController::class, 'toggleStar'])->name('live-chat.messages.star');
 });
 
 Route::get('/admin/login', [AdminAuthController::class, 'showLoginForm'])

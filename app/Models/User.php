@@ -57,4 +57,23 @@ class User extends Authenticatable
     {
         return $this->hasMany(LiveChatOperator::class, 'user_id');
     }
+
+    public function assignedChannels()
+    {
+        return $this->belongsToMany(LiveChatChannel::class, 'live_chat_operators', 'user_id', 'channel_id');
+    }
+
+    public function liveChatAdmin()
+    {
+        return $this->hasOne(LiveChatAdmin::class, 'user_id');
+    }
+
+    public function getAssignedChannelNames(): string
+    {
+        if ($this->is_admin) {
+            return 'Semua Channel';
+        }
+
+        return $this->assignedChannels()->pluck('name')->implode(', ') ?: 'Belum ditugaskan';
+    }
 }

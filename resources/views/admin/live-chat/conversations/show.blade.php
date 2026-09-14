@@ -40,9 +40,9 @@
                     </div>
                     @endif
                     @if($msg->message_type === 'image' && $msg->media_path)
-                    <div class="chat-media"><img src="/media/{{ $msg->media_path }}" alt="Image" loading="lazy"></div>
+                    <button type="button" class="chat-media chat-image-trigger" onclick="openChatImage('/media/{{ $msg->media_path }}', {{ $msg->id }})" aria-label="Buka gambar ukuran penuh"><img src="/media/{{ $msg->media_path }}" alt="Gambar yang dikirim di chat" loading="lazy"></button>
                     @elseif($msg->message_type === 'video' && $msg->media_path)
-                    <div class="chat-media"><video src="/media/{{ $msg->media_path }}" controls preload="none"></video></div>
+                    <div class="chat-media"><video src="/media/{{ $msg->media_path }}" controls preload="none" @if($msg->poster_path) poster="/media/{{ $msg->poster_path }}" @endif></video></div>
                     @endif
                     @if($msg->message)
                     <div class="chat-bubble">{{ $msg->message }}</div>
@@ -65,7 +65,7 @@
 
         @if($conversation->status !== 'closed')
         <div class="chat-composer" style="flex-shrink:0;border-top:1px solid var(--border);padding:12px">
-            <input type="file" id="admin-file-input" accept="image/*,video/*" style="display:none" onchange="adminFileSelect(event)">
+            <input type="file" id="admin-file-input" accept="image/*,video/*" multiple style="display:none" onchange="adminFileSelect(event)">
             <div style="display:flex;align-items:flex-end;gap:8px">
                 <button class="btn-icon" onclick="document.getElementById('admin-file-input').click()" title="Kirim gambar/video">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
@@ -90,14 +90,25 @@
 .chat-msg-admin { align-self: flex-start; }
 .chat-msg-system { align-self: center; max-width: 100%; }
 .chat-bubble { padding: 8px 12px; border-radius: 12px; font-size: 13px; line-height: 1.5; word-break: break-word; }
-.chat-msg-user .chat-bubble { background: var(--purple, #7c3aed); color: #fff; border-bottom-right-radius: 4px; }
+.chat-msg-user .chat-bubble { background: var(--purple, #8b5cf6); color: #fff; border-bottom-right-radius: 4px; }
 .chat-msg-admin .chat-bubble { background: var(--surface-2, rgba(255,255,255,.06)); color: var(--text, #f5f3fb); border-bottom-left-radius: 4px; }
 .chat-bubble-system { background: transparent; color: var(--text-mute, rgba(255,255,255,.4)); font-size: 11px; text-align: center; padding: 4px 12px; }
 .chat-time { font-size: 10px; color: var(--text-mute, rgba(255,255,255,.3)); margin-top: 4px; display: flex; align-items: center; gap: 4px; }
 .chat-msg-user .chat-time { justify-content: flex-end; }
 .chat-media { max-width: 100%; border-radius: 8px; overflow: hidden; margin-bottom: 4px; }
+.chat-image-trigger { display:block; padding:0; border:0; background:transparent; cursor:zoom-in; }
 .chat-media img, .chat-media video { width: 100%; max-height: 200px; object-fit: cover; display: block; }
-.chat-reply { background: var(--surface-3, rgba(255,255,255,.04)); border-left: 3px solid var(--purple, #7c3aed); padding: 4px 8px; margin-bottom: 6px; border-radius: 4px; font-size: 11px; color: var(--text-dim, rgba(255,255,255,.6)); cursor: pointer; }
+.chat-image-lightbox { position:fixed; inset:0; z-index:10050; display:flex; align-items:center; justify-content:center; padding:24px; background:rgba(8,6,16,.92); cursor:zoom-out; }
+.chat-image-lightbox img { max-width:100%; max-height:100%; object-fit:contain; border-radius:10px; box-shadow:0 24px 80px rgba(0,0,0,.5); cursor:default; }
+.chat-image-lightbox-tools { position:fixed; top:16px; right:18px; display:flex; align-items:center; gap:6px; z-index:1; }
+.chat-image-lightbox-tools button, .chat-image-lightbox-tools a { width:40px; height:40px; border:0; border-radius:50%; background:rgba(255,255,255,.14); color:#fff; display:grid; place-items:center; text-decoration:none; cursor:pointer; }
+.chat-image-lightbox-tools svg { width:19px; height:19px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.chat-image-lightbox-tools [data-action="close"] { font-size:30px; line-height:1; }
+.chat-image-lightbox-tools button:hover, .chat-image-lightbox-tools button:focus-visible, .chat-image-lightbox-tools a:hover, .chat-image-lightbox-tools a:focus-visible { background:rgba(255,255,255,.25); }
+.chat-image-lightbox-tools .is-active { color:#facc15; }
+.chat-image-reactions { position:absolute; top:48px; right:44px; display:flex; gap:4px; padding:6px; border-radius:14px; background:rgba(33,26,47,.96); box-shadow:0 10px 30px rgba(0,0,0,.3); }
+.chat-image-reactions button { font-size:18px; background:transparent; }
+.chat-reply { background: var(--surface-3, rgba(255,255,255,.04)); border-left: 3px solid var(--purple, #8b5cf6); padding: 4px 8px; margin-bottom: 6px; border-radius: 4px; font-size: 11px; color: var(--text-dim, rgba(255,255,255,.6)); cursor: pointer; }
 .chat-reply:hover { background: var(--surface-2, rgba(255,255,255,.06)); }
 .chat-delete-btn { background: none; border: none; cursor: pointer; font-size: 10px; opacity: 0.5; }
 .chat-delete-btn:hover { opacity: 1; }
@@ -110,6 +121,7 @@ const CSRF_TOKEN = '{{ csrf_token() }}';
 const CONVERSATION_ID = {{ $conversation->id }};
 
 let pollTimer = null;
+let adminReplyToId = null;
 
 function startPoll() {
     stopPoll();
@@ -152,9 +164,10 @@ function appendMessage(msg) {
         html += `<div class="chat-reply">↳ ${escapeHtml((msg.reply_to.message || '').substring(0, 50))}</div>`;
     }
     if (msg.message_type === 'image' && msg.media_path) {
-        html += `<div class="chat-media"><img src="/media/${msg.media_path}" alt="Image" loading="lazy"></div>`;
+        html += `<button type="button" class="chat-media chat-image-trigger" onclick="openChatImage('/media/${msg.media_path}', ${msg.id})" aria-label="Buka gambar ukuran penuh"><img src="/media/${msg.media_path}" alt="Gambar yang dikirim di chat" loading="lazy"></button>`;
     } else if (msg.message_type === 'video' && msg.media_path) {
-        html += `<div class="chat-media"><video src="/media/${msg.media_path}" controls preload="none"></video></div>`;
+        const posterAttr = msg.poster_path ? ` poster="/media/${msg.poster_path}"` : '';
+        html += `<div class="chat-media"><video src="/media/${msg.media_path}" controls preload="none"${posterAttr}></video></div>`;
     }
     if (msg.message) {
         html += `<div class="chat-bubble">${escapeHtml(msg.message)}</div>`;
@@ -167,6 +180,64 @@ function appendMessage(msg) {
 }
 
 function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+
+function openChatImage(imageUrl, messageId) {
+    document.getElementById('chat-image-lightbox')?.remove();
+
+    const lightbox = document.createElement('div');
+    lightbox.id = 'chat-image-lightbox';
+    lightbox.className = 'chat-image-lightbox';
+    lightbox.setAttribute('role', 'dialog');
+    lightbox.setAttribute('aria-modal', 'true');
+    lightbox.setAttribute('aria-label', 'Pratinjau gambar');
+    lightbox.innerHTML = `
+        <div class="chat-image-lightbox-tools" aria-label="Aksi gambar">
+            <button type="button" data-action="reply" title="Balas" aria-label="Balas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 9 5 14l5 5"/><path d="M5 14h9a5 5 0 0 1 5 5"/></svg></button>
+            <button type="button" data-action="react" title="Beri reaksi" aria-label="Beri reaksi"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8 14s1.4 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/></svg></button>
+            <button type="button" data-action="star" title="Beri bintang" aria-label="Beri bintang" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z"/></svg></button>
+            <a href="${imageUrl}" download title="Unduh" aria-label="Unduh gambar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11"/><path d="m8 10 4 4 4-4M5 20h14"/></svg></a>
+            <button type="button" data-action="close" title="Tutup" aria-label="Tutup gambar">×</button>
+            <div class="chat-image-reactions" hidden><button type="button">👍</button><button type="button">❤️</button><button type="button">😂</button><button type="button">😮</button></div>
+        </div><img src="${imageUrl}" alt="Gambar ukuran penuh">`;
+
+    let onKeydown;
+    const close = () => {
+        lightbox.remove();
+        document.removeEventListener('keydown', onKeydown);
+    };
+    lightbox.addEventListener('click', (event) => {
+        if (event.target === lightbox) close();
+    });
+    lightbox.querySelector('[data-action="close"]')?.addEventListener('click', close);
+    lightbox.querySelector('[data-action="reply"]')?.addEventListener('click', () => {
+        close();
+        adminReplyToId = messageId;
+        const input = document.getElementById('admin-chat-input');
+        if (input) {
+            input.placeholder = `Balas gambar #${messageId}...`;
+            input.focus();
+        }
+    });
+    const reactionPicker = lightbox.querySelector('.chat-image-reactions');
+    lightbox.querySelector('[data-action="react"]')?.addEventListener('click', () => { reactionPicker.hidden = !reactionPicker.hidden; });
+    reactionPicker?.addEventListener('click', (event) => {
+        if (event.target.tagName !== 'BUTTON') return;
+        lightbox.querySelector('[data-action="react"]').textContent = event.target.textContent;
+        reactionPicker.hidden = true;
+    });
+    lightbox.querySelector('[data-action="star"]')?.addEventListener('click', (event) => {
+        const active = event.currentTarget.classList.toggle('is-active');
+        event.currentTarget.setAttribute('aria-pressed', String(active));
+    });
+    onKeydown = function(event) {
+        if (event.key === 'Escape') {
+            close();
+        }
+    };
+    document.addEventListener('keydown', onKeydown);
+    document.body.appendChild(lightbox);
+    lightbox.querySelector('[data-action="close"]')?.focus();
+}
 
 function scrollToMsg(id) {
     const el = document.querySelector(`[data-msg-id="${id}"]`);
@@ -193,6 +264,7 @@ async function adminSendText() {
     const input = document.getElementById('admin-chat-input');
     const text = input?.value?.trim();
     if (!text) return;
+    const replyToId = adminReplyToId;
 
     input.value = '';
     input.style.height = 'auto';
@@ -202,6 +274,7 @@ async function adminSendText() {
         const formData = new FormData();
         formData.append('message_type', 'text');
         formData.append('message', text);
+        if (replyToId) formData.append('reply_to_message_id', replyToId);
 
         const res = await fetch(`/admin/live-chat/conversations/${CONVERSATION_ID}/reply`, {
             method: 'POST',
@@ -211,31 +284,43 @@ async function adminSendText() {
         if (!res.ok) throw new Error();
         const msg = await res.json();
         appendMessage(msg);
+        adminReplyToId = null;
+        input.placeholder = 'Ketik pesan...';
         document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
     } catch (e) {
         input.value = text;
     }
 }
 
-let adminPreviewFile = null;
+let adminPreviewFiles = [];
 
 function adminFileSelect(e) {
-    const file = e.target.files[0];
-    if (!file) return;
+    const newFiles = Array.from(e.target.files);
+    if (!newFiles.length) return;
     e.target.value = '';
-    adminPreviewFile = file;
-    showAdminPreview(file);
+    adminPreviewFiles.push(...newFiles);
+    showAdminPreview();
 }
 
-function showAdminPreview(file) {
-    const url = URL.createObjectURL(file);
-    const isImage = file.type.startsWith('image/');
+function showAdminPreview() {
+    if (adminPreviewFiles.length === 0) return;
+    const o = document.getElementById('admin-preview-overlay');
+    if (o) o.remove();
+    const filesHtml = adminPreviewFiles.map((f, i) => {
+        const url = URL.createObjectURL(f);
+        const isImage = f.type.startsWith('image/');
+        const isVideo = f.type.startsWith('video/');
+        return `<div class="admin-preview-item" style="position:relative;display:inline-block;margin:4px">
+            ${isImage ? `<img src="${url}" style="width:80px;height:80px;object-fit:cover;border-radius:8px">` : `<video src="${url}" style="width:80px;height:80px;object-fit:cover;border-radius:8px" muted preload="metadata"></video>`}
+            <button onclick="removeAdminPreviewFile(${i})" style="position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;border:none;background:rgba(0,0,0,.7);color:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center">&times;</button>
+        </div>`;
+    }).join('');
     const overlay = document.createElement('div');
     overlay.id = 'admin-preview-overlay';
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:10002;display:flex;align-items:center;justify-content:center';
     overlay.innerHTML = `
         <div style="background:var(--surface);border-radius:16px;padding:20px;max-width:400px;width:90%;text-align:center">
-            ${isImage ? `<img src="${url}" style="max-width:100%;max-height:300px;border-radius:8px;margin-bottom:12px">` : `<video src="${url}" style="max-width:100%;max-height:300px;border-radius:8px;margin-bottom:12px" controls preload="none"></video>`}
+            <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:4px;margin-bottom:12px">${filesHtml}</div>
             <input type="text" id="admin-preview-caption" class="input-field" placeholder="Caption (opsional)" style="width:100%;margin-bottom:12px;border-radius:12px">
             <div style="display:flex;gap:8px;justify-content:center">
                 <button onclick="cancelAdminPreview()" style="padding:8px 20px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-dim);cursor:pointer">Batal</button>
@@ -245,35 +330,52 @@ function showAdminPreview(file) {
     document.body.appendChild(overlay);
 }
 
+function removeAdminPreviewFile(idx) {
+    adminPreviewFiles.splice(idx, 1);
+    if (adminPreviewFiles.length === 0) {
+        cancelAdminPreview();
+    } else {
+        showAdminPreview();
+    }
+}
+
 function cancelAdminPreview() {
-    adminPreviewFile = null;
+    adminPreviewFiles = [];
     const o = document.getElementById('admin-preview-overlay');
     if (o) o.remove();
 }
 
 async function confirmAdminSend() {
-    if (!adminPreviewFile) return;
+    if (!adminPreviewFiles.length) return;
     const caption = document.getElementById('admin-preview-caption')?.value || '';
-    const file = adminPreviewFile;
-    const isImage = file.type.startsWith('image/');
+    const files = [...adminPreviewFiles];
+    const replyToId = adminReplyToId;
     cancelAdminPreview();
 
-    try {
-        const formData = new FormData();
-        formData.append('message_type', isImage ? 'image' : 'video');
-        formData.append('message', caption);
-        formData.append('media', file);
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const isImage = file.type.startsWith('image/');
+        try {
+            const formData = new FormData();
+            formData.append('message_type', isImage ? 'image' : 'video');
+            formData.append('media', file);
+            if (i === 0 && caption) formData.append('message', caption);
+            if (i === 0 && replyToId) formData.append('reply_to_message_id', replyToId);
 
-        const res = await fetch(`/admin/live-chat/conversations/${CONVERSATION_ID}/reply`, {
-            method: 'POST',
-            headers: { 'X-CSRF-TOKEN': CSRF_TOKEN, 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-            body: formData
-        });
-        if (!res.ok) throw new Error();
-        const msg = await res.json();
-        appendMessage(msg);
-        document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
-    } catch (e) {}
+            const res = await fetch(`/admin/live-chat/conversations/${CONVERSATION_ID}/reply`, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': CSRF_TOKEN, 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                body: formData
+            });
+            if (!res.ok) throw new Error();
+            const msg = await res.json();
+            appendMessage(msg);
+        } catch (e) {}
+    }
+    adminReplyToId = null;
+    const input = document.getElementById('admin-chat-input');
+    if (input) input.placeholder = 'Ketik pesan...';
+    document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
 }
 
 async function deleteMsg(id) {

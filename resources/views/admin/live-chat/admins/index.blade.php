@@ -11,7 +11,7 @@
 @endif
 
 <div style="margin-bottom:28px">
-    <h1 style="font-family:'Sora',sans-serif;font-weight:800;font-size:1.6rem;color:#fff;margin:0 0 4px">Kelola Admin Live Chat</h1>
+    <h1 style="font-family:'Poppins',sans-serif;font-weight:800;font-size:1.6rem;color:#fff;margin:0 0 4px">Kelola Admin Live Chat</h1>
     <p style="font-size:0.88rem;color:#9CB5D2;margin:0">Atur foto, status, dan jadwal operator admin</p>
 </div>
 
@@ -30,7 +30,7 @@
                 @if($admin && $admin->photo_path)
                     <img src="{{ asset('storage/' . $admin->photo_path) }}" alt="{{ $channel->name }}" style="width:100%;height:100%;object-fit:cover;border-radius:14px">
                 @else
-                    <span style="font-family:'Sora',sans-serif;font-weight:800;font-size:18px;color:#fff">{{ substr($channel->name, 0, 2) }}</span>
+                    <span style="font-family:'Poppins',sans-serif;font-weight:800;font-size:18px;color:#fff">{{ substr($channel->name, 0, 2) }}</span>
                 @endif
             </div>
             <div class="lc-info">
@@ -113,7 +113,7 @@
     width: 60px;
     height: 60px;
     border-radius: 14px;
-    background: linear-gradient(135deg, #0987F5, #6366f1);
+    background: linear-gradient(135deg, #0987F5, #8b5cf6);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -128,7 +128,7 @@
     min-width: 0;
 }
 .lc-name {
-    font-family: 'Sora', sans-serif;
+    font-family: 'Poppins', sans-serif;
     font-weight: 700;
     font-size: 16px;
     color: #fff;
@@ -218,7 +218,7 @@
 .lc-op-time {
     font-size: 13px;
     color: #9CB5D2;
-    font-family: 'Inter', monospace;
+    font-family: 'Poppins', monospace;
 }
 .lc-op-empty {
     font-size: 14px;
@@ -241,7 +241,7 @@
     color: #9CB5D2;
     font-size: 13px;
     font-weight: 500;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Poppins', sans-serif;
     text-decoration: none;
     transition: all .2s;
 }

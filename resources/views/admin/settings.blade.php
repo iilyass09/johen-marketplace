@@ -140,7 +140,7 @@
             <!-- QRIS -->
             <div class="card-glass p-4">
                 <h3 class="font-semibold mb-3 flex items-center gap-2" style="font-size:0.9rem">
-                    <i class="fas fa-qrcode" style="color:#7c3aed;font-size:0.85rem"></i>
+                    <i class="fas fa-qrcode" style="color:#8b5cf6;font-size:0.85rem"></i>
                     <span>QRIS Pembayaran (Jual Beli Akun)</span>
                 </h3>
                 <p style="color:var(--text-dim);font-size:0.72rem;margin-bottom:0.75rem">

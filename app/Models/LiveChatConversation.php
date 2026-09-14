@@ -16,12 +16,14 @@ class LiveChatConversation extends Model
         'last_message_at',
         'user_unread_count',
         'admin_unread_count',
+        'is_favorited',
     ];
 
     protected $casts = [
         'last_message_at' => 'datetime',
         'user_unread_count' => 'integer',
         'admin_unread_count' => 'integer',
+        'is_favorited' => 'boolean',
     ];
 
     public function channel(): BelongsTo

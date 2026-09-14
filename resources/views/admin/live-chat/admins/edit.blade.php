@@ -95,11 +95,11 @@
                             </div>
                             <div>
                                 <label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">Jam Mulai</label>
-                                <input type="text" name="operators[{{ $index }}][start_time]" value="{{ substr($operator->schedules->first()?->start_time ?? '', 0, 5) }}" placeholder="07:00" pattern="[0-9]{2}:[0-9]{2}" maxlength="5" style="width:100%;padding:8px 10px;border-radius:8px;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-size:0.82rem;outline:none;font-family:'Inter',monospace">
+                                <input type="text" name="operators[{{ $index }}][start_time]" value="{{ substr($operator->schedules->first()?->start_time ?? '', 0, 5) }}" placeholder="07:00" pattern="[0-9]{2}:[0-9]{2}" maxlength="5" style="width:100%;padding:8px 10px;border-radius:8px;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-size:0.82rem;outline:none;font-family:'Poppins',monospace">
                             </div>
                             <div>
                                 <label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">Jam Selesai</label>
-                                <input type="text" name="operators[{{ $index }}][end_time]" value="{{ substr($operator->schedules->first()?->end_time ?? '', 0, 5) }}" placeholder="18:00" pattern="[0-9]{2}:[0-9]{2}" maxlength="5" style="width:100%;padding:8px 10px;border-radius:8px;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-size:0.82rem;outline:none;font-family:'Inter',monospace">
+                                <input type="text" name="operators[{{ $index }}][end_time]" value="{{ substr($operator->schedules->first()?->end_time ?? '', 0, 5) }}" placeholder="18:00" pattern="[0-9]{2}:[0-9]{2}" maxlength="5" style="width:100%;padding:8px 10px;border-radius:8px;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-size:0.82rem;outline:none;font-family:'Poppins',monospace">
                             </div>
                         </div>
                     </div>
@@ -115,7 +115,7 @@
 
         {{-- Action Buttons --}}
         <div style="display:flex;gap:12px">
-            <button type="submit" style="display:inline-flex;align-items:center;gap:6px;padding:10px 24px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#6366f1);color:#fff;font-size:0.88rem;font-weight:600;border:none;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 14px -4px rgba(9,135,245,0.4)" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px -4px rgba(9,135,245,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 14px -4px rgba(9,135,245,0.4)'">
+            <button type="submit" style="display:inline-flex;align-items:center;gap:6px;padding:10px 24px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#8b5cf6);color:#fff;font-size:0.88rem;font-weight:600;border:none;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 14px -4px rgba(9,135,245,0.4)" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px -4px rgba(9,135,245,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 14px -4px rgba(9,135,245,0.4)'">
                 <i class="fas fa-check"></i> Simpan
             </button>
             <a href="{{ route('admin.live-chat.admins') }}" style="display:inline-flex;align-items:center;gap:6px;padding:10px 24px;border-radius:10px;background:var(--bg-input);color:var(--text-muted);font-size:0.88rem;font-weight:500;text-decoration:none;border:1px solid var(--border);transition:all 0.2s" onmouseover="this.style.color='var(--text)';this.style.borderColor='var(--text-dim)'" onmouseout="this.style.color='var(--text-muted)';this.style.borderColor='var(--border)'">
@@ -200,9 +200,9 @@
                 '<div><label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">Nama Operator</label>' +
                     '<input type="text" name="operators[' + operatorIndex + '][name]" placeholder="Nama operator" style="width:100%;padding:8px 10px;border-radius:8px;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-size:0.82rem;outline:none"></div>' +
                 '<div><label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">Jam Mulai</label>' +
-                    '<input type="text" name="operators[' + operatorIndex + '][start_time]" placeholder="07:00" pattern="[0-9]{2}:[0-9]{2}" maxlength="5" style="width:100%;padding:8px 10px;border-radius:8px;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-size:0.82rem;outline:none;font-family:Inter,monospace"></div>' +
+                    '<input type="text" name="operators[' + operatorIndex + '][start_time]" placeholder="07:00" pattern="[0-9]{2}:[0-9]{2}" maxlength="5" style="width:100%;padding:8px 10px;border-radius:8px;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-size:0.82rem;outline:none;font-family:Poppins,monospace"></div>' +
                 '<div><label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">Jam Selesai</label>' +
-                    '<input type="text" name="operators[' + operatorIndex + '][end_time]" placeholder="18:00" pattern="[0-9]{2}:[0-9]{2}" maxlength="5" style="width:100%;padding:8px 10px;border-radius:8px;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-size:0.82rem;outline:none;font-family:Inter,monospace"></div>' +
+                    '<input type="text" name="operators[' + operatorIndex + '][end_time]" placeholder="18:00" pattern="[0-9]{2}:[0-9]{2}" maxlength="5" style="width:100%;padding:8px 10px;border-radius:8px;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-size:0.82rem;outline:none;font-family:Poppins,monospace"></div>' +
             '</div></div>';
 
         container.insertAdjacentHTML('beforeend', html);

@@ -76,7 +76,7 @@ class LiveChatConversationController extends Controller
             'message_type' => 'required|in:text,image,video',
             'message' => 'nullable|string|max:5000',
             'reply_to_message_id' => 'nullable|exists:live_chat_messages,id',
-            'media' => 'required_if:message_type,image,video|file|max:10240|mimes:jpg,jpeg,png,gif,webp,mp4,mov,avi',
+            'media' => 'required_if:message_type,image,video|file|max:1048576|mimes:jpg,jpeg,png,gif,webp,mp4,mov,avi,mkv,webm,flv,3gp',
         ]);
 
         $userId = Auth::id();

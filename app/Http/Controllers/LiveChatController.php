@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\LiveChatChannel;
 use App\Models\LiveChatConversation;
 use App\Models\LiveChatMessage;
+use App\Models\LiveChatMessageReaction;
+use App\Models\LiveChatMessageStar;
+use App\Models\LiveChatMessageHiddenUser;
 use App\Models\User;
 use App\Services\MediaStore;
 use Illuminate\Http\JsonResponse;
@@ -86,7 +89,8 @@ class LiveChatController extends Controller
 
         $afterId = $request->input('after');
         $query = LiveChatMessage::where('conversation_id', $conversation->id)
-            ->with(['sender', 'replyTo']);
+            ->whereDoesntHave('hiddenUsers', fn ($hidden) => $hidden->where('user_id', $userId))
+            ->with(['sender', 'replyTo', 'reactions', 'stars']);
 
         if ($afterId) {
             $query->where('id', '>', $afterId);
@@ -104,7 +108,8 @@ class LiveChatController extends Controller
             'message_type' => 'required|in:text,image,video',
             'message' => 'nullable|string|max:5000',
             'reply_to_message_id' => 'nullable|exists:live_chat_messages,id',
-            'media' => 'required_if:message_type,image,video|file|max:10240|mimes:jpg,jpeg,png,gif,webp,mp4,mov,avi',
+            'media' => 'required_if:message_type,image,video|file|max:1048576|mimes:jpg,jpeg,png,gif,webp,mp4,mov,avi,mkv,webm,flv,3gp',
+            'thumbnail' => 'nullable|file|max:5120|mimes:jpg,jpeg,png,webp',
         ]);
 
         $userId = Auth::id();
@@ -130,6 +135,11 @@ class LiveChatController extends Controller
             $data['media_name'] = $file->getClientOriginalName();
             $data['media_mime'] = $file->getMimeType();
             $data['media_size'] = $file->getSize();
+        }
+
+        if ($request->hasFile('thumbnail')) {
+            $thumbPath = $request->file('thumbnail')->store('live-chat/media', 'public');
+            $data['poster_path'] = $thumbPath;
         }
 
         $message = LiveChatMessage::create($data);
@@ -163,7 +173,7 @@ class LiveChatController extends Controller
             ]);
         }
 
-        $message->load('sender', 'replyTo');
+        $message->load('sender', 'replyTo', 'reactions', 'stars');
 
         return response()->json($message);
     }
@@ -171,7 +181,7 @@ class LiveChatController extends Controller
     public function uploadMedia(Request $request): JsonResponse
     {
         $request->validate([
-            'media' => 'required|file|max:10240|mimes:jpg,jpeg,png,gif,webp,mp4,mov,avi',
+            'media' => 'required|file|max:1048576|mimes:jpg,jpeg,png,gif,webp,mp4,mov,avi,mkv,webm,flv,3gp',
         ]);
 
         $file = $request->file('media');
@@ -225,5 +235,61 @@ class LiveChatController extends Controller
         $message->delete();
 
         return response()->json(['success' => true]);
+    }
+
+    public function hideMessage(LiveChatMessage $message): JsonResponse
+    {
+        $this->ensureConversationOwner($message);
+
+        LiveChatMessageHiddenUser::firstOrCreate([
+            'live_chat_message_id' => $message->id,
+            'user_id' => Auth::id(),
+        ]);
+
+        return response()->json(['success' => true]);
+    }
+
+    public function toggleReaction(Request $request, LiveChatMessage $message): JsonResponse
+    {
+        $this->ensureConversationOwner($message);
+
+        $data = $request->validate(['emoji' => 'required|in:👍,❤️,😂,😮']);
+        $reaction = LiveChatMessageReaction::where([
+            'live_chat_message_id' => $message->id,
+            'user_id' => Auth::id(),
+            'emoji' => $data['emoji'],
+        ])->first();
+
+        $active = ! $reaction;
+        $reaction ? $reaction->delete() : LiveChatMessageReaction::create([
+            'live_chat_message_id' => $message->id,
+            'user_id' => Auth::id(),
+            'emoji' => $data['emoji'],
+        ]);
+
+        $message->load('reactions', 'stars');
+
+        return response()->json(['active' => $active, 'reaction_summary' => $message->reaction_summary]);
+    }
+
+    public function toggleStar(LiveChatMessage $message): JsonResponse
+    {
+        $this->ensureConversationOwner($message);
+
+        $star = LiveChatMessageStar::where([
+            'live_chat_message_id' => $message->id,
+            'user_id' => Auth::id(),
+        ])->first();
+        $star ? $star->delete() : LiveChatMessageStar::create([
+            'live_chat_message_id' => $message->id,
+            'user_id' => Auth::id(),
+        ]);
+
+        return response()->json(['is_starred' => ! $star]);
+    }
+
+    private function ensureConversationOwner(LiveChatMessage $message): void
+    {
+        abort_unless($message->conversation->user_id === Auth::id(), 403);
     }
 }

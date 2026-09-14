@@ -15,7 +15,7 @@
         </h2>
 
         <div class="flex items-center gap-3 mb-6 pb-4" style="border-bottom:1px solid var(--glass-border)">
-            <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#6366f1);display:flex;align-items:center;justify-content:center;font-size:0.85rem;font-weight:700;color:#fff;flex-shrink:0">
+            <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:0.85rem;font-weight:700;color:#fff;flex-shrink:0">
                 {{ substr($user->name, 0, 1) }}
             </div>
             <div>
@@ -40,13 +40,25 @@
                 @error('email') <p style="color:var(--error);font-size:0.78rem;margin-top:0.3rem">{{ $message }}</p> @enderror
             </div>
 
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-1.5">Password <span style="color:var(--text-dim);font-weight:400">(kosongkan jika tidak diubah)</span></label>
+                <input type="password" name="password" class="input-field" placeholder="Minimal 6 karakter">
+                @error('password') <p style="color:var(--error);font-size:0.78rem;margin-top:0.3rem">{{ $message }}</p> @enderror
+            </div>
+
             <div class="mb-6">
-                <label class="flex items-center gap-3" style="cursor:pointer">
-                    <input type="checkbox" name="is_admin" value="1" {{ old('is_admin', $user->is_admin) ? 'checked' : '' }}
-                           style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer">
-                    <span class="text-sm font-medium">Admin</span>
-                </label>
-                <p style="color:var(--text-dim);font-size:0.75rem;margin-top:0.3rem;margin-left:2rem">Centang untuk memberikan akses admin panel</p>
+                <label class="block text-sm font-medium mb-1.5">Role</label>
+                @php $assignedChannelId = $user->assignedChannels->pluck('id')->first(); @endphp
+                <select name="role" class="input-field" onchange="updateRole(this)">
+                    <option value="user" {{ !$user->is_admin && !$user->is_live_chat_admin ? 'selected' : '' }}>User Biasa</option>
+                    @foreach($channels as $ch)
+                    <option value="lc_{{ $ch->id }}" {{ $user->is_live_chat_admin && $assignedChannelId == $ch->id ? 'selected' : '' }}>Admin Live Chat - {{ $ch->name }}</option>
+                    @endforeach
+                    <option value="super_admin" {{ $user->is_admin ? 'selected' : '' }}>Super Admin</option>
+                </select>
+                <input type="hidden" name="is_admin" id="f_is_admin" value="{{ $user->is_admin ? '1' : '0' }}">
+                <input type="hidden" name="is_live_chat_admin" id="f_is_live_chat_admin" value="{{ $user->is_live_chat_admin ? '1' : '0' }}">
+                <input type="hidden" name="channel_id" id="f_channel_id" value="{{ $assignedChannelId }}">
             </div>
 
             <div class="flex justify-end gap-3">
@@ -56,4 +68,23 @@
         </form>
     </div>
 </div>
+
+<script>
+function updateRole(selectEl) {
+    const val = selectEl.value;
+    if (val === 'super_admin') {
+        document.getElementById('f_is_admin').value = '1';
+        document.getElementById('f_is_live_chat_admin').value = '0';
+        document.getElementById('f_channel_id').value = '';
+    } else if (val.startsWith('lc_')) {
+        document.getElementById('f_is_admin').value = '0';
+        document.getElementById('f_is_live_chat_admin').value = '1';
+        document.getElementById('f_channel_id').value = val.replace('lc_', '');
+    } else {
+        document.getElementById('f_is_admin').value = '0';
+        document.getElementById('f_is_live_chat_admin').value = '0';
+        document.getElementById('f_channel_id').value = '';
+    }
+}
+</script>
 @endsection

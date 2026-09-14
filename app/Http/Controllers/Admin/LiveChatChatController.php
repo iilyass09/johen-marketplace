@@ -83,7 +83,8 @@ class LiveChatChatController extends Controller
             'message_type' => 'required|in:text,image,video',
             'message' => 'nullable|string|max:5000',
             'reply_to_message_id' => 'nullable|exists:live_chat_messages,id',
-            'media' => 'required_if:message_type,image,video|file|max:10240|mimes:jpg,jpeg,png,gif,webp,mp4,mov,avi',
+            'media' => 'required_if:message_type,image,video|file|max:1048576|mimes:jpg,jpeg,png,gif,webp,mp4,mov,avi,mkv,webm,flv,3gp',
+            'thumbnail' => 'nullable|file|max:5120|mimes:jpg,jpeg,png,webp',
         ]);
 
         $userId = Auth::id();
@@ -104,6 +105,11 @@ class LiveChatChatController extends Controller
             $data['media_name'] = $file->getClientOriginalName();
             $data['media_mime'] = $file->getMimeType();
             $data['media_size'] = $file->getSize();
+        }
+
+        if ($request->hasFile('thumbnail')) {
+            $thumbPath = $request->file('thumbnail')->store('live-chat/media', 'public');
+            $data['poster_path'] = $thumbPath;
         }
 
         $message = LiveChatMessage::create($data);

@@ -15,7 +15,7 @@
 .ord-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem 1.5rem}
 .ord-label{font-size:.73rem;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.2rem}
 .ord-value{font-size:.88rem;font-weight:600}
-.ord-total{font-size:1.5rem;font-weight:800;background:linear-gradient(135deg,var(--accent),#6366f1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.ord-total{font-size:1.5rem;font-weight:800;background:linear-gradient(135deg,var(--accent),#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .ord-badge{display:inline-flex;align-items:center;gap:.35rem;padding:.35rem 1rem;border-radius:999px;font-size:.82rem;font-weight:600}
 .ord-loading{text-align:center;padding:3rem;color:var(--text-dim)}
 </style>
@@ -64,7 +64,7 @@
                     <td style="font-size:0.82rem;font-family:monospace">{{ $order->order_ref }}</td>
                     <td>
                         <div class="flex items-center gap-2">
-                            <div style="width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,var(--accent),#6366f1);display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;color:#fff;flex-shrink:0">
+                            <div style="width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,var(--accent),#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;color:#fff;flex-shrink:0">
                                 {{ substr($order->customer_name ?: ($order->user->name ?? '?'), 0, 1) }}
                             </div>
                             <span>{{ $order->customer_name ?: ($order->user->name ?? 'N/A') }}</span>

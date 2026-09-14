@@ -5,7 +5,7 @@
 @section('content')
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
     <div class="stat-card" style="--accent-color: #0987F5">
-        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent-color),#6366f1);border-radius:16px 16px 0 0"></div>
+        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent-color),#8b5cf6);border-radius:16px 16px 0 0"></div>
         <div class="flex items-center justify-between">
             <div>
                 <p style="color:var(--text-muted);font-size:0.78rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em">Total Produk</p>
@@ -160,7 +160,7 @@
                             <td style="padding:0.7rem 1rem;font-size:0.82rem;font-family:monospace">{{ $order->order_id }}</td>
                             <td style="padding:0.7rem 1rem;font-size:0.85rem">
                                 <div class="flex items-center gap-2">
-                                    <div style="width:26px;height:26px;border-radius:6px;background:linear-gradient(135deg,var(--accent),#6366f1);display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;color:#fff;flex-shrink:0">
+                                    <div style="width:26px;height:26px;border-radius:6px;background:linear-gradient(135deg,var(--accent),#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;color:#fff;flex-shrink:0">
                                         {{ substr($order->user->name ?? '?', 0, 1) }}
                                     </div>
                                     <span>{{ $order->user->name ?? 'N/A' }}</span>
@@ -215,7 +215,7 @@
                             <td style="padding:0.7rem 1rem;font-size:0.82rem;font-family:monospace">{{ $aorder->order_ref }}</td>
                             <td style="padding:0.7rem 1rem;font-size:0.85rem">
                                 <div class="flex items-center gap-2">
-                                    <div style="width:26px;height:26px;border-radius:6px;background:linear-gradient(135deg,#8b5cf6,#6366f1);display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;color:#fff;flex-shrink:0">
+                                    <div style="width:26px;height:26px;border-radius:6px;background:linear-gradient(135deg,#8b5cf6,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;color:#fff;flex-shrink:0">
                                         {{ substr($aorder->customer_name ?: ($aorder->user->name ?? '?'), 0, 1) }}
                                     </div>
                                     <span>{{ $aorder->customer_name ?: ($aorder->user->name ?? 'N/A') }}</span>
@@ -310,7 +310,7 @@
                         <span style="font-size:0.82rem;font-weight:700">{{ $stats['success_orders'] }}/{{ $stats['total_orders'] }}</span>
                     </div>
                     <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden">
-                        <div style="height:100%;width:{{ $stats['total_orders'] > 0 ? ($stats['success_orders']/$stats['total_orders']*100) : 0 }}%;background:linear-gradient(90deg,var(--accent),#6366f1);border-radius:3px;transition:width 0.6s ease"></div>
+                        <div style="height:100%;width:{{ $stats['total_orders'] > 0 ? ($stats['success_orders']/$stats['total_orders']*100) : 0 }}%;background:linear-gradient(90deg,var(--accent),#8b5cf6);border-radius:3px;transition:width 0.6s ease"></div>
                     </div>
                 </div>
             </div>

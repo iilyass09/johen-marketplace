@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class LiveChatMessage extends Model
@@ -17,6 +18,7 @@ class LiveChatMessage extends Model
         'message_type',
         'message',
         'media_path',
+        'poster_path',
         'media_name',
         'media_mime',
         'media_size',
@@ -28,6 +30,8 @@ class LiveChatMessage extends Model
         'media_size' => 'integer',
         'read_at' => 'datetime',
     ];
+
+    protected $appends = ['reaction_summary', 'is_starred'];
 
     public function conversation(): BelongsTo
     {
@@ -47,6 +51,39 @@ class LiveChatMessage extends Model
     public function replies()
     {
         return $this->hasMany(LiveChatMessage::class, 'reply_to_message_id');
+    }
+
+    public function reactions(): HasMany
+    {
+        return $this->hasMany(LiveChatMessageReaction::class);
+    }
+
+    public function stars(): HasMany
+    {
+        return $this->hasMany(LiveChatMessageStar::class);
+    }
+
+    public function hiddenUsers(): HasMany
+    {
+        return $this->hasMany(LiveChatMessageHiddenUser::class);
+    }
+
+    public function getReactionSummaryAttribute(): array
+    {
+        if (! $this->relationLoaded('reactions')) {
+            return [];
+        }
+
+        $userId = auth()->id();
+
+        return $this->reactions->groupBy('emoji')->map(function ($reactions, $emoji) use ($userId) {
+            return ['emoji' => $emoji, 'count' => $reactions->count(), 'reacted_by_me' => $reactions->contains('user_id', $userId)];
+        })->values()->all();
+    }
+
+    public function getIsStarredAttribute(): bool
+    {
+        return $this->relationLoaded('stars') && $this->stars->contains('user_id', auth()->id());
     }
 
     public function isRead(): bool

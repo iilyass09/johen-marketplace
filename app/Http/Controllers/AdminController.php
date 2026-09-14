@@ -6,6 +6,9 @@ use App\Mail\ContactReplyMail;
 use App\Models\AccountOrder;
 use App\Models\Brand;
 use App\Models\ContactInquiry;
+use App\Models\LiveChatChannel;
+use App\Models\LiveChatOperator;
+use App\Models\LiveChatOperatorSchedule;
 use App\Models\Order;
 use App\Models\PaymentMethod;
 use App\Models\Product;
@@ -16,6 +19,7 @@ use App\Services\ImageOptimizer;
 use App\Services\MediaStore;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 
@@ -586,13 +590,15 @@ class AdminController extends Controller
     // ---- USERS ----
     public function users()
     {
-        $users = User::latest()->paginate(20);
+        $users = User::with('assignedChannels')->latest()->paginate(20);
         return view('admin.users.index', compact('users'));
     }
 
     public function usersEdit(User $user)
     {
-        return view('admin.users.edit', compact('user'));
+        $user->load('assignedChannels');
+        $channels = LiveChatChannel::active()->ordered()->get();
+        return view('admin.users.edit', compact('user', 'channels'));
     }
 
     public function usersUpdate(Request $request, User $user)
@@ -601,6 +607,9 @@ class AdminController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
             'is_admin' => 'boolean',
+            'is_live_chat_admin' => 'boolean',
+            'password' => 'nullable|min:6',
+            'channel_id' => 'nullable|integer|exists:live_chat_channels,id',
         ]);
 
         if ($validator->fails()) {
@@ -610,17 +619,123 @@ class AdminController extends Controller
             return redirect()->back()->withErrors($validator)->withInput();
         }
 
-        $user->update([
+        $data = [
             'name' => $request->name,
             'email' => $request->email,
             'is_admin' => $request->boolean('is_admin', false),
-        ]);
+            'is_live_chat_admin' => $request->boolean('is_live_chat_admin', false),
+        ];
 
-        if ($request->ajax() || $request->wantsJson()) {
-            return response()->json(['success' => true, 'message' => 'Pengguna berhasil diperbarui']);
+        if ($request->filled('password')) {
+            $data['password'] = $request->password;
         }
 
-        return redirect()->route('admin.users')->with('success', 'Pengguna berhasil diperbarui');
+        DB::beginTransaction();
+
+        try {
+            $user->update($data);
+
+            LiveChatOperator::where('user_id', $user->id)->delete();
+
+            if ($user->is_live_chat_admin && $request->filled('channel_id')) {
+                $operator = LiveChatOperator::create([
+                    'user_id' => $user->id,
+                    'channel_id' => $request->channel_id,
+                    'is_active' => true,
+                ]);
+
+                $days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+                foreach ($days as $day) {
+                    LiveChatOperatorSchedule::create([
+                        'operator_id' => $operator->id,
+                        'day_of_week' => $day,
+                        'start_time' => '07:00',
+                        'end_time' => '23:00',
+                        'is_active' => true,
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => true, 'message' => 'Pengguna berhasil diperbarui']);
+            }
+
+            return redirect()->route('admin.users')->with('success', 'Pengguna berhasil diperbarui');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['errors' => ['error' => [$e->getMessage()]]], 422);
+            }
+            return redirect()->back()->withInput()->withErrors(['error' => 'Gagal menyimpan: ' . $e->getMessage()]);
+        }
+    }
+
+    public function usersStore(Request $request)
+    {
+        $validator = validator($request->all(), [
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'username' => 'required|string|max:255|unique:users,username',
+            'password' => 'required|min:6',
+            'is_admin' => 'boolean',
+            'is_live_chat_admin' => 'boolean',
+            'channel_id' => 'nullable|integer|exists:live_chat_channels,id',
+        ]);
+
+        if ($validator->fails()) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['errors' => $validator->errors()->messages()], 422);
+            }
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
+
+        DB::beginTransaction();
+
+        try {
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'username' => $request->username,
+                'password' => $request->password,
+                'is_admin' => $request->boolean('is_admin', false),
+                'is_live_chat_admin' => $request->boolean('is_live_chat_admin', false),
+            ]);
+
+            if ($user->is_live_chat_admin && $request->filled('channel_id')) {
+                $operator = LiveChatOperator::create([
+                    'user_id' => $user->id,
+                    'channel_id' => $request->channel_id,
+                    'is_active' => true,
+                ]);
+
+                $days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+                foreach ($days as $day) {
+                    LiveChatOperatorSchedule::create([
+                        'operator_id' => $operator->id,
+                        'day_of_week' => $day,
+                        'start_time' => '07:00',
+                        'end_time' => '23:00',
+                        'is_active' => true,
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => true, 'message' => 'Pengguna berhasil dibuat']);
+            }
+
+            return redirect()->route('admin.users')->with('success', 'Pengguna berhasil dibuat');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['errors' => ['error' => [$e->getMessage()]]], 422);
+            }
+            return redirect()->back()->withInput()->withErrors(['error' => 'Gagal menyimpan: ' . $e->getMessage()]);
+        }
     }
 
     // ---- PAYMENT METHODS ----
