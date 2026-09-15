@@ -31,10 +31,16 @@ class PushService
      * @param  array<int, array{guard: string, url: string}>  $targets
      * @param  int|null  $userId  batasi ke satu user (misal pemilik percakapan di guard "web")
      */
-    public function sendToTargets(array $targets, string $title, string $body, array $extra = [], ?int $userId = null): void
+    public function sendToTargets(array $targets, string $title, string $body, array $extra = [], ?int $userId = null): int
     {
         if (empty($targets)) {
-            return;
+            return 0;
+        }
+
+        if (empty(config('services.vapid.public_key')) || empty(config('services.vapid.private_key'))) {
+            logger()->warning('PushService: VAPID keys belum dikonfigurasi. Notifikasi dilewati.');
+
+            return 0;
         }
 
         $guards = array_values(array_unique(array_map(fn ($t) => $t['guard'], $targets)));
@@ -42,10 +48,16 @@ class PushService
         $subs = PushSubscription::query()
             ->whereIn('guard', $guards)
             ->when($userId, fn ($q) => $q->where('user_id', $userId))
-            ->get();
+            ->get()
+            ->unique('endpoint');
 
         if ($subs->isEmpty()) {
-            return;
+            logger()->info('PushService: tidak ada subscription terdaftar', [
+                'guards' => $guards,
+                'user_id' => $userId,
+            ]);
+
+            return 0;
         }
 
         try {
@@ -53,7 +65,7 @@ class PushService
         } catch (\Throwable $e) {
             logger()->warning('PushService: gagal inisialisasi WebPush', ['error' => $e->getMessage()]);
 
-            return;
+            return 0;
         }
 
         foreach ($subs as $sub) {
@@ -96,21 +108,33 @@ class PushService
             }
         }
 
+        $delivered = 0;
+
         try {
             foreach ($webPush->flush() as $report) {
-                logger()->info('PushService: laporan kirim', [
-                    'success' => $report->isSuccess(),
-                    'expired' => $report->isSubscriptionExpired(),
-                    'status' => $report->getResponse()?->getStatusCode(),
-                    'reason' => $report->getReason(),
-                ]);
-                if (! $report->isSuccess() && $report->isSubscriptionExpired()) {
-                    PushSubscription::query()->where('endpoint', $report->getEndpoint())->delete();
+                if ($report->isSuccess()) {
+                    $delivered++;
+                } else {
+                    logger()->info('PushService: laporan kirim', [
+                        'success' => false,
+                        'expired' => $report->isSubscriptionExpired(),
+                        'status' => $report->getResponse()?->getStatusCode(),
+                        'reason' => $report->getReason(),
+                        'endpoint' => substr($report->getEndpoint(), 0, 60),
+                    ]);
+
+                    if ($report->isSubscriptionExpired()) {
+                        PushSubscription::query()->where('endpoint', $report->getEndpoint())->delete();
+                    }
                 }
             }
         } catch (\Throwable $e) {
             logger()->error('PushService: flush gagal', ['error' => $e->getMessage(), 'trace' => substr($e->getTraceAsString(), 0, 500)]);
         }
+
+        logger()->info('PushService: selesai', ['guards' => $guards, 'user_id' => $userId, 'subs' => $subs->count(), 'delivered' => $delivered]);
+
+        return $delivered;
     }
 
     /**
@@ -134,10 +158,10 @@ class PushService
             $this->sendToTargets([
                 [
                     'guard' => 'web',
-                    'url' => route('home').'?chat=1&channel='.urlencode((string) $channel?->slug),
+                    'url' => '/?chat=1&channel='.urlencode((string) $channel?->slug),
                 ],
             ], $senderName, $preview, [
-                'icon' => $admin && $admin->photo_path ? asset('storage/'.$admin->photo_path) : asset('logo.png'),
+                'icon' => $admin && $admin->photo_path ? asset('storage/'.$admin->photo_path) : asset('logo-96.png'),
                 'msg_id' => $message->id,
                 'tag' => 'conv-'.$conversation->id.'-msg-'.$message->id,
                 'conversation_id' => $conversation->id,

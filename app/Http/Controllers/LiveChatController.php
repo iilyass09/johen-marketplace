@@ -207,12 +207,12 @@ class LiveChatController extends Controller
             };
 
             app(PushService::class)->sendToTargets([
-                ['guard' => 'admin', 'url' => route('admin.live-chat.conversations.show', $conversation->id)],
-                ['guard' => 'lcadmin', 'url' => route('lcadmin.conversations.show', $conversation->id)],
+                ['guard' => 'admin', 'url' => '/admin/live-chat/conversations/'.$conversation->id],
+                ['guard' => 'lcadmin', 'url' => '/lcadmin/conversations?open='.$conversation->id],
             ], $userName, $body, [
                 'tag' => 'conv-'.$conversation->id.'-msg-'.$message->id,
                 'msg_id' => $message->id,
-                'icon' => $user?->avatar ? media_url($user->avatar) : asset('logo.png'),
+                'icon' => $user?->avatar ? media_url($user->avatar) : asset('logo-96.png'),
                 'conversation_id' => $conversation->id,
                 'channel_slug' => $conversation->channel?->slug,
             ]);

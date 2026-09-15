@@ -272,6 +272,72 @@
   font-size: 12px;
 }
 
+/* Notification enable row */
+.lc-notif-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 2px 18px 16px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--surface-2, rgba(255,255,255,.05));
+  border: 1px solid var(--border, rgba(255,255,255,.08));
+}
+.lc-notif-row > svg {
+  color: var(--purple-light, #9d5cf5);
+  flex-shrink: 0;
+}
+.lc-notif-info {
+  flex: 1;
+  min-width: 0;
+}
+.lc-notif-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text, #f5f3fb);
+}
+.lc-notif-sub {
+  font-size: 10.5px;
+  color: var(--text-mute, rgba(255,255,255,.4));
+  line-height: 1.3;
+}
+.lc-notif-btn {
+  flex-shrink: 0;
+  border: none;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: inherit;
+  background: linear-gradient(135deg, #7c3aed, #9d5cf5);
+  color: #fff;
+  transition: all .15s;
+}
+.lc-notif-btn:hover {
+  filter: brightness(1.1);
+}
+.lc-notif-btn:disabled {
+  background: var(--surface-3, rgba(255,255,255,.10));
+  color: var(--text-mute, rgba(255,255,255,.35));
+  cursor: default;
+}
+.lc-notif-btn.is-on {
+  background: rgba(16,185,129,.18);
+  color: #34d399;
+  border: 1px solid rgba(16,185,129,.4);
+}
+[data-theme="light"] .lc-notif-btn.is-on {
+  background: rgba(16,185,129,.12);
+  color: #059669;
+}
+[data-theme="light"] .lc-notif-sub {
+  color: rgba(0,0,0,.5);
+}
+[data-theme="light"] .lc-notif-title {
+  color: rgba(0,0,0,.85);
+}
+
 /* Chat Room */
 .lc-chat {
   position: relative;

@@ -211,6 +211,5 @@
     </script>
     @stack('scripts')
     @include('partials.push-subscribe', ['pushGuard' => 'lcadmin'])
-    @include('partials.push-status')
 </body>
 </html>

@@ -7,7 +7,7 @@
     <title>@yield('title', config('app.name', 'Johen Gaming'))</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" href="{{ asset('logo.png') }}">
     <link rel="shortcut icon" href="{{ asset('logo.png') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -47,7 +47,7 @@
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
         html{scroll-behavior:smooth;}
         body{
-            font-family:'Inter',sans-serif;
+            font-family:'Poppins',sans-serif;
             background:var(--auth-bg);
             color:var(--auth-text);
             min-height:100vh;
@@ -152,7 +152,7 @@
             object-fit:contain;
         }
         .auth-logo-text{
-            font-family:'Sora',sans-serif;
+            font-family:'Poppins',sans-serif;
             font-weight:800;font-size:1.15rem;color:var(--auth-text);
             letter-spacing:.03em;
         }
@@ -164,7 +164,7 @@
             animation:fadeUp .5s ease-out .15s both;
         }
         .auth-header h1{
-            font-family:'Sora',sans-serif;
+            font-family:'Poppins',sans-serif;
             font-size:1.3rem;font-weight:800;
             margin-bottom:.25rem;
         }
@@ -215,7 +215,7 @@
             border-radius:12px;
             color:var(--auth-input-color);
             font-size:.88rem;
-            font-family:'Inter',sans-serif;
+            font-family:'Poppins',sans-serif;
             transition:all .25s ease;
             outline:none;
         }
@@ -280,7 +280,7 @@
             border-radius:12px;
             font-size:.9rem;
             font-weight:700;
-            font-family:'Inter',sans-serif;
+            font-family:'Poppins',sans-serif;
             cursor:pointer;
             transition:all .25s ease;
             position:relative;
@@ -363,7 +363,7 @@
             border-radius:12px;
             color:var(--auth-text);
             font-size:.88rem;font-weight:600;
-            font-family:'Inter',sans-serif;
+            font-family:'Poppins',sans-serif;
             text-decoration:none;
             cursor:pointer;
             transition:all .25s ease;

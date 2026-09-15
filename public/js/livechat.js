@@ -355,7 +355,81 @@
         <div class="lc-panel-divider"></div>
         <div class="lc-panel-section-title">PERCAKAPAN AKTIF</div>
         <div class="lc-conv-list">${convHtml}</div>
+        ${notifRowHtml()}
       </div>`;
+    refreshNotifRow();
+  }
+
+  function notifRowHtml() {
+    if (!AUTH_USER) return '';
+    const hasBridge = !!(window.PushBridge && window.PushBridge.canPush);
+    const statusText = hasBridge ? 'Dapatkan notifikasi saat admin membalas' : 'Notifikasi tidak tersedia';
+    const btn = hasBridge
+      ? '<button type="button" class="lc-notif-btn" id="lc-notif-btn" onclick="window.LiveChat.toggleNotif()">Aktifkan</button>'
+      : '';
+    return `
+      <div class="lc-notif-row" id="lc-notif-row">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        <div class="lc-notif-info">
+          <div class="lc-notif-title">Notifikasi chat</div>
+          <div class="lc-notif-sub" id="lc-notif-sub">${statusText}</div>
+        </div>
+        ${btn}
+      </div>`;
+  }
+
+  function refreshNotifRow() {
+    const row = document.getElementById('lc-notif-row');
+    if (!row) return;
+    const sub = document.getElementById('lc-notif-sub');
+    const btn = document.getElementById('lc-notif-btn');
+    if (!window.PushBridge || !window.PushBridge.canPush) return;
+    window.PushBridge.status().then(function (s) {
+      if (!sub || !btn) return;
+      if (s.permission === 'granted' && s.subscribed) {
+        sub.textContent = 'Notifikasi aktif di browser ini';
+        btn.textContent = 'Aktif ✓';
+        btn.disabled = true;
+        btn.classList.add('is-on');
+      } else if (s.permission === 'denied') {
+        sub.textContent = 'Notifikasi diblokir di browser — izinkan di pengaturan situs';
+        btn.textContent = 'Diblokir';
+        btn.disabled = true;
+      } else {
+        sub.textContent = 'Dapatkan notifikasi saat admin membalas';
+        btn.textContent = 'Aktifkan';
+        btn.disabled = false;
+        btn.classList.remove('is-on');
+      }
+    }).catch(function () {});
+  }
+
+  async function toggleNotif() {
+    const btn = document.getElementById('lc-notif-btn');
+    const sub = document.getElementById('lc-notif-sub');
+    if (!btn || !window.PushBridge || !window.PushBridge.canPush) return;
+    btn.disabled = true;
+    btn.textContent = 'Memproses…';
+    try {
+      const res = await window.PushBridge.enable();
+      if (res.granted && res.subscribed) {
+        if (sub) sub.textContent = 'Notifikasi aktif di browser ini';
+        btn.textContent = 'Aktif ✓';
+        btn.classList.add('is-on');
+      } else if (res.permission === 'denied') {
+        if (sub) sub.textContent = 'Notifikasi diblokir di browser — izinkan di pengaturan situs';
+        btn.textContent = 'Diblokir';
+      } else {
+        if (sub) sub.textContent = 'Izin ditunda — klik lagi untuk aktifkan';
+        btn.textContent = 'Aktifkan';
+        btn.disabled = false;
+      }
+    } catch (e) {
+      console.error('LiveChat: enable notif error', e);
+      if (sub) sub.textContent = 'Gagal, coba lagi';
+      btn.textContent = 'Aktifkan';
+      btn.disabled = false;
+    }
   }
 
   async function openChannel(slug) {
@@ -1037,6 +1111,7 @@
     toggle, close, openChannel, backToList, onKeydown, autoResize,
     sendText, onFileSelect, cancelMediaEditor, setActiveIndex, navMedia, removeMediaItem, updateActiveCaption,
     replyTo, cancelReply, deleteMsg, scrollToMsg, showMenu, updateBadge, openImage, openGallery, showReactions, toggleStar, showDeleteOptions, hideForMe, closeMenus: closeAllMenus, playVideoMessage,
+    toggleNotif,
   };
 
   document.addEventListener('DOMContentLoaded', function() {

@@ -118,9 +118,23 @@ class AdminController extends Controller
                     ? 'PAYMENT_SIMULATION=true — order tidak melibatkan pembayaran Digiflazz nyata.'
                     : 'PAYMENT_SIMULATION=false — pembayaran nyata.',
             ],
+            'push_notification' => [
+                'label' => 'Web Push (notifikasi live chat)',
+                'ok' => !empty(config('services.vapid.public_key')) && !empty(config('services.vapid.private_key')),
+                'detail' => !empty(config('services.vapid.public_key')) && !empty(config('services.vapid.private_key'))
+                    ? 'VAPID keys aktif. Pastikan admin & user mengaktifkan notifikasi di browser (tombol "Aktifkan Notifikasi").'
+                    : 'VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY belum diisi di .env.',
+            ],
         ];
 
-        return view('admin.gateway-status', compact('checks', 'isLocal', 'appUrl'));
+        $pushStats = [
+            'configured' => !empty(config('services.vapid.public_key')) && !empty(config('services.vapid.private_key')),
+            'web' => \App\Models\PushSubscription::where('guard', 'web')->count(),
+            'admin' => \App\Models\PushSubscription::where('guard', 'admin')->count(),
+            'lcadmin' => \App\Models\PushSubscription::where('guard', 'lcadmin')->count(),
+        ];
+
+        return view('admin.gateway-status', compact('checks', 'isLocal', 'appUrl', 'pushStats'));
     }
 
     // ---- PRODUCTS ----

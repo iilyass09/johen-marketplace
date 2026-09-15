@@ -1,5 +1,5 @@
 @extends('admin.layouts.app')
-@section('title', 'Chat - ' . $conversation->channel->name)
+@section('title', 'Chat - ' . ($conversation->channel?->name ?? 'Live Chat'))
 
 @section('content')
 <div style="display:flex;gap:24px;height:calc(100vh - 120px)">
@@ -8,11 +8,11 @@
             <div style="display:flex;align-items:center;gap:12px">
                 <a href="{{ route('admin.live-chat.conversations') }}" style="color:var(--purple-light);text-decoration:none;font-size:18px">←</a>
                 <div>
-                    <h3 class="card-title" style="margin:0">{{ $conversation->channel->name }}</h3>
+                    <h3 class="card-title" style="margin:0">{{ $conversation->channel?->name ?? 'Live Chat' }}</h3>
                     <div style="font-size:12px;color:var(--text-dim)">
                         User: {{ $conversation->user->name ?? 'User' }} ({{ $conversation->user->email ?? '' }})
                         @if($activeOperator)
-                        • Operator: {{ $activeOperator->user->name }} <span style="color:var(--success)">● Online</span>
+                        • Operator: {{ $activeOperator->name ?? $activeOperator->user?->name ?? 'Admin' }} <span style="color:var(--success)">● Online</span>
                         @else
                         • <span style="color:var(--error)">● Offline</span>
                         @endif

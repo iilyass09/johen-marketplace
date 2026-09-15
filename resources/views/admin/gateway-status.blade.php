@@ -50,6 +50,36 @@
 </div>
 
 <div class="card-glass p-5 mt-6">
+    <h3 class="font-semibold mb-3">
+        <i class="fas fa-bell" style="color:var(--accent)"></i> Notifikasi Push Chat ({{ $pushStats['configured'] ? 'Terkonfigurasi' : 'VAPID key belum diisi' }})
+    </h3>
+    <p class="text-sm mb-3" style="color:var(--text-muted)">
+        Perangkat yang sudah aktif menerima notifikasi live chat. Angka 0 berarti belum ada browser yang menekan tombol
+        <strong>"Aktifkan Notifikasi"</strong> (di admin panel atau di widget live chat toko). Notifikasi push hanya berjalan di
+        <strong>HTTPS</strong> (atau localhost).
+    </p>
+    <div class="grid grid-cols-3 gap-3">
+        <div class="stat-card" style="text-align:center">
+            <div class="text-2xl font-bold">{{ $pushStats['admin'] }}</div>
+            <div class="text-xs text-sm" style="color:var(--text-muted)">Admin panel</div>
+        </div>
+        <div class="stat-card" style="text-align:center">
+            <div class="text-2xl font-bold">{{ $pushStats['lcadmin'] }}</div>
+            <div class="text-xs" style="color:var(--text-muted)">Live Chat Admin</div>
+        </div>
+        <div class="stat-card" style="text-align:center">
+            <div class="text-2xl font-bold">{{ $pushStats['web'] }}</div>
+            <div class="text-xs" style="color:var(--text-muted)">User toko</div>
+        </div>
+    </div>
+    @if($pushStats['admin'] + $pushStats['lcadmin'] + $pushStats['web'] > 0)
+    <p class="text-sm mt-3" style="color:var(--success)">
+        <i class="fas fa-check-circle"></i> Ada perangkat terdaftar — coba tombol <strong>"Uji"</strong> di indikator notifikasi kanan-bawah halaman admin.
+    </p>
+    @endif
+</div>
+
+<div class="card-glass p-5 mt-6">
     <h3 class="font-semibold mb-3"><i class="fas fa-clipboard-check" style="color:var(--accent)"></i> Urutan Persiapan Live</h3>
     <ol class="list-decimal list-inside space-y-1 text-sm" style="color:var(--text-muted)">
         <li>Deploy aplikasi ke hosting + domain + SSL, set <code>APP_URL=https://domainmu</code>.</li>

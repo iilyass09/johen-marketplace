@@ -806,6 +806,5 @@
     </script>
     @stack('scripts')
     @include('partials.push-subscribe', ['pushGuard' => 'admin'])
-    @include('partials.push-status')
 </body>
 </html>

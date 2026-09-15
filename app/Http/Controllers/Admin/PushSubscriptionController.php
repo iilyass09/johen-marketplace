@@ -50,6 +50,12 @@ class PushSubscriptionController extends Controller
             'auth_token' => 'required|string|max:2048',
         ]);
 
+        logger()->info('PushSubscription: subscribe', [
+            'user_id' => $userId,
+            'guard' => $guard,
+            'endpoint' => substr($valid['endpoint'], 0, 80),
+        ]);
+
         PushSubscription::updateOrCreate(
             ['user_id' => $userId, 'guard' => $guard, 'endpoint' => $valid['endpoint']],
             [
@@ -69,6 +75,40 @@ class PushSubscriptionController extends Controller
             ->delete();
 
         return response()->json(['ok' => true]);
+    }
+
+    public function status(Request $request, string $guard): JsonResponse
+    {
+        $userId = Auth::guard('admin')->id();
+        if (! $userId) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        if (! in_array($guard, ['admin', 'lcadmin'], true)) {
+            return response()->json(['error' => 'Invalid guard'], 422);
+        }
+
+        $count = PushSubscription::query()
+            ->where('user_id', $userId)
+            ->where('guard', $guard)
+            ->count();
+
+        return response()->json(['ok' => true, 'registered' => $count > 0, 'count' => $count]);
+    }
+
+    public function statusWeb(Request $request): JsonResponse
+    {
+        $userId = Auth::guard('web')->id();
+        if (! $userId) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $count = PushSubscription::query()
+            ->where('user_id', $userId)
+            ->where('guard', 'web')
+            ->count();
+
+        return response()->json(['ok' => true, 'registered' => $count > 0, 'count' => $count]);
     }
 
     public function subscribeWeb(Request $request): JsonResponse
@@ -95,6 +135,70 @@ class PushSubscriptionController extends Controller
         }
 
         return response()->json(['ok' => true]);
+    }
+
+    /**
+     * Kirim notifikasi uji ke semua perangkat admin/lcadmin yang terdaftar.
+     */
+    public function test(Request $request, string $guard): JsonResponse
+    {
+        $userId = Auth::guard('admin')->id();
+        if (! $userId) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        if (! in_array($guard, ['admin', 'lcadmin'], true)) {
+            return response()->json(['error' => 'Invalid guard'], 422);
+        }
+
+        $url = $guard === 'lcadmin'
+            ? '/lcadmin/conversations'
+            : '/admin/live-chat/conversations';
+
+        $sent = app(\App\Services\PushService::class)->sendToTargets(
+            [
+                ['guard' => $guard, 'url' => $url],
+            ],
+            $request->input('title', 'Johen'),
+            $request->input('body', 'Ini notifikasi uji — push berfungsi!'),
+            [
+                'icon' => asset('logo-96.png'),
+                'badge' => asset('logo-96.png'),
+                'tag' => 'push-test-'.time().'-'.$userId,
+                'target_guard' => $guard,
+            ],
+            $userId,
+        );
+
+        return response()->json(['ok' => true, 'delivered' => $sent]);
+    }
+
+    /**
+     * Kirim notifikasi uji ke perangkat user (guard web) yang terdaftar.
+     */
+    public function testWeb(Request $request): JsonResponse
+    {
+        $userId = Auth::guard('web')->id();
+        if (! $userId) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $sent = app(\App\Services\PushService::class)->sendToTargets(
+            [
+                ['guard' => 'web', 'url' => '/'],
+            ],
+            $request->input('title', 'Johen'),
+            $request->input('body', 'Ini notifikasi uji — push berfungsi!'),
+            [
+                'icon' => asset('logo-96.png'),
+                'badge' => asset('logo-96.png'),
+                'tag' => 'push-test-'.time().'-'.$userId,
+                'target_guard' => 'web',
+            ],
+            $userId,
+        );
+
+        return response()->json(['ok' => true, 'delivered' => $sent]);
     }
 
     /**
@@ -134,12 +238,12 @@ class PushSubscriptionController extends Controller
         return response()->json([
             'title' => $shown,
             'body' => $this->messagePreview($conversation->lastMessage),
-            'url' => route('home').'?chat=1&channel='.urlencode((string) ($channel?->slug ?? '')),
+            'url' => '/?chat=1&channel='.urlencode((string) ($channel?->slug ?? '')),
             'app_name' => config('services.vapid.notif_brand', 'Johen Gaming'),
             'conversation_id' => $conversation->id,
             'channel_slug' => $channel?->slug,
             'target_guard' => 'web',
-            'icon' => asset('logo.png'),
+            'icon' => asset('logo-96.png'),
         ]);
     }
 
@@ -165,8 +269,8 @@ class PushSubscriptionController extends Controller
         }
 
         $url = $guard === 'lcadmin'
-            ? route('lcadmin.conversations.show', $conversation->id)
-            : route('admin.live-chat.conversations.show', $conversation->id);
+            ? '/lcadmin/conversations?open='.$conversation->id
+            : '/admin/live-chat/conversations/'.$conversation->id;
 
         return response()->json([
             'title' => $conversation->user?->name ?? 'User',
@@ -176,7 +280,7 @@ class PushSubscriptionController extends Controller
             'conversation_id' => $conversation->id,
             'channel_slug' => $conversation->channel?->slug,
             'target_guard' => $guard,
-            'icon' => asset('logo.png'),
+            'icon' => asset('logo-96.png'),
         ]);
     }
 

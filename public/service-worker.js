@@ -8,7 +8,7 @@ function normalizePayload(raw) {
   let url = data.url || data.target_url || '';
 
   if (!url && conversationId) {
-    if (data.target_guard === 'lcadmin') url = `/lcadmin/conversations/${conversationId}`;
+    if (data.target_guard === 'lcadmin') url = `/lcadmin/conversations?open=${conversationId}`;
     else if (data.target_guard === 'admin') url = `/admin/live-chat/conversations/${conversationId}`;
     else if (channelSlug) url = `/?chat=1&channel=${encodeURIComponent(channelSlug)}`;
   }
@@ -25,7 +25,7 @@ function normalizePayload(raw) {
 
 function safeIcon(value) {
   if (value && typeof value === 'string' && /^https?:\/\//i.test(value)) return value;
-  return '/logo.png';
+  return '/logo-96.png';
 }
 
 function buildNotification(data) {
@@ -33,7 +33,7 @@ function buildNotification(data) {
   const opts = {
     body: data.body,
     icon: safeIcon(data.icon),
-    badge: safeIcon(data.badge || '/logo.png'),
+    badge: safeIcon(data.badge || '/logo-96.png'),
     lang: 'id-ID',
     dir: 'auto',
     silent: false,
@@ -116,8 +116,8 @@ self.addEventListener('push', (event) => {
     console.error('Johen Gaming push notification gagal:', error);
     return self.registration.showNotification('Pesan Baru', {
       body: 'Kamu menerima pesan baru.',
-      icon: '/logo.png',
-      badge: '/logo.png',
+      icon: '/logo-96.png',
+      badge: '/logo-96.png',
     });
   });
 

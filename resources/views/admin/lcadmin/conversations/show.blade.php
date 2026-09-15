@@ -1,5 +1,5 @@
 @extends('admin.layouts.lcadmin')
-@section('title', 'Chat - ' . $conversation->channel->name)
+@section('title', 'Chat - ' . ($conversation->channel?->name ?? 'Live Chat'))
 
 @section('content')
 <div style="display:flex;gap:24px;height:100%">
@@ -8,7 +8,7 @@
             <div style="display:flex;align-items:center;gap:12px">
                 <a href="{{ route('lcadmin.conversations') }}" style="color:var(--accent);text-decoration:none;font-size:18px">←</a>
                 <div>
-                    <h3 style="margin:0;font-weight:700;font-size:1rem">{{ $conversation->channel->name }}</h3>
+                    <h3 style="margin:0;font-weight:700;font-size:1rem">{{ $conversation->channel?->name ?? 'Live Chat' }}</h3>
                     <div style="font-size:12px;color:var(--text-dim)">
                         User: {{ $conversation->user->name ?? 'User' }} ({{ $conversation->user->email ?? '' }})
                         @if($activeOperator)

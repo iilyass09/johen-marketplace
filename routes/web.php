@@ -209,6 +209,8 @@ Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->gro
 
     Route::post('/push/{guard}/subscribe', [PushSubscriptionController::class, 'subscribe'])->whereIn('guard', ['admin', 'lcadmin'])->name('push.subscribe');
     Route::post('/push/{guard}/unsubscribe', [PushSubscriptionController::class, 'unsubscribe'])->whereIn('guard', ['admin', 'lcadmin'])->name('push.unsubscribe');
+    Route::post('/push/{guard}/test', [PushSubscriptionController::class, 'test'])->whereIn('guard', ['admin', 'lcadmin'])->name('push.test');
+    Route::get('/push/{guard}/status', [PushSubscriptionController::class, 'status'])->whereIn('guard', ['admin', 'lcadmin'])->name('push.status');
 
     Route::get('/live-chat/operators', [LiveChatOperatorController::class, 'index'])->name('live-chat.operators');
     Route::post('/live-chat/operators', [LiveChatOperatorController::class, 'store'])->name('live-chat.operators.store');
@@ -236,6 +238,8 @@ Route::middleware(['auth:admin', 'live-chat-admin'])->prefix('lcadmin')->name('l
 
     Route::post('/push/{guard}/subscribe', [PushSubscriptionController::class, 'subscribe'])->whereIn('guard', ['admin', 'lcadmin'])->name('push.subscribe');
     Route::post('/push/{guard}/unsubscribe', [PushSubscriptionController::class, 'unsubscribe'])->whereIn('guard', ['admin', 'lcadmin'])->name('push.unsubscribe');
+    Route::post('/push/{guard}/test', [PushSubscriptionController::class, 'test'])->whereIn('guard', ['admin', 'lcadmin'])->name('push.test');
+    Route::get('/push/{guard}/status', [PushSubscriptionController::class, 'status'])->whereIn('guard', ['admin', 'lcadmin'])->name('push.status');
 });
 
 Route::middleware(['auth:web'])->prefix('api')->name('api.')->group(function () {
@@ -253,6 +257,8 @@ Route::middleware(['auth:web'])->prefix('api')->name('api.')->group(function () 
 
     Route::post('/push/subscribe', [PushSubscriptionController::class, 'subscribeWeb'])->name('push.subscribe');
     Route::post('/push/unsubscribe', [PushSubscriptionController::class, 'unsubscribeWeb'])->name('push.unsubscribe');
+    Route::post('/push/test', [PushSubscriptionController::class, 'testWeb'])->name('push.test');
+    Route::get('/push/status', [PushSubscriptionController::class, 'statusWeb'])->name('push.status');
 });
 
 Route::get('/admin/login', [AdminAuthController::class, 'showLoginForm'])
