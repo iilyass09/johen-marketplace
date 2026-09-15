@@ -1,0 +1,19 @@
+HOME = .
+RANDFILE = .rnd
+[ req ]
+default_bits = 2048
+default_keyfile = keyout.pem
+distinguished_name = req_distinguished_name
+attributes = req_attributes
+prompt = no
+[ req_distinguished_name ]
+countryName = ID
+stateOrProvinceName = Jakarta
+localityName = Jakarta
+organizationName = Johen
+organizationalUnitName = Web
+commonName = localhost
+[ req_attributes ]
+[ v3_req ]
+basicConstraints = CA:FALSE
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment

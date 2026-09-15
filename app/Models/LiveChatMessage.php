@@ -63,6 +63,11 @@ class LiveChatMessage extends Model
         return $this->hasMany(LiveChatMessageStar::class);
     }
 
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(LiveChatMessageAttachment::class, 'live_chat_message_id')->orderBy('sort_order');
+    }
+
     public function hiddenUsers(): HasMany
     {
         return $this->hasMany(LiveChatMessageHiddenUser::class);

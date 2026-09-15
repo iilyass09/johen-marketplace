@@ -5,6 +5,8 @@ namespace App\Http\Controllers\LCAdmin;
 use App\Http\Controllers\Controller;
 use App\Models\LiveChatConversation;
 use App\Models\LiveChatMessage;
+use App\Services\LiveChatMedia;
+use App\Services\PushService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -47,7 +49,7 @@ class LCAdminConversationController extends Controller
         $conversation->markAdminRead();
 
         $messages = LiveChatMessage::where('conversation_id', $conversation->id)
-            ->with(['sender', 'replyTo'])
+            ->with(['sender', 'replyTo', 'attachments'])
             ->ordered()
             ->get();
 
@@ -69,7 +71,7 @@ class LCAdminConversationController extends Controller
         $conversation->markAdminRead();
 
         $messages = LiveChatMessage::where('conversation_id', $conversation->id)
-            ->with(['sender', 'replyTo'])
+            ->with(['sender', 'replyTo', 'attachments'])
             ->ordered()
             ->get();
 
@@ -95,7 +97,7 @@ class LCAdminConversationController extends Controller
 
         $messages = LiveChatMessage::where('conversation_id', $conversation->id)
             ->where('id', '>', $afterId)
-            ->with(['sender', 'replyTo'])
+            ->with(['sender', 'replyTo', 'attachments'])
             ->ordered()
             ->get();
 
@@ -117,8 +119,12 @@ class LCAdminConversationController extends Controller
             'message_type' => 'required|in:text,image,video',
             'message' => 'nullable|string|max:5000',
             'reply_to_message_id' => 'nullable|exists:live_chat_messages,id',
-            'media' => 'required_if:message_type,image,video|file|max:1048576|mimes:jpg,jpeg,png,gif,webp,mp4,mov,avi,mkv,webm,flv,3gp',
-            'thumbnail' => 'nullable|file|max:5120|mimes:jpg,jpeg,png,webp',
+            'media' => 'nullable|array',
+            'media.*' => 'file|max:1048576|mimes:jpg,jpeg,png,gif,webp,mp4,mov,avi,mkv,webm,flv,3gp',
+            'thumbnail' => 'nullable|array',
+            'thumbnail.*' => 'file|max:5120|mimes:jpg,jpeg,png,webp',
+            'thumbnail_indexes' => 'nullable|array',
+            'thumbnail_indexes.*' => 'integer|min:0',
         ]);
 
         $data = [
@@ -130,28 +136,30 @@ class LCAdminConversationController extends Controller
             'reply_to_message_id' => $request->reply_to_message_id,
         ];
 
-        if ($request->hasFile('media')) {
-            $file = $request->file('media');
-            $path = $file->store('live-chat/media', 'public');
-            $data['media_path'] = $path;
-            $data['media_name'] = $file->getClientOriginalName();
-            $data['media_mime'] = $file->getMimeType();
-            $data['media_size'] = $file->getSize();
-        }
-
-        if ($request->hasFile('thumbnail')) {
-            $thumbPath = $request->file('thumbnail')->store('live-chat/media', 'public');
-            $data['poster_path'] = $thumbPath;
-        }
-
         $message = LiveChatMessage::create($data);
+
+        $files = $request->file('media', []);
+        if (!empty($files)) {
+            $posterFiles = [];
+            foreach ((array) $request->input('thumbnail_indexes', []) as $key => $index) {
+                $thumb = $request->file('thumbnail')[$key] ?? null;
+                if ($thumb) {
+                    $posterFiles[(int) $index] = $thumb;
+                }
+            }
+            $rows = LiveChatMedia::storeBatch($files, $posterFiles);
+            $message->attachments()->createMany($rows);
+            LiveChatMedia::applyCompatColumns($message, $rows);
+        }
 
         $conversation->update([
             'last_message_at' => now(),
             'user_unread_count' => $conversation->user_unread_count + 1,
         ]);
 
-        $message->load('sender', 'replyTo');
+        app(PushService::class)->sendUserReplyNotification($conversation, $message, $user->name ?? 'Admin');
+
+        $message->load('sender', 'replyTo', 'attachments');
 
         return response()->json($message);
     }

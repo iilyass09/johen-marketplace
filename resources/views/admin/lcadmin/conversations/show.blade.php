@@ -39,10 +39,10 @@
                         ↳ {{ Str::limit($msg->reply_to->message ?? 'Media', 50) }}
                     </div>
                     @endif
-                    @if($msg->message_type === 'image' && $msg->media_path)
-                    <div class="chat-media"><img src="/media/{{ $msg->media_path }}" alt="Gambar" loading="lazy"></div>
+                    @if($msg->message_type === 'image' && ($msg->media_path || $msg->attachments->isNotEmpty()))
+                    @include('partials.livechat-gallery', ['msg' => $msg])
                     @elseif($msg->message_type === 'video' && $msg->media_path)
-                    <div class="chat-media"><video src="/media/{{ $msg->media_path }}" controls preload="none" @if($msg->poster_path) poster="/media/{{ $msg->poster_path }}" @endif></video></div>
+                    @include('partials.livechat-gallery', ['msg' => $msg])
                     @endif
                     @if($msg->message)
                     <div class="chat-bubble">{{ $msg->message }}</div>
@@ -97,6 +97,38 @@
 .chat-msg-user .chat-time { justify-content: flex-end; }
 .chat-media { max-width: 100%; border-radius: 8px; overflow: hidden; margin-bottom: 4px; }
 .chat-media img, .chat-media video { width: 100%; max-height: 200px; object-fit: cover; display: block; }
+.chat-media video:fullscreen, .chat-media video:-webkit-full-screen { width: 100vw; height: 100vh; max-height: none; object-fit: contain; background: #000; }
+.chat-video-wrap { position: relative; }
+.chat-video-play { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2; width: 44px; height: 44px; border: none; border-radius: 50%; background: rgba(0,0,0,.55); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .2s ease, transform .2s ease; }
+.chat-video-play svg { width: 20px; height: 20px; fill: #fff; margin-left: 2px; }
+.chat-video-play:hover { background: rgba(124,58,237,.85); transform: translate(-50%,-50%) scale(1.08); }
+.chat-video-play.is-hidden { display: none; }
+.chat-msg-gallery { display: grid; gap: 3px; margin-bottom: 4px; width: 100%; max-width: 260px; }
+.chat-grid-1 { grid-template-columns: minmax(0, 1fr); }
+.chat-grid-2, .chat-grid-3, .chat-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.chat-msg-gallery .chat-gallery-item { position: relative; overflow: hidden; padding: 0; border: 0; background: #0a0a12; cursor: zoom-in; }
+.chat-msg-gallery .chat-gallery-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.chat-grid-1 .chat-gallery-item { display: block; }
+.chat-grid-1 .chat-gallery-item img { height: auto; max-height: 160px; }
+.chat-grid-2 .chat-gallery-item, .chat-grid-3 .chat-gallery-item, .chat-grid-4 .chat-gallery-item { aspect-ratio: 1 / 1; }
+.chat-gallery-more { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.55); color: #fff; font-weight: 700; font-size: 20px; pointer-events: none; }
+.chat-lightbox-stage { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.chat-lightbox-stage img { max-width: 72%; max-height: 72%; object-fit: contain; border-radius: 10px; box-shadow: 0 24px 80px rgba(0,0,0,.5); cursor: default; }
+.chat-lightbox-nav { position: absolute; top: 50%; transform: translateY(-50%); z-index: 2; width: 42px; height: 42px; border: 0; border-radius: 50%; background: rgba(255,255,255,.14); color: #fff; font-size: 22px; line-height: 1; cursor: pointer; display: grid; place-items: center; }
+.chat-lightbox-nav.prev { left: 10px; }
+.chat-lightbox-nav.next { right: 10px; }
+.chat-lightbox-nav:hover { background: rgba(255,255,255,.25); }
+.chat-lightbox-counter { position: absolute; bottom: 92px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.5); color: #fff; padding: 4px 14px; border-radius: 999px; font-size: 12px; z-index: 2; }
+.chat-lightbox-thumbs { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; padding: 6px; border-radius: 12px; background: rgba(0,0,0,.55); max-width: 88%; overflow-x: auto; z-index: 2; }
+.chat-lightbox-thumbs .chat-thumb { flex: 0 0 auto; width: 46px; height: 46px; padding: 0; border: 2px solid transparent; border-radius: 8px; overflow: hidden; background: #000; cursor: pointer; }
+.chat-lightbox-thumbs .chat-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.chat-lightbox-thumbs .chat-thumb.active { border-color: #a78bfa; }
+.chat-image-lightbox { position: fixed; inset: 0; z-index: 10050; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(8,6,16,.92); cursor: zoom-out; }
+.chat-image-lightbox-tools { position: fixed; top: 16px; right: 18px; display: flex; align-items: center; gap: 6px; z-index: 1; }
+.chat-image-lightbox-tools a, .chat-image-lightbox-tools button { width: 40px; height: 40px; border: 0; border-radius: 50%; background: rgba(255,255,255,.14); color: #fff; display: grid; place-items: center; text-decoration: none; cursor: pointer; }
+.chat-image-lightbox-tools svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.chat-image-lightbox-tools [data-action="close"] { font-size: 30px; line-height: 1; }
+.chat-image-lightbox-tools .is-active { color: #facc15; }
 .chat-reply { background: var(--bg-input); border-left: 3px solid var(--accent); padding: 4px 8px; margin-bottom: 6px; border-radius: 4px; font-size: 11px; color: var(--text-dim); cursor: pointer; }
 .chat-reply:hover { background: var(--sidebar-hover); }
 </style>
@@ -107,6 +139,22 @@ const CONVERSATION_ID = {{ $conversation->id }};
 
 let pollTimer = null;
 let adminReplyToId = null;
+
+function playChatVideo(btn) {
+    const wrap = btn.closest('.chat-video-wrap');
+    if (!wrap) return;
+    const video = wrap.querySelector('video');
+    if (!video) return;
+    if (!video.dataset.chatVideoBound) {
+        video.dataset.chatVideoBound = '1';
+        video.addEventListener('play', () => btn.classList.add('is-hidden'));
+        video.addEventListener('pause', () => btn.classList.remove('is-hidden'));
+        video.addEventListener('ended', () => btn.classList.remove('is-hidden'));
+    }
+    btn.classList.add('is-hidden');
+    const pr = video.play();
+    if (pr && pr.catch) pr.catch(() => { btn.classList.remove('is-hidden'); });
+}
 
 function startPoll() {
     stopPoll();
@@ -135,6 +183,116 @@ async function pollMessages() {
     } catch (e) {}
 }
 
+function attachmentsOfMsg(msg) {
+    if (msg.attachments && msg.attachments.length) return msg.attachments;
+    if (msg.media_path) return [{ media_path: msg.media_path, poster_path: msg.poster_path || null, media_mime: msg.media_mime || null }];
+    return [];
+}
+
+function buildGalleryHtml(msg) {
+    const atts = attachmentsOfMsg(msg);
+    if (!atts.length) return '';
+
+    if (msg.message_type === 'video') {
+        const a = atts[0];
+        const posterAttr = a.poster_path ? ` poster="/media/${a.poster_path}"` : '';
+        return `<div class="chat-media chat-video-wrap"><button type="button" class="chat-video-play" onclick="playChatVideo(this)" aria-label="Putar video"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button><video src="/media/${a.media_path}" controls preload="none"${posterAttr}></video></div>`;
+    }
+
+    const gridCls = atts.length === 1 ? 'chat-msg-gallery chat-grid-1'
+        : atts.length === 2 ? 'chat-msg-gallery chat-grid-2'
+        : atts.length === 3 ? 'chat-msg-gallery chat-grid-3'
+        : 'chat-msg-gallery chat-grid-4';
+    const urlsJson = JSON.stringify(atts.map(a => `/media/${a.media_path}`)).replace(/"/g, '&quot;');
+    const visible = atts.slice(0, 4);
+    const hiddenCount = atts.length - 4;
+    const tiles = visible.map((a, i) => {
+        const url = `/media/${a.media_path}`;
+        const more = (i === 3 && hiddenCount > 0) ? `<span class="chat-gallery-more">+${hiddenCount}</span>` : '';
+        return `<button type="button" class="chat-gallery-item" data-urls="${urlsJson}" onclick="openAdminGallery(this, ${msg.id}, ${i})" aria-label="Buka gambar ukuran penuh"><img src="${url}" alt="Gambar" loading="lazy">${more}</button>`;
+    }).join('');
+    return `<div class="chat-media ${gridCls}">${tiles}</div>`;
+}
+
+function openAdminGallery(btn, messageId, startIndex) {
+    let urls = [];
+    try { urls = JSON.parse(btn.dataset.urls || '[]'); } catch (e) {}
+    if (!urls.length) return;
+    openAdminLightbox(urls, startIndex || 0, messageId);
+}
+
+function openAdminLightbox(urls, startIndex, messageId) {
+    document.getElementById('chat-image-lightbox')?.remove();
+
+    let index = Math.max(0, Math.min(startIndex || 0, urls.length - 1));
+    const hasMany = urls.length > 1;
+    const thumbsHtml = urls.map((u, i) =>
+        `<button type="button" class="chat-thumb${i === index ? ' active' : ''}" data-i="${i}" aria-label="Gambar ${i + 1}"><img src="${u}" alt="" loading="lazy"></button>`
+    ).join('');
+
+    const lightbox = document.createElement('div');
+    lightbox.id = 'chat-image-lightbox';
+    lightbox.className = 'chat-image-lightbox';
+    lightbox.setAttribute('role', 'dialog');
+    lightbox.setAttribute('aria-modal', 'true');
+    lightbox.setAttribute('aria-label', 'Pratinjau gambar');
+    lightbox.innerHTML = `
+        <div class="chat-image-lightbox-tools" aria-label="Aksi gambar">
+            <a id="chat-lightbox-download" href="${urls[index]}" download title="Unduh" aria-label="Unduh gambar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11"/><path d="m8 10 4 4 4-4M5 20h14"/></svg></a>
+            <button type="button" data-action="close" title="Tutup" aria-label="Tutup gambar">×</button>
+        </div>
+        <div class="chat-lightbox-stage">
+            ${hasMany ? '<button type="button" class="chat-lightbox-nav prev" data-nav="-1" aria-label="Sebelumnya">‹</button>' : ''}
+            <img id="chat-lightbox-img" src="${urls[index]}" alt="Gambar ukuran penuh">
+            ${hasMany ? '<button type="button" class="chat-lightbox-nav next" data-nav="1" aria-label="Berikutnya">›</button>' : ''}
+            ${hasMany ? '<div class="chat-lightbox-counter">' + (index + 1) + ' / ' + urls.length + '</div>' : ''}
+            ${hasMany ? `<div class="chat-lightbox-thumbs">${thumbsHtml}</div>` : ''}
+        </div>`;
+
+    const img = lightbox.querySelector('#chat-lightbox-img');
+    const download = lightbox.querySelector('#chat-lightbox-download');
+    const thumbs = lightbox.querySelector('.chat-lightbox-thumbs');
+    let counter = null;
+    const updateThumbs = () => {
+        thumbs?.querySelectorAll('.chat-thumb').forEach((t, i) => {
+            t.classList.toggle('active', i === index);
+            if (i === index) t.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        });
+    };
+    const setIndex = (i) => {
+        index = (i + urls.length) % urls.length;
+        img.src = urls[index];
+        if (download) download.href = urls[index];
+        if (counter) counter.textContent = `${index + 1} / ${urls.length}`;
+        updateThumbs();
+    };
+
+    let onKeydown;
+    const close = () => {
+        lightbox.remove();
+        document.removeEventListener('keydown', onKeydown);
+    };
+    lightbox.addEventListener('click', (event) => {
+        if (event.target === lightbox || event.target.classList.contains('chat-lightbox-stage')) close();
+    });
+    lightbox.querySelector('.chat-lightbox-nav.prev')?.addEventListener('click', () => setIndex(index - 1));
+    lightbox.querySelector('.chat-lightbox-nav.next')?.addEventListener('click', () => setIndex(index + 1));
+    thumbs?.addEventListener('click', (e) => {
+        const t = e.target.closest('.chat-thumb');
+        if (t) setIndex(parseInt(t.dataset.i, 10));
+    });
+    lightbox.querySelector('[data-action="close"]')?.addEventListener('click', close);
+    onKeydown = function(event) {
+        if (event.key === 'Escape') { close(); return; }
+        if (hasMany && event.key === 'ArrowLeft') setIndex(index - 1);
+        if (hasMany && event.key === 'ArrowRight') setIndex(index + 1);
+    };
+    document.addEventListener('keydown', onKeydown);
+    document.body.appendChild(lightbox);
+    counter = lightbox.querySelector('.chat-lightbox-counter');
+    lightbox.querySelector('[data-action="close"]')?.focus();
+}
+
 function appendMessage(msg) {
     const container = document.getElementById('chat-messages');
     const emptyState = container.querySelector('.empty-state');
@@ -148,11 +306,10 @@ function appendMessage(msg) {
     if (msg.reply_to) {
         html += `<div class="chat-reply">↳ ${escapeHtml((msg.reply_to.message || '').substring(0, 50))}</div>`;
     }
-    if (msg.message_type === 'image' && msg.media_path) {
-        html += `<div class="chat-media"><img src="/media/${msg.media_path}" alt="Gambar" loading="lazy"></div>`;
+    if (msg.message_type === 'image' && (msg.media_path || (msg.attachments && msg.attachments.length))) {
+        html += buildGalleryHtml(msg);
     } else if (msg.message_type === 'video' && msg.media_path) {
-        const posterAttr = msg.poster_path ? ` poster="/media/${msg.poster_path}"` : '';
-        html += `<div class="chat-media"><video src="/media/${msg.media_path}" controls preload="none"${posterAttr}></video></div>`;
+        html += buildGalleryHtml(msg);
     }
     if (msg.message) {
         html += `<div class="chat-bubble">${escapeHtml(msg.message)}</div>`;
@@ -253,6 +410,64 @@ function cancelAdminPreview() {
     if (o) o.remove();
 }
 
+async function extractVideoThumb(file) {
+    return new Promise(resolve => {
+        const video = document.createElement('video');
+        video.preload = 'auto';
+        video.muted = true;
+        video.playsInline = true;
+        video.crossOrigin = 'anonymous';
+        const url = URL.createObjectURL(file);
+        video.src = url;
+
+        let done = false;
+        const finish = (blob) => {
+            if (done) return;
+            done = true;
+            URL.revokeObjectURL(url);
+            resolve(blob);
+        };
+
+        const timeout = setTimeout(() => finish(null), 8000);
+
+        video.addEventListener('loadedmetadata', () => {
+            try {
+                const dur = video.duration;
+                const isLive = !isFinite(dur) || dur <= 0;
+                const target = isLive ? 1 : Math.max(0, Math.min(1, dur - 0.05));
+                video.currentTime = target;
+                if (video.paused) {
+                    video.play().catch(() => {});
+                }
+            } catch (e) {
+                clearTimeout(timeout);
+                finish(null);
+            }
+        }, { once: true });
+
+        video.addEventListener('seeked', () => {
+            clearTimeout(timeout);
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth || 320;
+                canvas.height = video.videoHeight || 180;
+                canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+                canvas.toBlob(blob => finish(blob), 'image/jpeg', 0.6);
+                if (!video.paused) {
+                    video.pause();
+                }
+            } catch (e) {
+                finish(null);
+            }
+        }, { once: true });
+
+        video.addEventListener('error', () => {
+            clearTimeout(timeout);
+            finish(null);
+        }, { once: true });
+    });
+}
+
 async function confirmAdminSend() {
     if (!adminPreviewFile) return;
     const caption = document.getElementById('admin-preview-caption')?.value || '';
@@ -265,8 +480,15 @@ async function confirmAdminSend() {
         const formData = new FormData();
         formData.append('message_type', isImage ? 'image' : 'video');
         formData.append('message', caption);
-        formData.append('media', file);
+        formData.append('media[]', file);
         if (replyToId) formData.append('reply_to_message_id', replyToId);
+        if (!isImage) {
+            const thumbBlob = await extractVideoThumb(file);
+            if (thumbBlob) {
+                formData.append('thumbnail[]', thumbBlob, 'thumb.jpg');
+                formData.append('thumbnail_indexes[]', '0');
+            }
+        }
 
         const res = await fetch(`/lcadmin/conversations/${CONVERSATION_ID}/reply`, {
             method: 'POST',

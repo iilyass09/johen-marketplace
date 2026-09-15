@@ -47,6 +47,37 @@
     return div.innerHTML;
   }
 
+  function attachmentsOf(msg) {
+    if (msg.attachments && msg.attachments.length) return msg.attachments;
+    if (msg.media_path) return [{ media_path: msg.media_path, poster_path: msg.poster_path || null, media_mime: msg.media_mime || null }];
+    return [];
+  }
+
+  function galleryHtml(msg, messageId) {
+    const atts = attachmentsOf(msg);
+    if (!atts.length) return '';
+
+    if (msg.message_type === 'video') {
+      const a = atts[0];
+      const posterAttr = a.poster_path ? ` poster="/media/${a.poster_path}"` : '';
+      return `<div class="lc-msg-media lc-video-wrap"><button type="button" class="lc-video-play" onclick="window.LiveChat.playVideoMessage(this)" aria-label="Putar video"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button><video src="/media/${a.media_path}" controls preload="none"${posterAttr}></video></div>`;
+    }
+
+    const gridCls = atts.length === 1 ? 'lc-msg-gallery lc-grid-1'
+      : atts.length === 2 ? 'lc-msg-gallery lc-grid-2'
+      : atts.length === 3 ? 'lc-msg-gallery lc-grid-3'
+      : 'lc-msg-gallery lc-grid-4';
+    const urlsJson = JSON.stringify(atts.map(a => `/media/${a.media_path}`)).replace(/"/g, '&quot;');
+    const visible = atts.slice(0, 4);
+    const hiddenCount = atts.length - 4;
+    const tiles = visible.map((a, i) => {
+      const url = `/media/${a.media_path}`;
+      const more = (i === 3 && hiddenCount > 0) ? `<span class="lc-gallery-more">+${hiddenCount}</span>` : '';
+      return `<button type="button" class="lc-gallery-item" data-urls="${urlsJson}" onclick="window.LiveChat.openGallery(event, this, ${messageId}, ${i})" aria-label="Buka gambar ukuran penuh"><img src="${url}" alt="Gambar" loading="lazy">${more}</button>`;
+    }).join('');
+    return `<div class="lc-msg-media ${gridCls}">${tiles}</div>`;
+  }
+
   function showToast(message, type) {
     const existing = document.querySelector('.lc-toast');
     if (existing) existing.remove();
@@ -62,26 +93,58 @@
   function extractVideoThumb(file) {
     return new Promise(resolve => {
       const video = document.createElement('video');
-      video.preload = 'metadata';
+      video.preload = 'auto';
       video.muted = true;
       video.playsInline = true;
+      video.crossOrigin = 'anonymous';
       const url = URL.createObjectURL(file);
       video.src = url;
-      video.onloadeddata = () => {
-        video.currentTime = Math.min(1, video.duration * 0.1);
+
+      let done = false;
+      const finish = (blob) => {
+        if (done) return;
+        done = true;
+        URL.revokeObjectURL(url);
+        resolve(blob);
       };
-      video.onseeked = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth || 320;
-        canvas.height = video.videoHeight || 180;
-        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-        canvas.toBlob(blob => {
-          URL.revokeObjectURL(url);
-          resolve(blob);
-        }, 'image/jpeg', 0.6);
-      };
-      video.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
-      setTimeout(() => { URL.revokeObjectURL(url); resolve(null); }, 5000);
+
+      const timeout = setTimeout(() => finish(null), 8000);
+
+      video.addEventListener('loadedmetadata', () => {
+        try {
+          const dur = video.duration;
+          const isLive = !isFinite(dur) || dur <= 0;
+          const target = isLive ? 1 : Math.max(0, Math.min(1, dur - 0.05));
+          video.currentTime = target;
+          if (video.paused) {
+            video.play().catch(() => {});
+          }
+        } catch (e) {
+          clearTimeout(timeout);
+          finish(null);
+        }
+      }, { once: true });
+
+      video.addEventListener('seeked', () => {
+        clearTimeout(timeout);
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = video.videoWidth || 320;
+          canvas.height = video.videoHeight || 180;
+          canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob(blob => finish(blob), 'image/jpeg', 0.6);
+          if (!video.paused) {
+            video.pause();
+          }
+        } catch (e) {
+          finish(null);
+        }
+      }, { once: true });
+
+      video.addEventListener('error', () => {
+        clearTimeout(timeout);
+        finish(null);
+      }, { once: true });
     });
   }
 
@@ -98,7 +161,8 @@
       const rSender = msg.reply_to.sender?.name || (msg.reply_to.sender_type === 'user' ? (AUTH_USER?.name || 'Anda') : 'Admin');
       let rContent = '';
       if (msg.reply_to.message_type === 'image' && msg.reply_to.media_path) {
-        rContent = '<span class="lc-quote-media">📷 Foto</span>';
+        const n = attachmentsOf(msg.reply_to).length;
+        rContent = `<span class="lc-quote-media">📷 ${n > 1 ? n + ' ' : ''}Foto</span>`;
       } else if (msg.reply_to.message_type === 'video' && msg.reply_to.media_path) {
         rContent = '<span class="lc-quote-media">🎬 Video</span>';
       } else {
@@ -107,14 +171,7 @@
       quoteHtml = `<div class="lc-msg-quote" onclick="event.stopPropagation();window.LiveChat.scrollToMsg(${msg.reply_to.id})"><div class="lc-quote-bar"></div><div class="lc-quote-content"><div class="lc-quote-sender">${escapeHtml(rSender)}</div><div class="lc-quote-text">${rContent}</div></div></div>`;
     }
 
-    let mediaHtml = '';
-    if (msg.message_type === 'image' && msg.media_path) {
-      const imageUrl = `/media/${msg.media_path}`;
-      mediaHtml = `<button type="button" class="lc-msg-media lc-image-trigger" onclick="window.LiveChat.openImage(event, '${imageUrl}', ${msg.id})" aria-label="Buka gambar ukuran penuh"><img src="${imageUrl}" alt="Gambar yang dikirim di chat" loading="lazy"></button>`;
-      } else if (msg.message_type === 'video' && msg.media_path) {
-        const posterAttr = msg.poster_path ? ` poster="/media/${msg.poster_path}"` : '';
-        mediaHtml = `<div class="lc-msg-media"><video src="/media/${msg.media_path}" controls preload="none"${posterAttr}></video></div>`;
-    }
+    let mediaHtml = galleryHtml(msg, msg.id);
 
     const bubbleContent = msg.message ? `<div class="lc-msg-bubble">${escapeHtml(msg.message)}</div>` : '';
 
@@ -336,6 +393,7 @@
         newMessages.forEach(m => appendUserMsg(m));
         scrollToBottom();
         setTimeout(scrollToBottom, 100);
+        dismissActiveToast();
       }
       if (state.conversation.user_unread_count > 0) {
         fetch(`/api/live-chat/conversation/${state.conversation.channel?.slug || state.activeChannel?.slug}`, { headers: headers() });
@@ -368,7 +426,8 @@
         const rSender = msg.reply_to.sender?.name || (msg.reply_to.sender_type === 'user' ? (AUTH_USER?.name || 'Anda') : 'Admin');
         let rContent = '';
         if (msg.reply_to.message_type === 'image' && msg.reply_to.media_path) {
-          rContent = '<span class="lc-quote-media">📷 Foto</span>';
+          const n = attachmentsOf(msg.reply_to).length;
+          rContent = `<span class="lc-quote-media">📷 ${n > 1 ? n + ' ' : ''}Foto</span>`;
         } else if (msg.reply_to.message_type === 'video' && msg.reply_to.media_path) {
           rContent = '<span class="lc-quote-media">🎬 Video</span>';
         } else {
@@ -384,13 +443,7 @@
           </div>`;
       }
 
-      let mediaHtml = '';
-      if (msg.message_type === 'image' && msg.media_path) {
-        const imageUrl = `/media/${msg.media_path}`;
-        mediaHtml = `<button type="button" class="lc-msg-media lc-image-trigger" onclick="window.LiveChat.openImage(event, '${imageUrl}', ${msg.id})" aria-label="Buka gambar ukuran penuh"><img src="${imageUrl}" alt="Gambar yang dikirim di chat" loading="lazy"></button>`;
-      } else if (msg.message_type === 'video' && msg.media_path) {
-        mediaHtml = `<div class="lc-msg-media"><video src="/media/${msg.media_path}" controls preload="none"></video></div>`;
-      }
+      let mediaHtml = galleryHtml(msg, msg.id);
 
       const bubbleContent = msg.message
         ? `<div class="lc-msg-bubble">${escapeHtml(msg.message)}</div>`
@@ -624,20 +677,51 @@
     cancelMediaEditor();
 
     if (hasMedia) {
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
+      const imageItems = items.filter(it => it.type === 'image');
+      const videoItems = items.filter(it => it.type === 'video');
+
+      if (imageItems.length > 0) {
+        const tempId = Date.now();
+        addLoadingMsg(tempId, imageItems[0].file);
+        try {
+          const formData = new FormData();
+          formData.append('conversation_id', state.conversation.id);
+          formData.append('message_type', 'image');
+          const caption = imageItems.map(i => i.caption).find(c => c) || '';
+          if (caption) formData.append('message', caption);
+          if (replyId) formData.append('reply_to_message_id', replyId);
+          imageItems.forEach(fi => formData.append('media[]', fi.file));
+          const res = await fetch('/api/live-chat/messages', {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': getToken(), 'Accept': 'application/json' },
+            body: formData,
+          });
+          removeLoadingMsg(tempId);
+          if (!res.ok) {
+            showToast('Gagal mengirim gambar', 'error');
+          } else {
+            const msg = await res.json();
+            state.messages.push(msg);
+            appendUserMsg(msg);
+          }
+        } catch (e) { removeLoadingMsg(tempId); showToast('Gagal mengirim gambar', 'error'); }
+      }
+
+      for (let i = 0; i < videoItems.length; i++) {
+        const item = videoItems[i];
         const tempId = Date.now() + i;
         addLoadingMsg(tempId, item.file);
         try {
           const formData = new FormData();
           formData.append('conversation_id', state.conversation.id);
-          formData.append('message_type', item.type);
-          formData.append('media', item.file);
+          formData.append('message_type', 'video');
+          formData.append('media[]', item.file);
           if (item.caption) formData.append('message', item.caption);
           if (i === 0 && replyId) formData.append('reply_to_message_id', replyId);
-          if (item.type === 'video') {
-            const thumbBlob = await extractVideoThumb(item.file);
-            if (thumbBlob) formData.append('thumbnail', thumbBlob, 'thumb.jpg');
+          const thumbBlob = await extractVideoThumb(item.file);
+          if (thumbBlob) {
+            formData.append('thumbnail[]', thumbBlob, 'thumb.jpg');
+            formData.append('thumbnail_indexes[]', '0');
           }
           const res = await fetch('/api/live-chat/messages', {
             method: 'POST',
@@ -699,8 +783,10 @@
     state.replyToMsg = msg;
     const senderName = getSenderName(msg);
     let preview = '';
-    if (msg.message_type === 'image' && msg.media_path) preview = '📷 Foto';
-    else if (msg.message_type === 'video' && msg.media_path) preview = '🎬 Video';
+    if (msg.message_type === 'image') {
+      const n = attachmentsOf(msg).length;
+      preview = n > 1 ? `📷 ${n} Foto` : '📷 Foto';
+    } else if (msg.message_type === 'video') preview = '🎬 Video';
     else preview = escapeHtml((msg.message || '').substring(0, 80));
     const replyPreview = document.getElementById('lc-reply-preview');
     if (replyPreview) {
@@ -746,6 +832,25 @@
       console.error('LiveChat: delete error', e);
       showToast('Gagal menghapus pesan', 'error');
     }
+  }
+
+  function dismissActiveToast() {
+    if (!('serviceWorker' in navigator)) return;
+    const convId = state.conversation?.id;
+    if (!convId) return;
+    navigator.serviceWorker.ready
+      .then((reg) => {
+        if (!reg.getNotifications) return;
+        return reg.getNotifications().then((list) => {
+          list.forEach((notification) => {
+            if (notification.data?.conversationId === convId
+              || notification.data?.conversationId === String(convId)) {
+              notification.close();
+            }
+          });
+        });
+      })
+      .catch(() => {});
   }
 
   function startPolling() {
@@ -800,10 +905,26 @@
   }
 
   function openImage(event, imageUrl, messageId) {
-    event?.stopPropagation();
+    openLightbox([imageUrl], 0, messageId);
+  }
 
+  function openGallery(event, btn, messageId, startIndex) {
+    event?.stopPropagation();
+    let urls = [];
+    try { urls = JSON.parse(btn.dataset.urls || '[]'); } catch (e) {}
+    if (!urls.length) {
+      const msg = state.messages.find(m => m.id === messageId);
+      if (msg) urls = attachmentsOf(msg).map(a => `/media/${a.media_path}`);
+    }
+    if (!urls.length) return;
+    openLightbox(urls, startIndex || 0, messageId);
+  }
+
+  function openLightbox(urls, startIndex, messageId) {
     const existing = document.getElementById('lc-image-lightbox');
     if (existing) existing.remove();
+
+    let index = Math.max(0, Math.min(startIndex || 0, urls.length - 1));
 
     const lightbox = document.createElement('div');
     lightbox.id = 'lc-image-lightbox';
@@ -811,17 +932,45 @@
     lightbox.setAttribute('role', 'dialog');
     lightbox.setAttribute('aria-modal', 'true');
     lightbox.setAttribute('aria-label', 'Pratinjau gambar');
+    const hasMany = urls.length > 1;
+    const thumbsHtml = urls.map((u, i) =>
+      `<button type="button" class="lc-thumb${i === index ? ' active' : ''}" data-i="${i}" aria-label="Gambar ${i + 1}"><img src="${u}" alt="" loading="lazy"></button>`
+    ).join('');
     lightbox.innerHTML = `
       <div class="lc-image-lightbox-tools" aria-label="Aksi gambar">
         <button type="button" data-action="reply" title="Balas" aria-label="Balas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 9 5 14l5 5"/><path d="M5 14h9a5 5 0 0 1 5 5"/></svg></button>
         <button type="button" data-action="react" title="Beri reaksi" aria-label="Beri reaksi"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8 14s1.4 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/></svg></button>
         <button type="button" data-action="star" title="Beri bintang" aria-label="Beri bintang" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z"/></svg></button>
-        <a href="${imageUrl}" download title="Unduh" aria-label="Unduh gambar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11"/><path d="m8 10 4 4 4-4M5 20h14"/></svg></a>
+        <a id="lc-lightbox-download" href="${urls[index]}" download title="Unduh" aria-label="Unduh gambar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11"/><path d="m8 10 4 4 4-4M5 20h14"/></svg></a>
         <button type="button" data-action="close" title="Tutup" aria-label="Tutup gambar">×</button>
         <div class="lc-image-reactions" hidden><button type="button">👍</button><button type="button">❤️</button><button type="button">😂</button><button type="button">😮</button></div>
       </div>
-      <img src="${imageUrl}" alt="Gambar ukuran penuh">
+      <div class="lc-lightbox-stage">
+        ${hasMany ? '<button type="button" class="lc-lightbox-nav prev" data-nav="-1" aria-label="Sebelumnya">‹</button>' : ''}
+        <img id="lc-lightbox-img" src="${urls[index]}" alt="Gambar ukuran penuh">
+        ${hasMany ? '<button type="button" class="lc-lightbox-nav next" data-nav="1" aria-label="Berikutnya">›</button>' : ''}
+        ${hasMany ? '<div class="lc-lightbox-counter" id="lc-lightbox-counter">' + (index + 1) + ' / ' + urls.length + '</div>' : ''}
+        ${hasMany ? `<div class="lc-lightbox-thumbs">${thumbsHtml}</div>` : ''}
+      </div>
     `;
+
+    const img = lightbox.querySelector('#lc-lightbox-img');
+    const download = lightbox.querySelector('#lc-lightbox-download');
+    const thumbs = lightbox.querySelector('.lc-lightbox-thumbs');
+    let counter = null;
+    const updateThumbs = () => {
+      thumbs?.querySelectorAll('.lc-thumb').forEach((t, i) => {
+        t.classList.toggle('active', i === index);
+        if (i === index) t.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      });
+    };
+    const setIndex = (i) => {
+      index = (i + urls.length) % urls.length;
+      img.src = urls[index];
+      if (download) download.href = urls[index];
+      if (counter) counter.textContent = `${index + 1} / ${urls.length}`;
+      updateThumbs();
+    };
 
     let onKeydown;
     const close = () => {
@@ -829,7 +978,15 @@
       document.removeEventListener('keydown', onKeydown);
     };
     lightbox.addEventListener('click', (e) => {
-      if (e.target === lightbox) close();
+      if (e.target === lightbox || e.target.classList.contains('lc-lightbox-stage')) close();
+    });
+    const prev = lightbox.querySelector('.lc-lightbox-nav.prev');
+    const next = lightbox.querySelector('.lc-lightbox-nav.next');
+    prev?.addEventListener('click', () => setIndex(index - 1));
+    next?.addEventListener('click', () => setIndex(index + 1));
+    thumbs?.addEventListener('click', (e) => {
+      const t = e.target.closest('.lc-thumb');
+      if (t) setIndex(parseInt(t.dataset.i, 10));
     });
     lightbox.querySelector('[data-action="close"]')?.addEventListener('click', close);
     lightbox.querySelector('[data-action="reply"]')?.addEventListener('click', () => {
@@ -850,19 +1007,36 @@
       e.currentTarget.setAttribute('aria-pressed', String(active));
     });
     onKeydown = function(e) {
-      if (e.key === 'Escape') {
-        close();
-      }
+      if (e.key === 'Escape') { close(); return; }
+      if (hasMany && e.key === 'ArrowLeft') setIndex(index - 1);
+      if (hasMany && e.key === 'ArrowRight') setIndex(index + 1);
     };
     document.addEventListener('keydown', onKeydown);
     document.body.appendChild(lightbox);
+    counter = lightbox.querySelector('#lc-lightbox-counter');
     lightbox.querySelector('[data-action="close"]')?.focus();
+  }
+
+  function playVideoMessage(btn) {
+    const wrap = btn.closest('.lc-video-wrap');
+    if (!wrap) return;
+    const video = wrap.querySelector('video');
+    if (!video) return;
+    if (!video.dataset.lcVideoBound) {
+      video.dataset.lcVideoBound = '1';
+      video.addEventListener('play', () => btn.classList.add('is-hidden'));
+      video.addEventListener('pause', () => btn.classList.remove('is-hidden'));
+      video.addEventListener('ended', () => btn.classList.remove('is-hidden'));
+    }
+    btn.classList.add('is-hidden');
+    const pr = video.play();
+    if (pr && pr.catch) pr.catch(() => { btn.classList.remove('is-hidden'); });
   }
 
   window.LiveChat = {
     toggle, close, openChannel, backToList, onKeydown, autoResize,
     sendText, onFileSelect, cancelMediaEditor, setActiveIndex, navMedia, removeMediaItem, updateActiveCaption,
-    replyTo, cancelReply, deleteMsg, scrollToMsg, showMenu, updateBadge, openImage, showReactions, toggleStar, showDeleteOptions, hideForMe, closeMenus: closeAllMenus,
+    replyTo, cancelReply, deleteMsg, scrollToMsg, showMenu, updateBadge, openImage, openGallery, showReactions, toggleStar, showDeleteOptions, hideForMe, closeMenus: closeAllMenus, playVideoMessage,
   };
 
   document.addEventListener('DOMContentLoaded', function() {
@@ -875,5 +1049,21 @@
         closeAllMenus();
       }
     });
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('chat') === '1') {
+      state.isOpen = true;
+      const popup = document.getElementById('lc-popup');
+      const overlayEl = document.getElementById('lc-overlay');
+      popup?.classList.add('active');
+      overlayEl?.classList.add('active');
+      document.body.style.overflow = 'hidden';
+      const channel = params.get('channel');
+      if (channel && AUTH_USER) {
+        openChannel(channel).catch(function () {});
+      } else if (state.view === 'panel') {
+        fetchChannels();
+      }
+    }
   });
 })();

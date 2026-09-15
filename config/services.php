@@ -65,4 +65,15 @@ return [
         'channel' => env('PAYMENT_CHANNEL', 'qris'),
     ],
 
+    /**
+     * Web Push (VAPID) untuk notifikasi admin saat user mengirim live chat.
+     * Generate key: php artisan -r "echo json_encode(Minishlink\WebPush\VAPID::createVapidKeys());"
+     */
+    'vapid' => [
+        'subject' => env('VAPID_SUBJECT', 'mailto:admin@johen.com'),
+        'public_key' => env('VAPID_PUBLIC_KEY'),
+        'private_key' => env('VAPID_PRIVATE_KEY'),
+        'notif_brand' => env('VAPID_NOTIF_BRAND', 'Johen Gaming'),
+    ],
+
 ];

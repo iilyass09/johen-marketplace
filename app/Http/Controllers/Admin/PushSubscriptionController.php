@@ -1,0 +1,193 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\LiveChatConversation;
+use App\Models\LiveChatMessage;
+use App\Models\PushSubscription;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class PushSubscriptionController extends Controller
+{
+    public function subscribe(Request $request, string $guard): JsonResponse
+    {
+        $userId = Auth::guard('admin')->id();
+        if (! $userId) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        if (! in_array($guard, ['admin', 'lcadmin'], true)) {
+            return response()->json(['error' => 'Invalid guard'], 422);
+        }
+
+        return $this->storeSubscription($request, $userId, $guard);
+    }
+
+    public function unsubscribe(Request $request, string $guard): JsonResponse
+    {
+        $userId = Auth::guard('admin')->id();
+
+        if ($userId) {
+            $endpoint = $request->input('endpoint');
+            PushSubscription::query()
+                ->where('user_id', $userId)
+                ->where('guard', $guard)
+                ->when($endpoint, fn ($q) => $q->where('endpoint', $endpoint))
+                ->delete();
+        }
+
+        return response()->json(['ok' => true]);
+    }
+
+    protected function storeSubscription(Request $request, $userId, string $guard): JsonResponse
+    {
+        $valid = $request->validate([
+            'endpoint' => 'required|url',
+            'public_key' => 'required|string|max:2048',
+            'auth_token' => 'required|string|max:2048',
+        ]);
+
+        PushSubscription::updateOrCreate(
+            ['user_id' => $userId, 'guard' => $guard, 'endpoint' => $valid['endpoint']],
+            [
+                'public_key' => $valid['public_key'],
+                'auth_token' => $valid['auth_token'],
+                'user_agent' => substr($request->header('User-Agent', ''), 0, 2048),
+            ],
+        );
+
+        PushSubscription::query()
+            ->where('user_id', $userId)
+            ->where('guard', $guard)
+            ->where(function ($q) {
+                $q->whereNull('public_key')->orWhereNull('auth_token');
+            })
+            ->where('endpoint', '!=', $valid['endpoint'])
+            ->delete();
+
+        return response()->json(['ok' => true]);
+    }
+
+    public function subscribeWeb(Request $request): JsonResponse
+    {
+        $userId = Auth::guard('web')->id();
+        if (! $userId) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        return $this->storeSubscription($request, $userId, 'web');
+    }
+
+    public function unsubscribeWeb(Request $request): JsonResponse
+    {
+        $userId = Auth::guard('web')->id();
+
+        if ($userId) {
+            $endpoint = $request->input('endpoint');
+            PushSubscription::query()
+                ->where('user_id', $userId)
+                ->where('guard', 'web')
+                ->when($endpoint, fn ($q) => $q->where('endpoint', $endpoint))
+                ->delete();
+        }
+
+        return response()->json(['ok' => true]);
+    }
+
+    /**
+     * Fallback payload untuk push yang datang tanpa data terenkripsi.
+     * Service worker memanggil endpoint ini untuk menampilkan chat terbaru.
+     */
+    public function latestNotification(): JsonResponse
+    {
+        if (Auth::guard('web')->check()) {
+            return $this->latestForWeb();
+        }
+
+        if (Auth::guard('admin')->check()) {
+            return $this->latestForAdmin();
+        }
+
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
+
+    protected function latestForWeb(): JsonResponse
+    {
+        $conversation = LiveChatConversation::query()
+            ->with(['channel', 'lastMessage.sender'])
+            ->where('user_id', Auth::guard('web')->id())
+            ->where('user_unread_count', '>', 0)
+            ->orderByDesc('last_message_at')
+            ->first();
+
+        if (! $conversation || ! $conversation->lastMessage) {
+            return response()->json(['error' => 'Tidak ada pesan baru'], 404);
+        }
+
+        $channel = $conversation->channel;
+        $operator = $channel?->getActiveOperator();
+        $shown = $operator?->name ?? $conversation->lastMessage->sender?->name ?? 'Admin';
+
+        return response()->json([
+            'title' => $shown,
+            'body' => $this->messagePreview($conversation->lastMessage),
+            'url' => route('home').'?chat=1&channel='.urlencode((string) ($channel?->slug ?? '')),
+            'app_name' => config('services.vapid.notif_brand', 'Johen Gaming'),
+            'conversation_id' => $conversation->id,
+            'channel_slug' => $channel?->slug,
+            'target_guard' => 'web',
+            'icon' => asset('logo.png'),
+        ]);
+    }
+
+    protected function latestForAdmin(): JsonResponse
+    {
+        $admin = Auth::guard('admin')->user();
+        $guard = $admin && $admin->isLiveChatAdmin() ? 'lcadmin' : 'admin';
+
+        $query = LiveChatConversation::query()
+            ->with(['user', 'channel', 'lastMessage.sender'])
+            ->where('admin_unread_count', '>', 0)
+            ->orderByDesc('last_message_at');
+
+        if ($guard === 'lcadmin') {
+            $channelIds = $admin->assignedOperators()->pluck('channel_id');
+            $query->whereIn('channel_id', $channelIds);
+        }
+
+        $conversation = $query->first();
+
+        if (! $conversation || ! $conversation->lastMessage) {
+            return response()->json(['error' => 'Tidak ada pesan baru'], 404);
+        }
+
+        $url = $guard === 'lcadmin'
+            ? route('lcadmin.conversations.show', $conversation->id)
+            : route('admin.live-chat.conversations.show', $conversation->id);
+
+        return response()->json([
+            'title' => $conversation->user?->name ?? 'User',
+            'body' => $this->messagePreview($conversation->lastMessage),
+            'url' => $url,
+            'app_name' => config('services.vapid.notif_brand', 'Johen Gaming'),
+            'conversation_id' => $conversation->id,
+            'channel_slug' => $conversation->channel?->slug,
+            'target_guard' => $guard,
+            'icon' => asset('logo.png'),
+        ]);
+    }
+
+    protected function messagePreview(LiveChatMessage $message): string
+    {
+        return match ($message->message_type) {
+            'image' => $message->attachments()->count() > 0 ? '📷 '.$message->attachments()->count().' Foto' : '📷 Foto',
+            'video' => $message->attachments()->count() > 0 ? '🎬 '.$message->attachments()->count().' Video' : '🎬 Video',
+            default => $message->message && mb_strlen((string) $message->message) > 150
+                ? mb_substr((string) $message->message, 0, 150).'…'
+                : (string) $message->message,
+        };
+    }
+}

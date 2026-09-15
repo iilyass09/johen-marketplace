@@ -297,10 +297,25 @@
     width: 100%; max-height: 200px; object-fit: cover; display: block;
     border-radius: 8px;
 }
+.lc-msg-gallery { display: grid; gap: 3px; width: 100%; max-width: 260px; }
+.lc-grid-1 { grid-template-columns: minmax(0, 1fr); }
+.lc-grid-2, .lc-grid-3, .lc-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.lc-msg-gallery .lc-gallery-item { position: relative; overflow: hidden; padding: 0; border: 0; background: #0a0a12; cursor: zoom-in; }
+.lc-msg-gallery .lc-gallery-item img { width: 100%; height: 100%; object-fit: cover; display: block; max-height: none; border-radius: 0; }
+.lc-grid-1 .lc-gallery-item { display: block; }
+.lc-grid-1 .lc-gallery-item img { height: auto; max-height: 160px; border-radius: 8px; }
+.lc-grid-2 .lc-gallery-item, .lc-grid-3 .lc-gallery-item, .lc-grid-4 .lc-gallery-item { aspect-ratio: 1 / 1; }
+.lc-gallery-more { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.55); color: #fff; font-weight: 700; font-size: 20px; pointer-events: none; }
 .lc-msg-media video {
     width: 100%; max-height: 200px; object-fit: cover; display: block;
     border-radius: 8px;
 }
+.lc-msg-media video:fullscreen, .lc-msg-media video:-webkit-full-screen { width: 100vw; height: 100vh; max-height: none; object-fit: contain; background: #000; }
+.lc-video-wrap { position: relative; }
+.lc-video-play { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2; width: 44px; height: 44px; border: none; border-radius: 50%; background: rgba(0,0,0,.55); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .2s ease, transform .2s ease; }
+.lc-video-play svg { width: 20px; height: 20px; fill: #fff; margin-left: 2px; }
+.lc-video-play:hover { background: rgba(124,58,237,.85); transform: translate(-50%,-50%) scale(1.08); }
+.lc-video-play.is-hidden { display: none; }
 
 /* Reply quote */
 .lc-msg-quote {
@@ -519,6 +534,17 @@
 .lc-image-lightbox-tools .is-active { color: #facc15; }
 .lc-image-reactions { position: absolute; top: 48px; right: 44px; display: flex; gap: 4px; padding: 6px; border-radius: 14px; background: rgba(16,46,77,.96); box-shadow: 0 10px 30px rgba(0,0,0,.3); }
 .lc-image-reactions button { font-size: 18px; background: transparent; border: none; cursor: pointer; }
+.lc-lightbox-stage { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.lc-lightbox-stage img { max-width: 72%; max-height: 72%; }
+.lc-lightbox-nav { position: absolute; top: 50%; transform: translateY(-50%); z-index: 2; width: 42px; height: 42px; border: 0; border-radius: 50%; background: rgba(255,255,255,.14); color: #fff; font-size: 22px; line-height: 1; cursor: pointer; display: grid; place-items: center; }
+.lc-lightbox-nav.prev { left: 10px; }
+.lc-lightbox-nav.next { right: 10px; }
+.lc-lightbox-nav:hover { background: rgba(255,255,255,.25); }
+.lc-lightbox-counter { position: absolute; bottom: 92px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.5); color: #fff; padding: 4px 14px; border-radius: 999px; font-size: 12px; z-index: 2; }
+.lc-lightbox-thumbs { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; padding: 6px; border-radius: 12px; background: rgba(0,0,0,.55); max-width: 88%; overflow-x: auto; z-index: 2; }
+.lc-lightbox-thumbs .lc-thumb { flex: 0 0 auto; width: 46px; height: 46px; padding: 0; border: 2px solid transparent; border-radius: 8px; overflow: hidden; background: #000; cursor: pointer; }
+.lc-lightbox-thumbs .lc-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.lc-lightbox-thumbs .lc-thumb.active { border-color: #a78bfa; }
 
 /* Highlight animation */
 @keyframes lcHighlight { 0% { background: rgba(63,109,245,.25); } 100% { background: transparent; } }
@@ -749,6 +775,22 @@ function addLoadingMsg(tempId, file) {
     container.scrollTop = container.scrollHeight;
 }
 
+function addLoadingThumbMsg(tempId, file, count) {
+    const container = document.getElementById('lcMessages');
+    if (!container) return;
+    const empty = container.querySelector('div[style*="text-align:center"]');
+    if (empty) empty.remove();
+    const url = URL.createObjectURL(file);
+    const tiles = [];
+    for (let i = 0; i < Math.min(count, 4); i++) {
+        tiles.push(`<span class="lc-gallery-item" style="display:inline-block;aspect-ratio:1/1;overflow:hidden;background:#0a0a12"><img src="${url}" alt="" style="width:100%;height:100%;object-fit:cover"></span>`);
+    }
+    const counterEl = count > 4 ? `<span class="lc-gallery-more">+${count - 4}</span>` : '';
+    container.insertAdjacentHTML('beforeend', `<div class="lc-msg lc-msg-admin" data-msg-id="temp-${tempId}" data-temp="1"><div class="lc-msg-body"><div class="lc-msg-media lc-msg-gallery lc-grid-${Math.min(count, 4)}"><span style="position:relative;display:grid;grid-template-columns:repeat(${Math.min(count, 4) === 1 ? 1 : 2}, minmax(0,1fr));gap:3px">${tiles.slice(0, 4).join('')}${counterEl}</span></div></div></div>`);
+    URL.revokeObjectURL(url);
+    container.scrollTop = container.scrollHeight;
+}
+
 function removeLoadingMsg(tempId) {
     const el = document.querySelector(`[data-msg-id="temp-${tempId}"]`);
     if (el) el.remove();
@@ -757,21 +799,58 @@ function removeLoadingMsg(tempId) {
 function extractVideoThumb(file) {
     return new Promise(resolve => {
         const video = document.createElement('video');
-        video.preload = 'metadata';
+        video.preload = 'auto';
         video.muted = true;
         video.playsInline = true;
+        video.crossOrigin = 'anonymous';
         const url = URL.createObjectURL(file);
         video.src = url;
-        video.onloadeddata = () => { video.currentTime = Math.min(1, video.duration * 0.1); };
-        video.onseeked = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth || 320;
-            canvas.height = video.videoHeight || 180;
-            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-            canvas.toBlob(blob => { URL.revokeObjectURL(url); resolve(blob); }, 'image/jpeg', 0.6);
+
+        let done = false;
+        const finish = (blob) => {
+            if (done) return;
+            done = true;
+            URL.revokeObjectURL(url);
+            resolve(blob);
         };
-        video.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
-        setTimeout(() => { URL.revokeObjectURL(url); resolve(null); }, 5000);
+
+        const timeout = setTimeout(() => finish(null), 8000);
+
+        video.addEventListener('loadedmetadata', () => {
+            try {
+                const dur = video.duration;
+                const isLive = !isFinite(dur) || dur <= 0;
+                const target = isLive ? 1 : Math.max(0, Math.min(1, dur - 0.05));
+                video.currentTime = target;
+                if (video.paused) {
+                    video.play().catch(() => {});
+                }
+            } catch (e) {
+                clearTimeout(timeout);
+                finish(null);
+            }
+        }, { once: true });
+
+        video.addEventListener('seeked', () => {
+            clearTimeout(timeout);
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth || 320;
+                canvas.height = video.videoHeight || 180;
+                canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+                canvas.toBlob(blob => finish(blob), 'image/jpeg', 0.6);
+                if (!video.paused) {
+                    video.pause();
+                }
+            } catch (e) {
+                finish(null);
+            }
+        }, { once: true });
+
+        video.addEventListener('error', () => {
+            clearTimeout(timeout);
+            finish(null);
+        }, { once: true });
     });
 }
 
@@ -873,6 +952,30 @@ async function pollNew() {
     } catch (e) {}
 }
 
+function attachmentsOfMsg(msg) {
+    if (msg.attachments && msg.attachments.length) return msg.attachments;
+    if (msg.media_path) return [{ media_path: msg.media_path, poster_path: msg.poster_path || null, media_mime: msg.media_mime || null }];
+    return [];
+}
+
+function galleryHtml(msg) {
+    const atts = attachmentsOfMsg(msg);
+    if (!atts.length) return '';
+    const gridCls = atts.length === 1 ? 'lc-msg-media lc-msg-gallery lc-grid-1'
+        : atts.length === 2 ? 'lc-msg-media lc-msg-gallery lc-grid-2'
+        : atts.length === 3 ? 'lc-msg-media lc-msg-gallery lc-grid-3'
+        : 'lc-msg-media lc-msg-gallery lc-grid-4';
+    const urlsJson = JSON.stringify(atts.map(a => `/media/${a.media_path}`)).replace(/"/g, '&quot;');
+    const visible = atts.slice(0, 4);
+    const hiddenCount = atts.length - 4;
+    const tiles = visible.map((a, i) => {
+        const url = `/media/${a.media_path}`;
+        const more = (i === 3 && hiddenCount > 0) ? `<span class="lc-gallery-more">+${hiddenCount}</span>` : '';
+        return `<button type="button" class="lc-gallery-item" data-urls="${urlsJson}" onclick="openGallery(event, this, ${msg.id}, ${i})" aria-label="Buka gambar ukuran penuh"><img src="${url}" alt="Gambar" loading="lazy">${more}</button>`;
+    }).join('');
+    return `<div class="${gridCls}">${tiles}</div>`;
+}
+
 function appendMsg(msg) {
     const container = document.getElementById('lcMessages');
     const empty = container.querySelector('div[style*="text-align:center"]');
@@ -904,12 +1007,11 @@ function appendMsg(msg) {
     }
 
     let mediaHtml = '';
-    if (msg.message_type === 'image' && msg.media_path) {
-        const imageUrl = `/media/${msg.media_path}`;
-        mediaHtml = `<button type="button" class="lc-msg-media lc-image-trigger" onclick="openImage(event, '${imageUrl}', ${msg.id})"><img src="${imageUrl}" alt="Gambar" loading="lazy"></button>`;
+    if (msg.message_type === 'image' && (msg.media_path || (msg.attachments && msg.attachments.length))) {
+        mediaHtml = galleryHtml(msg);
     } else if (msg.message_type === 'video' && msg.media_path) {
         const posterAttr = msg.poster_path ? ` poster="/media/${msg.poster_path}"` : '';
-        mediaHtml = `<div class="lc-msg-media"><video src="/media/${msg.media_path}" controls preload="none"${posterAttr}></video></div>`;
+        mediaHtml = `<div class="lc-msg-media lc-video-wrap"><button type="button" class="lc-video-play" onclick="playVideoMessage(this)" aria-label="Putar video"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button><video src="/media/${msg.media_path}" controls preload="none"${posterAttr}></video></div>`;
     }
 
     const bubbleContent = msg.message ? `<div class="lc-bubble">${esc(msg.message)}</div>` : '';
@@ -931,6 +1033,22 @@ function appendMsg(msg) {
 }
 
 function esc(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+
+function playVideoMessage(btn) {
+    const wrap = btn.closest('.lc-video-wrap');
+    if (!wrap) return;
+    const video = wrap.querySelector('video');
+    if (!video) return;
+    if (!video.dataset.lcVideoBound) {
+        video.dataset.lcVideoBound = '1';
+        video.addEventListener('play', () => btn.classList.add('is-hidden'));
+        video.addEventListener('pause', () => btn.classList.remove('is-hidden'));
+        video.addEventListener('ended', () => btn.classList.remove('is-hidden'));
+    }
+    btn.classList.add('is-hidden');
+    const pr = video.play();
+    if (pr && pr.catch) pr.catch(() => { btn.classList.remove('is-hidden'); });
+}
 
 function scrollToMsg(id) {
     const el = document.querySelector(`[data-msg-id="${id}"]`);
@@ -1049,24 +1167,79 @@ async function deleteMsg(id) {
 
 /* ---- IMAGE LIGHTBOX ---- */
 function openImage(event, imageUrl, messageId) {
+    openLightbox([imageUrl], 0, messageId);
     event?.stopPropagation();
+}
+function openGallery(event, btn, messageId, startIndex) {
+    let urls = [];
+    try { urls = JSON.parse(btn.dataset.urls || '[]'); } catch (e) {}
+    event?.stopPropagation();
+    if (!urls.length) return;
+    openLightbox(urls, startIndex || 0, messageId);
+}
+function openLightbox(urls, startIndex, messageId) {
     const existing = document.getElementById('lc-image-lightbox');
     if (existing) existing.remove();
+
+    let index = Math.max(0, Math.min(startIndex || 0, urls.length - 1));
+    const hasMany = urls.length > 1;
+    const thumbsHtml = urls.map((u, i) =>
+        `<button type="button" class="lc-thumb${i === index ? ' active' : ''}" data-i="${i}" aria-label="Gambar ${i + 1}"><img src="${u}" alt="" loading="lazy"></button>`
+    ).join('');
     const lightbox = document.createElement('div');
     lightbox.id = 'lc-image-lightbox';
     lightbox.className = 'lc-image-lightbox';
     lightbox.innerHTML = `
         <div class="lc-image-lightbox-tools">
             <button data-action="reply" title="Balas" onclick="closeLightbox();replyTo(${messageId})"><svg viewBox="0 0 24 24"><path d="M10 9 5 14l5 5"/><path d="M5 14h9a5 5 0 0 1 5 5"/></svg></button>
-            <a href="${imageUrl}" download title="Unduh"><svg viewBox="0 0 24 24"><path d="M12 3v11"/><path d="m8 10 4 4 4-4M5 20h14"/></svg></a>
+            <a id="lc-lightbox-download" href="${urls[index]}" download title="Unduh"><svg viewBox="0 0 24 24"><path d="M12 3v11"/><path d="m8 10 4 4 4-4M5 20h14"/></svg></a>
             <button data-action="close" title="Tutup" onclick="closeLightbox()">\u00D7</button>
         </div>
-        <img src="${imageUrl}" alt="Gambar ukuran penuh">`;
-    lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
-    document.addEventListener('keydown', function lcEsc(e) { if (e.key === 'Escape') { closeLightbox(); document.removeEventListener('keydown', lcEsc); } });
+        <div class="lc-lightbox-stage">
+            ${hasMany ? '<button type="button" class="lc-lightbox-nav prev" data-nav="-1" aria-label="Sebelumnya">\u2039</button>' : ''}
+            <img id="lc-lightbox-img" src="${urls[index]}" alt="Gambar ukuran penuh">
+            ${hasMany ? '<button type="button" class="lc-lightbox-nav next" data-nav="1" aria-label="Berikutnya">\u203A</button>' : ''}
+            ${hasMany ? '<div class="lc-lightbox-counter">' + (index + 1) + ' / ' + urls.length + '</div>' : ''}
+            ${hasMany ? `<div class="lc-lightbox-thumbs">${thumbsHtml}</div>` : ''}
+        </div>`;
+
+    const img = lightbox.querySelector('#lc-lightbox-img');
+    const download = lightbox.querySelector('#lc-lightbox-download');
+    const thumbs = lightbox.querySelector('.lc-lightbox-thumbs');
+    let counter = lightbox.querySelector('.lc-lightbox-counter');
+    let onKeydown;
+    const updateThumbs = () => {
+        thumbs?.querySelectorAll('.lc-thumb').forEach((t, i) => {
+            t.classList.toggle('active', i === index);
+            if (i === index) t.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        });
+    };
+    const setIndex = (i) => {
+        index = (i + urls.length) % urls.length;
+        img.src = urls[index];
+        if (download) download.href = urls[index];
+        if (counter) counter.textContent = `${index + 1} / ${urls.length}`;
+        updateThumbs();
+    };
+    lightbox.querySelector('.lc-lightbox-nav.prev')?.addEventListener('click', () => setIndex(index - 1));
+    lightbox.querySelector('.lc-lightbox-nav.next')?.addEventListener('click', () => setIndex(index + 1));
+    thumbs?.addEventListener('click', (e) => {
+        const t = e.target.closest('.lc-thumb');
+        if (t) setIndex(parseInt(t.dataset.i, 10));
+    });
+    lightbox.addEventListener('click', (e) => { if (e.target === lightbox || e.target.classList.contains('lc-lightbox-stage')) closeLightbox(); });
+    onKeydown = (e) => {
+        if (e.key === 'Escape') { closeLightbox(); document.removeEventListener('keydown', onKeydown); }
+        if (hasMany && e.key === 'ArrowLeft') setIndex(index - 1);
+        if (hasMany && e.key === 'ArrowRight') setIndex(index + 1);
+    };
+    document.addEventListener('keydown', onKeydown);
     document.body.appendChild(lightbox);
 }
-function closeLightbox() { const lb = document.getElementById('lc-image-lightbox'); if (lb) lb.remove(); }
+function closeLightbox() {
+    const lb = document.getElementById('lc-image-lightbox');
+    if (lb) lb.remove();
+}
 
 /* ---- MEDIA EDITOR (WhatsApp-style) ---- */
 function handleFileSelect(e) {
@@ -1186,19 +1359,44 @@ async function sendText() {
     cancelReply();
 
     if (hasMedia) {
-        for (let i = 0; i < items.length; i++) {
-            const item = items[i];
+        const imageItems = items.filter(it => it.type === 'image');
+        const videoItems = items.filter(it => it.type !== 'image');
+
+        if (imageItems.length > 0) {
+            const tempId = Date.now();
+            addLoadingThumbMsg(tempId, imageItems[0].file, imageItems.length);
+            const caption = imageItems.find(it => it.caption)?.caption || '';
+            try {
+                const fd = new FormData();
+                fd.append('message_type', 'image');
+                if (caption) fd.append('message', caption);
+                if (replyId) fd.append('reply_to_message_id', replyId);
+                imageItems.forEach(it => fd.append('media[]', it.file));
+                const res = await fetch(`/lcadmin/conversations/${activeConvId}/reply`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    body: fd
+                });
+                removeLoadingMsg(tempId);
+                if (!res.ok) { showToast('Gagal mengirim gambar', 'error'); }
+                else appendMsg(await res.json());
+            } catch (e) { removeLoadingMsg(tempId); showToast('Gagal mengirim gambar', 'error'); }
+        }
+
+        for (let i = 0; i < videoItems.length; i++) {
+            const item = videoItems[i];
             const tempId = Date.now() + i;
             addLoadingMsg(tempId, item.file);
             try {
                 const fd = new FormData();
-                fd.append('message_type', item.type);
-                fd.append('media', item.file);
+                fd.append('message_type', 'video');
+                fd.append('media[]', item.file);
                 if (item.caption) fd.append('message', item.caption);
                 if (i === 0 && replyId) fd.append('reply_to_message_id', replyId);
-                if (item.type === 'video') {
-                    const thumbBlob = await extractVideoThumb(item.file);
-                    if (thumbBlob) fd.append('thumbnail', thumbBlob, 'thumb.jpg');
+                const thumbBlob = await extractVideoThumb(item.file);
+                if (thumbBlob) {
+                    fd.append('thumbnail[]', thumbBlob, 'thumb.jpg');
+                    fd.append('thumbnail_indexes[]', '0');
                 }
                 const res = await fetch(`/lcadmin/conversations/${activeConvId}/reply`, {
                     method: 'POST',

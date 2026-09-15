@@ -9,7 +9,9 @@ use App\Models\LiveChatMessageReaction;
 use App\Models\LiveChatMessageStar;
 use App\Models\LiveChatMessageHiddenUser;
 use App\Models\User;
+use App\Services\LiveChatMedia;
 use App\Services\MediaStore;
+use App\Services\PushService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -90,7 +92,7 @@ class LiveChatController extends Controller
         $afterId = $request->input('after');
         $query = LiveChatMessage::where('conversation_id', $conversation->id)
             ->whereDoesntHave('hiddenUsers', fn ($hidden) => $hidden->where('user_id', $userId))
-            ->with(['sender', 'replyTo', 'reactions', 'stars']);
+            ->with(['sender', 'replyTo', 'reactions', 'stars', 'attachments']);
 
         if ($afterId) {
             $query->where('id', '>', $afterId);
@@ -108,8 +110,12 @@ class LiveChatController extends Controller
             'message_type' => 'required|in:text,image,video',
             'message' => 'nullable|string|max:5000',
             'reply_to_message_id' => 'nullable|exists:live_chat_messages,id',
-            'media' => 'required_if:message_type,image,video|file|max:1048576|mimes:jpg,jpeg,png,gif,webp,mp4,mov,avi,mkv,webm,flv,3gp',
-            'thumbnail' => 'nullable|file|max:5120|mimes:jpg,jpeg,png,webp',
+            'media' => 'nullable|array',
+            'media.*' => 'file|max:1048576|mimes:jpg,jpeg,png,gif,webp,mp4,mov,avi,mkv,webm,flv,3gp',
+            'thumbnail' => 'nullable|array',
+            'thumbnail.*' => 'file|max:5120|mimes:jpg,jpeg,png,webp',
+            'thumbnail_indexes' => 'nullable|array',
+            'thumbnail_indexes.*' => 'integer|min:0',
         ]);
 
         $userId = Auth::id();
@@ -117,6 +123,11 @@ class LiveChatController extends Controller
 
         if ($conversation->user_id !== $userId) {
             return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $files = $request->file('media', []);
+        if ($request->message_type !== 'text' && empty($files)) {
+            return response()->json(['errors' => ['media' => ['Media wajib diisi.']]], 422);
         }
 
         $data = [
@@ -128,21 +139,22 @@ class LiveChatController extends Controller
             'reply_to_message_id' => $request->reply_to_message_id,
         ];
 
-        if ($request->hasFile('media')) {
-            $file = $request->file('media');
-            $path = $file->store('live-chat/media', 'public');
-            $data['media_path'] = $path;
-            $data['media_name'] = $file->getClientOriginalName();
-            $data['media_mime'] = $file->getMimeType();
-            $data['media_size'] = $file->getSize();
-        }
-
-        if ($request->hasFile('thumbnail')) {
-            $thumbPath = $request->file('thumbnail')->store('live-chat/media', 'public');
-            $data['poster_path'] = $thumbPath;
-        }
-
         $message = LiveChatMessage::create($data);
+
+        if (!empty($files)) {
+            $posterFiles = [];
+            foreach ((array) $request->input('thumbnail_indexes', []) as $key => $index) {
+                $thumb = $request->file('thumbnail')[$key] ?? null;
+                if ($thumb) {
+                    $posterFiles[(int) $index] = $thumb;
+                }
+            }
+            $rows = LiveChatMedia::storeBatch($files, $posterFiles);
+            $message->attachments()->createMany($rows);
+            LiveChatMedia::applyCompatColumns($message, $rows);
+        }
+
+        $lastInteraction = $conversation->last_message_at;
 
         $conversation->update([
             'last_message_at' => now(),
@@ -151,7 +163,6 @@ class LiveChatController extends Controller
 
         $channel = $conversation->channel;
         $operator = $channel->getActiveOperator();
-        $lastInteraction = $conversation->last_message_at;
         $shouldAutoReply = !$lastInteraction || $lastInteraction->diffInMinutes(now()) >= 60;
 
         if ($operator && $shouldAutoReply) {
@@ -173,9 +184,41 @@ class LiveChatController extends Controller
             ]);
         }
 
-        $message->load('sender', 'replyTo', 'reactions', 'stars');
+        $message->load('sender', 'replyTo', 'reactions', 'stars', 'attachments');
+
+        $this->notifyAdmins($message, $conversation, $request->message_type);
 
         return response()->json($message);
+    }
+
+    protected function notifyAdmins(LiveChatMessage $message, LiveChatConversation $conversation, string $messageType): void
+    {
+        try {
+            $user = Auth::user();
+            $userName = $user?->name ?: 'User';
+            $attachmentCount = (int) $message->attachments()->count();
+
+            $body = match ($messageType) {
+                'image' => $attachmentCount > 0 ? "📷 {$attachmentCount} Foto" : '📷 Foto',
+                'video' => $attachmentCount > 0 ? "🎬 {$attachmentCount} Video" : '🎬 Video',
+                default => mb_strlen((string) $message->message) > 150
+                    ? mb_substr((string) $message->message, 0, 150).'…'
+                    : (string) $message->message,
+            };
+
+            app(PushService::class)->sendToTargets([
+                ['guard' => 'admin', 'url' => route('admin.live-chat.conversations.show', $conversation->id)],
+                ['guard' => 'lcadmin', 'url' => route('lcadmin.conversations.show', $conversation->id)],
+            ], $userName, $body, [
+                'tag' => 'conv-'.$conversation->id.'-msg-'.$message->id,
+                'msg_id' => $message->id,
+                'icon' => $user?->avatar ? media_url($user->avatar) : asset('logo.png'),
+                'conversation_id' => $conversation->id,
+                'channel_slug' => $conversation->channel?->slug,
+            ]);
+        } catch (\Throwable) {
+            // Push tidak boleh menggagalkan kirim pesan.
+        }
     }
 
     public function uploadMedia(Request $request): JsonResponse
@@ -186,6 +229,7 @@ class LiveChatController extends Controller
 
         $file = $request->file('media');
         $path = $file->store('live-chat/media', 'public');
+        MediaStore::import($path);
 
         return response()->json([
             'path' => $path,

@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\LiveChatChatController;
 use App\Http\Controllers\Admin\LiveChatConversationController;
 use App\Http\Controllers\Admin\LiveChatDashboardController;
 use App\Http\Controllers\Admin\LiveChatOperatorController;
+use App\Http\Controllers\Admin\PushSubscriptionController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LiveChatController;
@@ -34,6 +35,8 @@ Route::get('/api/orders/check', [HomeController::class, 'checkOrder'])->name('ap
 Route::get('/api/account/check', [HomeController::class, 'checkAccount'])
     ->name('api.account.check')
     ->middleware('throttle:30,1');
+Route::get('/api/push/latest-message', [PushSubscriptionController::class, 'latestNotification'])
+    ->name('api.push.latest-message');
 Route::get('/games/{brand:name}', [HomeController::class, 'gameDetail'])->name('games.show');
 Route::get('/cek-transaksi', [HomeController::class, 'checkTransaction'])->name('check.transaction');
 Route::get('/jual-beli-akun', [App\Http\Controllers\HomeController::class, 'jualBeliAkun'])->name('jual-beli-akun');
@@ -204,6 +207,9 @@ Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->gro
     Route::patch('/live-chat/conversations/{conversation}/reopen', [LiveChatConversationController::class, 'reopen'])->name('live-chat.conversations.reopen');
     Route::delete('/live-chat/messages/{message}', [LiveChatChatController::class, 'deleteMessage'])->name('live-chat.messages.delete');
 
+    Route::post('/push/{guard}/subscribe', [PushSubscriptionController::class, 'subscribe'])->whereIn('guard', ['admin', 'lcadmin'])->name('push.subscribe');
+    Route::post('/push/{guard}/unsubscribe', [PushSubscriptionController::class, 'unsubscribe'])->whereIn('guard', ['admin', 'lcadmin'])->name('push.unsubscribe');
+
     Route::get('/live-chat/operators', [LiveChatOperatorController::class, 'index'])->name('live-chat.operators');
     Route::post('/live-chat/operators', [LiveChatOperatorController::class, 'store'])->name('live-chat.operators.store');
     Route::patch('/live-chat/operators/{operator}/toggle', [LiveChatOperatorController::class, 'toggle'])->name('live-chat.operators.toggle');
@@ -227,6 +233,9 @@ Route::middleware(['auth:admin', 'live-chat-admin'])->prefix('lcadmin')->name('l
             Route::delete('/conversations/{conversation}', [LCAdminConversationController::class, 'deleteConversation'])->name('conversations.delete');
             Route::get('/conversations/{conversation}/messages', [LCAdminConversationController::class, 'loadMessages'])->name('conversations.messages');
     Route::delete('/messages/{message}', [LCAdminConversationController::class, 'deleteMessage'])->name('messages.delete');
+
+    Route::post('/push/{guard}/subscribe', [PushSubscriptionController::class, 'subscribe'])->whereIn('guard', ['admin', 'lcadmin'])->name('push.subscribe');
+    Route::post('/push/{guard}/unsubscribe', [PushSubscriptionController::class, 'unsubscribe'])->whereIn('guard', ['admin', 'lcadmin'])->name('push.unsubscribe');
 });
 
 Route::middleware(['auth:web'])->prefix('api')->name('api.')->group(function () {
@@ -241,6 +250,9 @@ Route::middleware(['auth:web'])->prefix('api')->name('api.')->group(function () 
     Route::post('/live-chat/messages/{message}/hide', [LiveChatController::class, 'hideMessage'])->name('live-chat.messages.hide');
     Route::post('/live-chat/messages/{message}/reaction', [LiveChatController::class, 'toggleReaction'])->name('live-chat.messages.reaction');
     Route::post('/live-chat/messages/{message}/star', [LiveChatController::class, 'toggleStar'])->name('live-chat.messages.star');
+
+    Route::post('/push/subscribe', [PushSubscriptionController::class, 'subscribeWeb'])->name('push.subscribe');
+    Route::post('/push/unsubscribe', [PushSubscriptionController::class, 'unsubscribeWeb'])->name('push.unsubscribe');
 });
 
 Route::get('/admin/login', [AdminAuthController::class, 'showLoginForm'])
