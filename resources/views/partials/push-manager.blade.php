@@ -5,7 +5,7 @@
     $testUrl = $testUrl ?? null;
     $vapidKey = config('services.vapid.public_key');
     $vapidPrivate = config('services.vapid.private_key');
-    $swUrl = '/service-worker.js?v=20260915-10';
+    $swUrl = '/service-worker.js?v=20260916-notifclick';
 @endphp
 @if ($vapidKey && $vapidPrivate)
 <script>

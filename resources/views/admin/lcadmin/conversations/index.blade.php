@@ -1,6 +1,20 @@
 @extends('admin.layouts.lcadmin')
 @section('title', 'Live Chat')
 
+@section('topbar')
+@endsection
+
+@php
+    $adminUser = Auth::guard('admin')->user();
+    $primaryChannel = $adminUser->assignedOperators()->with('channel')->first()?->channel;
+    $channelName = $primaryChannel?->name ?? '';
+    $liveChatAdmin = null;
+    if ($primaryChannel) {
+        $liveChatAdmin = \App\Models\LiveChatAdmin::where('channel_id', $primaryChannel->id)->first();
+    }
+    $adminPhoto = $liveChatAdmin && $liveChatAdmin->photo_path ? asset('storage/' . $liveChatAdmin->photo_path) : null;
+@endphp
+
 @push('styles')
 <style>
 .lc-container {
@@ -14,15 +28,15 @@
 
 /* SIDEBAR */
 .lc-sidebar {
-    width: 350px;
-    min-width: 350px;
+    width: 600px;
+    min-width: 600px;
     border-right: 1px solid #1A4168;
     display: flex;
     flex-direction: column;
     background: #102E4D;
 }
 .lc-sidebar-header {
-    padding: 20px 16px 14px;
+    padding: 14px 16px 14px;
     border-bottom: 1px solid #1A4168;
 }
 .lc-sidebar-header h2 {
@@ -506,6 +520,59 @@
 }
 .lc-composer-attach:hover { background: rgba(63,109,245,0.08); }
 
+/* Attachment Menu (WhatsApp-style, muncul ke atas) */
+.lc-attach-wrap { position: relative; flex-shrink: 0; }
+.lc-attach-menu {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 0;
+    min-width: 210px;
+    padding: 6px;
+    background: #1b1f24;
+    border: 1px solid rgba(245,247,251,0.08);
+    border-radius: 12px;
+    box-shadow: 0 12px 32px -8px rgba(0,0,0,0.55);
+    z-index: 2100;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(6px);
+    transition: opacity .18s ease, transform .18s ease;
+}
+.lc-attach-menu.open {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+.lc-attach-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    height: 42px;
+    padding: 0 14px;
+    border: none;
+    background: none;
+    border-radius: 8px;
+    color: rgba(245,247,251,0.92);
+    font-size: 13px;
+    font-weight: 500;
+    font-family: 'Poppins', sans-serif;
+    text-align: left;
+    cursor: pointer;
+    transition: background .15s ease;
+}
+.lc-attach-item:hover { background: rgba(255,255,255,0.08); }
+.lc-attach-icon {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.lc-attach-doc .lc-attach-icon { background: rgba(139,92,246,0.16); color: #a78bfa; }
+.lc-attach-photo .lc-attach-icon { background: rgba(59,130,246,0.16); color: #60a5fa; }
+.lc-attach-camera .lc-attach-icon { background: rgba(236,72,153,0.16); color: #f472b6; }
+.lc-attach-audio .lc-attach-icon { background: rgba(249,115,22,0.16); color: #fb923c; }
+
 /* Image Lightbox */
 .lc-image-lightbox {
     position: fixed; inset: 0; z-index: 10050;
@@ -559,7 +626,7 @@
 }
 
 /* Responsive */
-@media (max-width: 900px) { .lc-sidebar { width: 280px; min-width: 280px; } }
+@media (max-width: 900px) { .lc-sidebar { width: 460px; min-width: 460px; } }
 @media (max-width: 768px) {
     .lc-container { flex-direction: column; height: 100%; }
     .lc-sidebar { width: 100%; min-width: 0; border-right: none; border-bottom: 1px solid #1A4168; overflow-y: auto; }
@@ -625,8 +692,34 @@
 <div class="lc-container">
     <!-- LEFT: SIDEBAR -->
     <div class="lc-sidebar" id="lcSidebar">
+        <div class="lc-topbar" style="height:auto;padding:14px 16px;border-bottom:none;flex-shrink:0">
+            <div class="lc-topbar-left">
+                @if($adminPhoto)
+                    <img src="{{ $adminPhoto }}" alt="{{ $channelName }}" class="lc-topbar-logo">
+                @else
+                    <img src="{{ asset('logo.png') }}" alt="Johen" class="lc-topbar-logo">
+                @endif
+                <div class="lc-topbar-title">Live <span>Chat</span> {{ $channelName }}</div>
+            </div>
+            <div class="lc-topbar-right">
+                <div class="lc-topbar-profile" id="lcProfile" onclick="this.classList.toggle('open')">
+                    @if($adminPhoto)
+                        <img src="{{ $adminPhoto }}" alt="{{ $adminUser->name }}" class="lc-topbar-avatar">
+                    @else
+                        <div class="lc-topbar-avatar">{{ substr($adminUser->name, 0, 1) }}</div>
+                    @endif
+                    <span class="lc-topbar-name">{{ $adminUser->name }}</span>
+                    <i class="fas fa-chevron-down lc-topbar-chevron"></i>
+                    <div class="lc-topbar-dropdown">
+                        <form method="POST" action="{{ route('admin.logout') }}">
+                            @csrf
+                            <button type="submit"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="lc-sidebar-header">
-            <h2>Live Chat</h2>
             <div class="lc-search">
                 <i class="fas fa-search lc-search-icon"></i>
                 <input type="text" placeholder="Cari user..." id="lcSearch" oninput="filterList()">
@@ -708,10 +801,6 @@
                         <span class="lc-header-meta" id="rMeta"></span>
                     </div>
                 </div>
-                <div class="lc-header-actions">
-                    <button class="btn btn-sm btn-ghost" id="rCloseBtn" onclick="closeConv()" style="border-color:#1A4168;color:#8FA8C4;font-size:12px">Tutup</button>
-                    <button class="btn btn-sm" id="rReopenBtn" onclick="reopenConv()" style="display:none;background:#36C98F;color:#fff;font-size:12px">Buka Kembali</button>
-                </div>
             </div>
             <div class="lc-messages" id="lcMessages"></div>
             <div class="lc-reply-preview" id="lcReplyPreview" style="display:none"></div>
@@ -735,9 +824,32 @@
             </div>
             <div class="lc-composer" id="lcComposer">
                 <input type="file" id="lcFileInput" accept="image/*,video/*" multiple style="display:none" onchange="handleFileSelect(event)">
-                <button class="lc-composer-attach" onclick="document.getElementById('lcFileInput').click()" title="Kirim gambar/video">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
-                </button>
+                <input type="file" id="lcDocInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar,.7z" multiple style="display:none" onchange="handleFileSelect(event)">
+                <input type="file" id="lcPhotoInput" accept="image/*" capture="environment" style="display:none" onchange="handleFileSelect(event)">
+                <input type="file" id="lcAudioInput" accept="audio/*" style="display:none" onchange="handleFileSelect(event)">
+                <div class="lc-attach-wrap" id="lcAttachWrap">
+                    <button class="lc-composer-attach" id="lcAttachBtn" onclick="toggleAttachMenu(event)" title="Lampiran">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+                    </button>
+                    <div class="lc-attach-menu" id="lcAttachMenu" role="menu">
+                        <button class="lc-attach-item lc-attach-doc" onclick="attachAction('doc')">
+                            <span class="lc-attach-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>
+                            <span class="lc-attach-label">Dokumen</span>
+                        </button>
+                        <button class="lc-attach-item lc-attach-photo" onclick="attachAction('media')">
+                            <span class="lc-attach-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span>
+                            <span class="lc-attach-label">Foto &amp; Video</span>
+                        </button>
+                        <button class="lc-attach-item lc-attach-camera" onclick="attachAction('camera')">
+                            <span class="lc-attach-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></span>
+                            <span class="lc-attach-label">Kamera</span>
+                        </button>
+                        <button class="lc-attach-item lc-attach-audio" onclick="attachAction('audio')">
+                            <span class="lc-attach-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg></span>
+                            <span class="lc-attach-label">Audio</span>
+                        </button>
+                    </div>
+                </div>
                 <textarea id="lcInput" class="lc-composer-input" rows="1" placeholder="Ketik pesan..." onkeydown="handleKeydown(event)" oninput="autoResize(this);toggleSend()"></textarea>
                 <button class="lc-composer-btn" id="lcSendBtn" onclick="sendText()" disabled>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -905,15 +1017,7 @@ async function loadMessages(id) {
         const channelName = conv.channel?.name || '';
         const onlineHtml = conv.status === 'open' ? '<span class="online-dot"></span> Online' : '<span style="color:#6F89A7">Offline</span>';
         document.getElementById('rMeta').innerHTML = channelName + ' &bull; ' + onlineHtml;
-        if (conv.status === 'open') {
-            document.getElementById('rCloseBtn').style.display = '';
-            document.getElementById('rReopenBtn').style.display = 'none';
-            document.getElementById('lcComposer').style.display = '';
-        } else {
-            document.getElementById('rCloseBtn').style.display = 'none';
-            document.getElementById('rReopenBtn').style.display = conv.status === 'closed' ? '' : 'none';
-            document.getElementById('lcComposer').style.display = conv.status === 'closed' ? 'none' : '';
-        }
+        document.getElementById('lcComposer').style.display = '';
         container.innerHTML = '';
         if (msgs.length === 0) {
             container.innerHTML = '<div style="text-align:center;padding:3rem;color:#6F89A7"><p style="font-size:13px">Belum ada pesan</p></div>';
@@ -1246,12 +1350,22 @@ function handleFileSelect(e) {
     const newFiles = Array.from(e.target.files);
     if (!newFiles.length) return;
     e.target.value = '';
+    let supportedCount = 0;
     newFiles.forEach(f => {
+        const isImg = f.type.startsWith('image/');
+        const isVideo = f.type.startsWith('video/');
+        if (!isImg && !isVideo) {
+            showToast('Format file tidak didukung. Hanya gambar & video yang bisa dikirim.', 'error');
+            return;
+        }
+        supportedCount++;
         const url = URL.createObjectURL(f);
-        const type = f.type.startsWith('image/') ? 'image' : 'video';
+        const type = isImg ? 'image' : 'video';
         mediaList.push({ file: f, url, type, caption: '' });
     });
-    if (mediaList.length > 0 && !document.getElementById('lcMediaEditor').style.display.includes('flex')) {
+    if (supportedCount === 0) return;
+    const mediaEditor = document.getElementById('lcMediaEditor');
+    if (mediaList.length > 0 && !(mediaEditor && mediaEditor.style.display.includes('flex'))) {
         activeIndex = 0;
     }
     openMediaEditor();
@@ -1337,6 +1451,25 @@ function updateSendBtn() {
         mediaSendBtn.disabled = mediaList.length === 0;
         document.getElementById('lcMediaSendCount').textContent = mediaList.length;
     }
+}
+
+/* ---- ATTACHMENT MENU ---- */
+function toggleAttachMenu(e) {
+    e.stopPropagation();
+    const menu = document.getElementById('lcAttachMenu');
+    if (!menu) return;
+    menu.classList.toggle('open');
+}
+function attachAction(action) {
+    closeAttachMenu();
+    if (action === 'doc') document.getElementById('lcDocInput').click();
+    else if (action === 'media') document.getElementById('lcFileInput').click();
+    else if (action === 'camera') document.getElementById('lcPhotoInput').click();
+    else if (action === 'audio') document.getElementById('lcAudioInput').click();
+}
+function closeAttachMenu() {
+    const menu = document.getElementById('lcAttachMenu');
+    if (menu) menu.classList.remove('open');
 }
 
 /* ---- SEND ---- */
@@ -1440,36 +1573,6 @@ async function sendText() {
     } catch (e) { removeLoadingMsg(tempId); input.value = text; showToast(e.message || 'Gagal mengirim pesan', 'error'); }
 }
 
-/* ---- CLOSE / REOPEN ---- */
-async function closeConv() {
-    if (!activeConvId || !confirm('Tutup percakapan ini?')) return;
-    try {
-        await fetch(`/lcadmin/conversations/${activeConvId}/close`, {
-            method: 'PATCH',
-            headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-        });
-        document.getElementById('rCloseBtn').style.display = 'none';
-        document.getElementById('rReopenBtn').style.display = '';
-        document.getElementById('lcComposer').style.display = 'none';
-        const meta = document.getElementById('rMeta');
-        meta.innerHTML = meta.innerHTML.replace('Online', 'Offline');
-    } catch (e) {}
-}
-async function reopenConv() {
-    if (!activeConvId) return;
-    try {
-        await fetch(`/lcadmin/conversations/${activeConvId}/reopen`, {
-            method: 'PATCH',
-            headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-        });
-        document.getElementById('rCloseBtn').style.display = '';
-        document.getElementById('rReopenBtn').style.display = 'none';
-        document.getElementById('lcComposer').style.display = '';
-        const channelName = document.getElementById('rMeta').textContent.split('\u2022')[0].trim();
-        document.getElementById('rMeta').innerHTML = channelName + ' &bull; <span class="online-dot"></span> Online';
-    } catch (e) {}
-}
-
 /* ---- SEARCH ---- */
 let activeFilter = 'all';
 function setFilter(filter, btn) {
@@ -1510,10 +1613,21 @@ document.addEventListener('click', function(e) {
     if (!e.target.closest('.lc-context-menu') && !e.target.closest('.lc-msg-anchor')) {
         closeAllMenus();
     }
+    if (!e.target.closest('#lcAttachWrap')) {
+        closeAttachMenu();
+    }
 });
 
 /* ---- ESCAPE KEY TO EXIT CHAT ---- */
 document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const menu = document.getElementById('lcAttachMenu');
+        if (menu && menu.classList.contains('open')) {
+            e.stopPropagation();
+            closeAttachMenu();
+            return;
+        }
+    }
     if (e.key === 'Escape' && activeConvId !== null) {
         const mediaEditor = document.getElementById('lcMediaEditor');
         if (mediaEditor && mediaEditor.style.display === 'flex') return;

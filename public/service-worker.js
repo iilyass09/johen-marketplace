@@ -45,6 +45,7 @@ function buildNotification(data) {
       msgId: data.msg_id || data.msgId || null,
       conversationId,
       channelSlug: data.channel_slug || data.channelSlug || null,
+      targetGuard: data.target_guard || data.targetGuard || null,
     },
   };
   if (data.tag) opts.tag = String(data.tag);
@@ -126,13 +127,23 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const raw = event.notification.data?.url;
-  if (!raw) return;
+  const data = event.notification.data || {};
+  const raw = data.url;
+  let isAdminNotif = data.targetGuard === 'admin' || data.targetGuard === 'lcadmin';
+
   let target;
   try {
     target = new URL(raw, self.location.href);
   } catch (e) {
     target = new URL('/', self.location.href);
+  }
+
+  // Fallback deteksi notifikasi admin via pola URL untuk notifikasi lama.
+  if (!isAdminNotif) {
+    const path = target.pathname || '';
+    if (path === '/admin/' || path.startsWith('/admin/') || path === '/lcadmin/' || path.startsWith('/lcadmin/')) {
+      isAdminNotif = true;
+    }
   }
 
   event.waitUntil((async () => {
@@ -145,6 +156,9 @@ self.addEventListener('notificationclick', (event) => {
         }
       } catch (e) { /* lewati client yang gagal dinavigasi */ }
     }
-    return self.clients.openWindow(target.href);
+    // Belum ada jendela web terbuka: admin/lcadmin diarahkan ke halaman login,
+    // bukan ke beranda.
+    const openUrl = isAdminNotif ? '/admin/login' : target.href;
+    return self.clients.openWindow(openUrl);
   })());
 });

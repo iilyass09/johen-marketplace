@@ -61,7 +61,9 @@
                                 {{ $op->is_active ? 'Disable' : 'Enable' }}
                             </button>
                             <button class="btn btn-sm" onclick="editSchedule({{ $op->id }}, {{ $op->schedules->toJson() }})">Jadwal</button>
+                            @if($op->user_id === null)
                             <button class="btn btn-sm btn-danger" onclick="deleteOperator({{ $op->id }})">Hapus</button>
+                            @endif
                         </div>
                     </td>
                 </tr>
@@ -167,7 +169,12 @@ async function deleteOperator(id) {
             method: 'DELETE',
             headers: { 'X-CSRF-TOKEN': CSRF_TOKEN, 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
         });
-        if (res.ok) location.reload();
+        if (res.ok) {
+            location.reload();
+        } else {
+            const data = await res.json();
+            alert(data.error || 'Gagal menghapus operator');
+        }
     } catch (e) {}
 }
 

@@ -44,8 +44,8 @@ class LiveChatOperatorController extends Controller
         $channelOperatorCount = LiveChatOperator::where('channel_id', $request->channel_id)
             ->count();
 
-        if ($channelOperatorCount >= 2) {
-            return response()->json(['error' => 'Maksimal 2 operator per channel'], 422);
+        if ($channelOperatorCount >= 10) {
+            return response()->json(['error' => 'Maksimal 10 operator per channel'], 422);
         }
 
         LiveChatOperator::create([
@@ -66,6 +66,10 @@ class LiveChatOperatorController extends Controller
 
     public function destroy(LiveChatOperator $operator)
     {
+        if ($operator->user_id) {
+            return response()->json(['error' => 'Operator akun tidak dapat dihapus. Ubah role akun di menu Users jika ingin melepas channel.'], 422);
+        }
+
         $operator->schedules()->delete();
         $operator->delete();
 

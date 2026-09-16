@@ -80,7 +80,8 @@
             </div>
 
             <div id="operatorsContainer">
-                @forelse($channel->operators as $index => $operator)
+                @php $namedOperators = $channel->operators->whereNull('user_id')->values(); @endphp
+                @forelse($namedOperators as $index => $operator)
                     <div class="operator-row" style="margin-bottom:16px;padding:14px;background:var(--bg-input);border-radius:10px;border:1px solid var(--border)" data-index="{{ $index }}">
                         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
                             <span style="font-size:0.75rem;color:var(--text-dim);font-weight:500">Operator {{ $index + 1 }}</span>
@@ -111,6 +112,7 @@
             </div>
 
             <div style="font-size:0.75rem;color:var(--text-dim);margin-top:8px">Atur jam operasional per operator. Format: 24 jam (00:00 - 23:59). Kosongkan jika tidak ada jadwal.</div>
+            <div style="font-size:0.75rem;color:var(--text-muted);margin-top:6px">Operator akun (sesuai akun login admin) tidak ikut di sini dan tidak terhapus saat menyimpan.</div>
         </div>
 
         {{-- Action Buttons --}}
@@ -180,8 +182,8 @@
         reader.readAsDataURL(file);
     });
 
-    let operatorIndex = {{ count($channel->operators) }};
-    const maxOperators = 2;
+    let operatorIndex = {{ count($namedOperators) }};
+    const maxOperators = 10;
 
     function addOperator() {
         const container = document.getElementById('operatorsContainer');

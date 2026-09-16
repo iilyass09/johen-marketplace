@@ -33,7 +33,7 @@ class LiveChatAdminController extends Controller
     {
         $request->validate([
             'admin_photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-            'operators' => 'nullable|array|max:2',
+            'operators' => 'nullable|array|max:10',
             'operators.*.name' => 'required_with:operators|string|max:255',
             'operators.*.start_time' => 'required_with:operators|date_format:H:i',
             'operators.*.end_time' => 'required_with:operators|date_format:H:i',
@@ -55,10 +55,12 @@ class LiveChatAdminController extends Controller
 
             $admin->save();
 
-            LiveChatOperator::where('channel_id', $channel->id)->each(function ($op) {
-                $op->schedules()->delete();
-                $op->delete();
-            });
+            LiveChatOperator::where('channel_id', $channel->id)
+                ->whereNull('user_id')
+                ->each(function ($op) {
+                    $op->schedules()->delete();
+                    $op->delete();
+                });
 
             $operators = $request->input('operators', []);
             foreach ($operators as $opData) {

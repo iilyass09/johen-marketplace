@@ -156,6 +156,7 @@
     @stack('styles')
 </head>
 <body>
+    @section('topbar')
     <div class="lc-topbar">
         <div class="lc-topbar-left">
             @if($adminPhoto)
@@ -183,6 +184,7 @@
             </div>
         </div>
     </div>
+    @show
     <div class="lc-main">
         @yield('content')
     </div>

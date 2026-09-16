@@ -20,7 +20,7 @@
     @php
         $admin = $channel->admins->first();
         $adminUser = $admin ? $admin->user : null;
-        $ops = $channel->operators->sortBy('id');
+        $ops = $channel->operators->whereNull('user_id')->sortBy('id');
     @endphp
     <div class="lc-card" data-channel-id="{{ $channel->id }}">
 
