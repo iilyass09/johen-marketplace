@@ -21,7 +21,8 @@ class LCAdminConversationController extends Controller
         $channelIds = $user->assignedOperators()->pluck('channel_id');
 
         $query = LiveChatConversation::with(['user', 'channel', 'lastMessage.sender'])
-            ->whereIn('channel_id', $channelIds);
+            ->whereIn('channel_id', $channelIds)
+            ->whereNull('guest_id');
 
         if ($request->filled('channel_id')) {
             $query->where('channel_id', $request->channel_id);
@@ -56,6 +57,8 @@ class LCAdminConversationController extends Controller
             abort(403);
         }
 
+        $this->guardNonGuest($conversation);
+
         $conversation->load(['user', 'channel', 'lastMessage.sender']);
         $conversation->markAdminRead();
 
@@ -80,6 +83,8 @@ class LCAdminConversationController extends Controller
         if (!$channelIds->contains($conversation->channel_id)) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
+
+        $this->guardNonGuest($conversation);
 
         $conversation->load(['user', 'channel']);
         $conversation->markAdminRead();
@@ -110,6 +115,8 @@ class LCAdminConversationController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
+        $this->guardNonGuest($conversation);
+
         $afterId = $request->input('after', 0);
 
         $adminId = Auth::guard('admin')->id();
@@ -134,6 +141,8 @@ class LCAdminConversationController extends Controller
         if (!$channelIds->contains($conversation->channel_id)) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
+
+        $this->guardNonGuest($conversation);
 
         $request->validate([
             'message_type' => 'required|in:text,image,video,audio',
@@ -195,6 +204,8 @@ class LCAdminConversationController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
+        $this->guardNonGuest($conversation);
+
         $conversation->update(['status' => 'closed']);
 
         return response()->json(['success' => true, 'message' => 'Conversation ditutup']);
@@ -208,6 +219,8 @@ class LCAdminConversationController extends Controller
         if (!$channelIds->contains($conversation->channel_id)) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
+
+        $this->guardNonGuest($conversation);
 
         $conversation->update(['status' => 'open']);
 
@@ -278,6 +291,11 @@ class LCAdminConversationController extends Controller
         return response()->json(['count' => $this->archivedUnreadCount($channelIds)]);
     }
 
+    private function guardNonGuest(LiveChatConversation $conversation): void
+    {
+        abort_if($conversation->guest_id !== null, 404);
+    }
+
     private function archivedUnreadCount($channelIds): int
     {
         if (!Schema::hasColumn('live_chat_conversations', 'archived_at')) {
@@ -336,6 +354,8 @@ class LCAdminConversationController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
+        $this->guardNonGuest($conversation);
+
         if ($message->sender_type !== 'admin' || $message->sender_id !== $user->id) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
@@ -353,6 +373,8 @@ class LCAdminConversationController extends Controller
         if (!$channelIds->contains($message->conversation->channel_id)) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
+
+        $this->guardNonGuest($message->conversation);
 
         LiveChatMessageHiddenUser::firstOrCreate([
             'live_chat_message_id' => $message->id,

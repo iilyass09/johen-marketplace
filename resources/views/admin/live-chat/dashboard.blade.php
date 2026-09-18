@@ -84,7 +84,7 @@
                 </div>
                 <div style="flex:1;min-width:0">
                     <div style="display:flex;justify-content:space-between;align-items:center">
-                        <strong style="font-size:13px;color:var(--text)">{{ $conv->user->name ?? 'User' }}</strong>
+                        <strong style="font-size:13px;color:var(--text)">{{ $conv->isGuest() ? ($conv->guest_name ?? 'Guest') : ($conv->user->name ?? 'User') }}</strong>
                         <span style="font-size:11px;color:var(--text-mute)">{{ $conv->last_message_at?->diffForHumans() ?? '' }}</span>
                     </div>
                     <div style="font-size:12px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">

@@ -12,6 +12,8 @@ class LiveChatConversation extends Model
     protected $fillable = [
         'channel_id',
         'user_id',
+        'guest_id',
+        'guest_name',
         'status',
         'last_message_at',
         'user_unread_count',
@@ -48,6 +50,11 @@ class LiveChatConversation extends Model
     public function lastMessage(): HasOne
     {
         return $this->hasOne(LiveChatMessage::class, 'conversation_id')->latestOfMany();
+    }
+
+    public function isGuest(): bool
+    {
+        return $this->user_id === null && $this->guest_id !== null;
     }
 
     public function scopeForUser($query, $userId)

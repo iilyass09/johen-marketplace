@@ -10,7 +10,7 @@
                 <div>
                     <h3 class="card-title" style="margin:0">{{ $conversation->channel?->name ?? 'Live Chat' }}</h3>
                     <div style="font-size:12px;color:var(--text-dim)">
-                        User: {{ $conversation->user->name ?? 'User' }} ({{ $conversation->user->email ?? '' }})
+                        User: {{ $conversation->isGuest() ? ($conversation->guest_name ?? 'Guest') : ($conversation->user->name ?? 'User') }} ({{ $conversation->isGuest() ? 'Pengunjung' : ($conversation->user->email ?? '') }})
                         @if($activeOperator)
                         • Operator: {{ $activeOperator->display_name }} <span style="color:var(--success)">● Online</span>
                         @else

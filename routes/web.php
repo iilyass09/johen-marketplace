@@ -13,6 +13,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LiveChatController;
 use App\Http\Controllers\LCAdmin\LCAdminDashboardController;
 use App\Http\Controllers\LCAdmin\LCAdminConversationController;
+use App\Http\Controllers\CsAdmin\CsConversationController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
@@ -93,6 +94,9 @@ Route::get('/admin', function () {
         $user = Auth::guard('admin')->user();
         if ($user->isLiveChatAdmin()) {
             return redirect()->route('lcadmin.conversations');
+        }
+        if ($user->isLiveChatCs()) {
+            return redirect()->route('csadmin.conversations');
         }
         return redirect()->route('admin.dashboard');
     }
@@ -249,6 +253,18 @@ Route::middleware(['auth:admin', 'live-chat-admin'])->prefix('lcadmin')->name('l
     Route::get('/push/{guard}/status', [PushSubscriptionController::class, 'status'])->whereIn('guard', ['admin', 'lcadmin'])->name('push.status');
 });
 
+Route::middleware(['auth:admin', 'live-chat-cs'])->prefix('csadmin')->name('csadmin.')->group(function () {
+    Route::get('/conversations', [CsConversationController::class, 'index'])->name('conversations');
+    Route::get('/conversations/{conversation}', [CsConversationController::class, 'show'])->name('conversations.show');
+    Route::get('/conversations/{conversation}/poll', [CsConversationController::class, 'poll'])->name('conversations.poll');
+    Route::get('/conversations/{conversation}/messages', [CsConversationController::class, 'loadMessages'])->name('conversations.messages');
+    Route::post('/conversations/{conversation}/reply', [CsConversationController::class, 'reply'])->name('conversations.reply');
+    Route::patch('/conversations/{conversation}/close', [CsConversationController::class, 'close'])->name('conversations.close');
+    Route::patch('/conversations/{conversation}/reopen', [CsConversationController::class, 'reopen'])->name('conversations.reopen');
+    Route::delete('/messages/{message}', [CsConversationController::class, 'deleteMessage'])->name('messages.delete');
+    Route::post('/messages/{message}/hide', [CsConversationController::class, 'hideMessage'])->name('messages.hide');
+});
+
 Route::middleware(['auth:web'])->prefix('api')->name('api.')->group(function () {
     Route::get('/live-chat/channels', [LiveChatController::class, 'channels'])->name('live-chat.channels');
     Route::get('/live-chat/conversation/{channelSlug}', [LiveChatController::class, 'getConversation'])->name('live-chat.conversation');
@@ -266,6 +282,15 @@ Route::middleware(['auth:web'])->prefix('api')->name('api.')->group(function () 
     Route::post('/push/unsubscribe', [PushSubscriptionController::class, 'unsubscribeWeb'])->name('push.unsubscribe');
     Route::post('/push/test', [PushSubscriptionController::class, 'testWeb'])->name('push.test');
     Route::get('/push/status', [PushSubscriptionController::class, 'statusWeb'])->name('push.status');
+});
+
+Route::prefix('api')->name('api.')->group(function () {
+    Route::get('/live-chat/guest/channels', [LiveChatController::class, 'guestChannels'])->name('live-chat.guest.channels');
+    Route::post('/live-chat/guest/conversation', [LiveChatController::class, 'guestConversation'])->name('live-chat.guest.conversation');
+    Route::get('/live-chat/guest/messages/{conversation}', [LiveChatController::class, 'guestMessages'])->name('live-chat.guest.messages');
+    Route::post('/live-chat/guest/messages', [LiveChatController::class, 'guestSendMessage'])->name('live-chat.guest.messages.store');
+    Route::patch('/live-chat/guest/conversation/{conversation}/read', [LiveChatController::class, 'guestMarkRead'])->name('live-chat.guest.mark-read');
+    Route::get('/live-chat/guest/unread', [LiveChatController::class, 'guestUnreadCount'])->name('live-chat.guest.unread');
 });
 
 Route::get('/admin/login', [AdminAuthController::class, 'showLoginForm'])

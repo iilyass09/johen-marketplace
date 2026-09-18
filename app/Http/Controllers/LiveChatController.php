@@ -53,6 +53,37 @@ class LiveChatController extends Controller
         return response()->json($channels);
     }
 
+    public function guestChannels(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'guest_id' => ['required', 'string', 'max:64'],
+        ]);
+
+        $channels = LiveChatChannel::active()->ordered()->get();
+
+        $channels->each(function ($channel) use ($data) {
+            $conversation = LiveChatConversation::where('channel_id', $channel->id)
+                ->where('guest_id', $data['guest_id'])
+                ->first();
+
+            $hasMessages = $conversation && $conversation->messages()->exists();
+
+            $activeOperator = $channel->getActiveOperator();
+            $admin = $channel->admins()->where('is_active', true)->first();
+
+            $channel->unread_count = $hasMessages ? $conversation->user_unread_count : 0;
+            $channel->last_message = $hasMessages ? $conversation->lastMessage : null;
+            $channel->last_message_at = $hasMessages ? $conversation->last_message_at : null;
+            $channel->has_conversation = $hasMessages;
+            $channel->conversation_id = $conversation ? $conversation->id : null;
+            $channel->is_online = $activeOperator !== null;
+            $channel->operator_name = $activeOperator ? $activeOperator->display_name : null;
+            $channel->admin_photo = $admin && $admin->photo_path ? asset('storage/' . $admin->photo_path) : null;
+        });
+
+        return response()->json($channels);
+    }
+
     public function getConversation(Request $request, string $channelSlug): JsonResponse
     {
         $channel = LiveChatChannel::where('slug', $channelSlug)->firstOrFail();
@@ -82,6 +113,62 @@ class LiveChatController extends Controller
                 'is_on_duty' => true,
             ] : null,
         ]);
+    }
+
+    public function guestConversation(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'channel_slug' => ['required', 'string'],
+            'guest_id' => ['required', 'string', 'max:64'],
+        ]);
+
+        $channel = LiveChatChannel::where('slug', $data['channel_slug'])->firstOrFail();
+
+        $conversation = LiveChatConversation::firstOrCreate(
+            [
+                'channel_id' => $channel->id,
+                'guest_id' => $data['guest_id'],
+            ],
+            [
+                'user_id' => null,
+                'guest_name' => 'Guest',
+                'status' => 'open',
+            ]
+        );
+
+        $conversation->load(['channel', 'lastMessage.sender']);
+
+        $activeOperator = $channel->getActiveOperator();
+        $admin = $channel->admins()->where('is_active', true)->first();
+
+        return response()->json([
+            'conversation' => $conversation,
+            'active_operator' => $activeOperator ? [
+                'name' => $activeOperator->display_name,
+                'photo' => $admin && $admin->photo_path ? asset('storage/' . $admin->photo_path) : null,
+                'schedule' => $activeOperator->getCurrentSchedule()?->schedule_label,
+                'is_on_duty' => true,
+            ] : null,
+        ]);
+    }
+
+    public function guestMessages(Request $request, LiveChatConversation $conversation): JsonResponse
+    {
+        $this->ensureGuestConversation($conversation, $request->input('guest_id'));
+
+        $afterId = $request->input('after');
+
+        $query = LiveChatMessage::where('conversation_id', $conversation->id)
+            ->whereDoesntHave('hiddenUsers', fn ($hidden) => $hidden->where('user_id', null))
+            ->with(['sender', 'replyTo', 'reactions', 'stars', 'attachments']);
+
+        if ($afterId) {
+            $query->where('id', '>', $afterId);
+        }
+
+        $messages = $query->ordered()->get();
+
+        return response()->json($messages);
     }
 
     public function messages(Request $request, LiveChatConversation $conversation): JsonResponse
@@ -266,6 +353,123 @@ class LiveChatController extends Controller
             ->update(['read_at' => now()]);
 
         return response()->json(['success' => true]);
+    }
+
+    public function guestSendMessage(Request $request): JsonResponse
+    {
+        $request->validate([
+            'conversation_id' => 'required|exists:live_chat_conversations,id',
+            'guest_id' => 'required|string|max:64',
+            'message_type' => 'required|in:text,image,video,audio',
+            'message' => 'nullable|string|max:5000',
+            'reply_to_message_id' => 'nullable|exists:live_chat_messages,id',
+            'media' => 'nullable|array',
+            'media.*' => 'file|max:1048576|mimes:jpg,jpeg,png,gif,webp,mp4,mov,avi,mkv,webm,flv,3gp,wav,oga,ogg,opus,mp3,m4a,aac,weba',
+            'media_duration' => 'nullable|integer|min:0|max:1800',
+            'thumbnail' => 'nullable|array',
+            'thumbnail.*' => 'file|max:5120|mimes:jpg,jpeg,png,webp',
+            'thumbnail_indexes' => 'nullable|array',
+            'thumbnail_indexes.*' => 'integer|min:0',
+        ]);
+
+        $conversation = LiveChatConversation::findOrFail($request->conversation_id);
+        $this->ensureGuestConversation($conversation, $request->guest_id);
+
+        $files = $request->file('media', []);
+        if ($request->message_type !== 'text' && empty($files)) {
+            return response()->json(['errors' => ['media' => ['Media wajib diisi.']]], 422);
+        }
+
+        $data = [
+            'conversation_id' => $conversation->id,
+            'sender_id' => null,
+            'sender_type' => 'user',
+            'message_type' => $request->message_type,
+            'message' => $request->message,
+            'reply_to_message_id' => $request->reply_to_message_id,
+        ];
+
+        $message = LiveChatMessage::create($data);
+
+        if (!empty($files)) {
+            $posterFiles = [];
+            foreach ((array) $request->input('thumbnail_indexes', []) as $key => $index) {
+                $thumb = $request->file('thumbnail')[$key] ?? null;
+                if ($thumb) {
+                    $posterFiles[(int) $index] = $thumb;
+                }
+            }
+            $durations = $request->message_type === 'audio' ? [0 => (int) $request->media_duration] : [];
+            $rows = LiveChatMedia::storeBatch($files, $posterFiles, $durations, $request->message_type !== 'audio');
+            $message->attachments()->createMany($rows);
+            LiveChatMedia::applyCompatColumns($message, $rows);
+        }
+
+        $lastInteraction = $conversation->last_message_at;
+
+        $conversation->update([
+            'last_message_at' => now(),
+            'admin_unread_count' => $conversation->admin_unread_count + 1,
+        ]);
+
+        $channel = $conversation->channel;
+        $operator = $channel->getActiveOperator();
+        $shouldAutoReply = !$lastInteraction || $lastInteraction->diffInMinutes(now()) >= 60;
+
+        if ($operator && $shouldAutoReply) {
+            $operatorName = $operator->display_name ?? 'Admin';
+            $channelName = str_replace('Johen ', '', $channel->name);
+
+            LiveChatMessage::create([
+                'conversation_id' => $conversation->id,
+                'sender_id' => null,
+                'sender_type' => 'admin',
+                'message_type' => 'text',
+                'message' => "Halo! Kamu sekarang terhubung dengan admin {$operatorName} johen {$channelName}. Ada yang bisa kami bantu?",
+            ]);
+
+            $conversation->update([
+                'last_message_at' => now(),
+                'user_unread_count' => $conversation->user_unread_count + 1,
+            ]);
+        }
+
+        $message->load('sender', 'replyTo', 'reactions', 'stars', 'attachments');
+
+        $this->notifyAdmins($message, $conversation, $request->message_type);
+
+        return response()->json($message);
+    }
+
+    public function guestMarkRead(Request $request, LiveChatConversation $conversation): JsonResponse
+    {
+        $this->ensureGuestConversation($conversation, $request->input('guest_id'));
+
+        $conversation->markUserRead();
+
+        LiveChatMessage::where('conversation_id', $conversation->id)
+            ->where('sender_type', '!=', 'user')
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
+
+        return response()->json(['success' => true]);
+    }
+
+    public function guestUnreadCount(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'guest_id' => ['required', 'string', 'max:64'],
+        ]);
+
+        $total = LiveChatConversation::where('guest_id', $data['guest_id'])
+            ->sum('user_unread_count');
+
+        return response()->json(['unread_count' => $total]);
+    }
+
+    protected function ensureGuestConversation(LiveChatConversation $conversation, ?string $guestId): void
+    {
+        abort_unless($conversation->user_id === null && $guestId !== null && $conversation->guest_id === $guestId, 403);
     }
 
     public function unreadCount(): JsonResponse

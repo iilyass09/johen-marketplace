@@ -35,6 +35,11 @@ class AuthController extends Controller
                 return redirect()->intended(route('lcadmin.conversations'));
             }
 
+            if ($user->isLiveChatCs()) {
+                $request->session()->regenerate();
+                return redirect()->intended(route('csadmin.conversations'));
+            }
+
             Auth::guard('admin')->logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();

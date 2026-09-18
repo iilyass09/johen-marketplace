@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
             'live-chat-admin' => \App\Http\Middleware\LiveChatAdminMiddleware::class,
+            'live-chat-cs' => \App\Http\Middleware\LiveChatCsMiddleware::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [

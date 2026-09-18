@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'username', 'email', 'password', 'is_admin', 'is_live_chat_admin', 'google_id', 'avatar'])]
+#[Fillable(['name', 'username', 'email', 'password', 'is_admin', 'is_live_chat_admin', 'is_live_chat_cs', 'google_id', 'avatar'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -25,6 +25,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_admin' => 'boolean',
             'is_live_chat_admin' => 'boolean',
+            'is_live_chat_cs' => 'boolean',
         ];
     }
 
@@ -36,6 +37,11 @@ class User extends Authenticatable
     public function isLiveChatAdmin(): bool
     {
         return $this->is_live_chat_admin && !$this->is_admin;
+    }
+
+    public function isLiveChatCs(): bool
+    {
+        return $this->is_live_chat_cs && !$this->is_admin;
     }
 
     public function isSuperAdmin(): bool

@@ -622,6 +622,7 @@ class AdminController extends Controller
             'email' => 'required|email|unique:users,email,' . $user->id,
             'is_admin' => 'boolean',
             'is_live_chat_admin' => 'boolean',
+            'is_live_chat_cs' => 'boolean',
             'password' => 'nullable|min:6',
             'channel_id' => 'nullable|integer|exists:live_chat_channels,id',
         ]);
@@ -638,6 +639,7 @@ class AdminController extends Controller
             'email' => $request->email,
             'is_admin' => $request->boolean('is_admin', false),
             'is_live_chat_admin' => $request->boolean('is_live_chat_admin', false),
+            'is_live_chat_cs' => $request->boolean('is_live_chat_cs', false),
         ];
 
         if ($request->filled('password')) {
@@ -695,6 +697,7 @@ class AdminController extends Controller
             'password' => 'required|min:6',
             'is_admin' => 'boolean',
             'is_live_chat_admin' => 'boolean',
+            'is_live_chat_cs' => 'boolean',
             'channel_id' => 'nullable|integer|exists:live_chat_channels,id',
         ]);
 
@@ -715,6 +718,7 @@ class AdminController extends Controller
                 'password' => $request->password,
                 'is_admin' => $request->boolean('is_admin', false),
                 'is_live_chat_admin' => $request->boolean('is_live_chat_admin', false),
+                'is_live_chat_cs' => $request->boolean('is_live_chat_cs', false),
             ]);
 
             if ($user->is_live_chat_admin && $request->filled('channel_id')) {

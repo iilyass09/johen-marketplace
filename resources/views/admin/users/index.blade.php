@@ -63,7 +63,7 @@
                     <td class="text-center" style="font-size:0.82rem;color:var(--text-muted)">{{ $user->created_at->format('d/m/Y') }}</td>
                     <td class="text-center">
                         <button type="button" class="btn btn-ghost btn-xs"
-                            data-user="{{ json_encode($user->only(['id','name','email','username','is_admin','is_live_chat_admin'])) }}"
+                            data-user="{{ json_encode($user->only(['id','name','email','username','is_admin','is_live_chat_admin','is_live_chat_cs'])) }}"
                             data-channels="{{ json_encode($user->assignedChannels->pluck('id')->toArray()) }}"
                             onclick="openEditModal(this)">
                             <i class="fas fa-edit"></i> Edit
@@ -115,7 +115,7 @@
                     <td class="text-center" style="font-size:0.82rem;color:var(--text-muted)">{{ $user->created_at->format('d/m/Y') }}</td>
                     <td class="text-center">
                         <button type="button" class="btn btn-ghost btn-xs"
-                            data-user="{{ json_encode($user->only(['id','name','email','username','is_admin','is_live_chat_admin'])) }}"
+                            data-user="{{ json_encode($user->only(['id','name','email','username','is_admin','is_live_chat_admin','is_live_chat_cs'])) }}"
                             data-channels="{{ json_encode($user->assignedChannels->pluck('id')->toArray()) }}"
                             onclick="openEditModal(this)">
                             <i class="fas fa-edit"></i> Edit
@@ -180,9 +180,11 @@
                     <option value="lc_{{ $ch->id }}">Admin Live Chat - {{ $ch->name }}</option>
                     @endforeach
                     <option value="super_admin">Super Admin</option>
+                    <option value="cs">Admin CS</option>
                 </select>
                 <input type="hidden" name="is_admin" id="f_is_admin_create" value="0">
                 <input type="hidden" name="is_live_chat_admin" id="f_is_live_chat_admin_create" value="0">
+                <input type="hidden" name="is_live_chat_cs" id="f_is_live_chat_cs_create" value="0">
                 <input type="hidden" name="channel_id" id="f_channel_id_create" value="">
             </div>
 
@@ -241,9 +243,11 @@
                     <option value="lc_{{ $ch->id }}" id="opt_role_lc_{{ $ch->id }}">Admin Live Chat - {{ $ch->name }}</option>
                     @endforeach
                     <option value="super_admin" id="opt_role_super_admin">Super Admin</option>
+                    <option value="cs" id="opt_role_cs">Admin CS</option>
                 </select>
                 <input type="hidden" name="is_admin" id="f_is_admin" value="0">
                 <input type="hidden" name="is_live_chat_admin" id="f_is_live_chat_admin" value="0">
+                <input type="hidden" name="is_live_chat_cs" id="f_is_live_chat_cs" value="0">
                 <input type="hidden" name="channel_id" id="f_channel_id" value="">
             </div>
 
@@ -300,8 +304,9 @@ function switchTab(tab) {
     document.getElementById('addBtnText').textContent = tab === 'admin' ? 'Tambah Admin' : 'Tambah User';
 }
 
-function setRoleFields(selectEl, hiddenIsAdmin, hiddenIsLcAdmin, hiddenChannelId) {
+function setRoleFields(selectEl, hiddenIsAdmin, hiddenIsLcAdmin, hiddenChannelId, hiddenIsLcCs) {
     const val = selectEl.value;
+    document.getElementById(hiddenIsLcCs).value = '0';
     if (val === 'super_admin') {
         document.getElementById(hiddenIsAdmin).value = '1';
         document.getElementById(hiddenIsLcAdmin).value = '0';
@@ -310,6 +315,11 @@ function setRoleFields(selectEl, hiddenIsAdmin, hiddenIsLcAdmin, hiddenChannelId
         document.getElementById(hiddenIsAdmin).value = '0';
         document.getElementById(hiddenIsLcAdmin).value = '1';
         document.getElementById(hiddenChannelId).value = val.replace('lc_', '');
+    } else if (val === 'cs') {
+        document.getElementById(hiddenIsAdmin).value = '0';
+        document.getElementById(hiddenIsLcAdmin).value = '0';
+        document.getElementById(hiddenChannelId).value = '';
+        document.getElementById(hiddenIsLcCs).value = '1';
     } else {
         document.getElementById(hiddenIsAdmin).value = '0';
         document.getElementById(hiddenIsLcAdmin).value = '0';
@@ -343,9 +353,10 @@ document.getElementById('createForm').addEventListener('submit', async function 
 
     const select = document.getElementById('createRoleSelect');
     const formData = new FormData(this);
-    setRoleFields(select, 'f_is_admin_create', 'f_is_live_chat_admin_create', 'f_channel_id_create');
+    setRoleFields(select, 'f_is_admin_create', 'f_is_live_chat_admin_create', 'f_channel_id_create', 'f_is_live_chat_cs_create');
     formData.set('is_admin', document.getElementById('f_is_admin_create').value);
     formData.set('is_live_chat_admin', document.getElementById('f_is_live_chat_admin_create').value);
+    formData.set('is_live_chat_cs', document.getElementById('f_is_live_chat_cs_create').value);
     formData.set('channel_id', document.getElementById('f_channel_id_create').value);
     formData.delete('role');
 
@@ -401,11 +412,13 @@ function openEditModal(btn) {
         select.value = 'super_admin';
     } else if (u.is_live_chat_admin && channels.length > 0) {
         select.value = 'lc_' + channels[0];
+    } else if (u.is_live_chat_cs) {
+        select.value = 'cs';
     } else {
         select.value = 'user';
     }
 
-    setRoleFields(select, 'f_is_admin', 'f_is_live_chat_admin', 'f_channel_id');
+    setRoleFields(select, 'f_is_admin', 'f_is_live_chat_admin', 'f_channel_id', 'f_is_live_chat_cs');
 
     clearEditErrors();
     document.getElementById('userModal').style.display = 'flex';
@@ -423,7 +436,7 @@ function clearEditErrors() {
 }
 
 function updateEditRole(selectEl) {
-    setRoleFields(selectEl, 'f_is_admin', 'f_is_live_chat_admin', 'f_channel_id');
+    setRoleFields(selectEl, 'f_is_admin', 'f_is_live_chat_admin', 'f_channel_id', 'f_is_live_chat_cs');
 }
 
 document.getElementById('userForm').addEventListener('submit', async function (e) {

@@ -3,7 +3,28 @@
 
   const AUTH_USER = window.LIVECHAT_USER || null;
   const CHANNELS_API = '/api/live-chat/channels';
+  const GUEST_CHANNELS_API = '/api/live-chat/guest/channels';
+  const IS_GUEST = !AUTH_USER;
   const POLL_INTERVAL = 3000;
+
+  function getGuestId() {
+    let id = localStorage.getItem('johen_lc_guest');
+    if (!id) {
+      id = (window.crypto && window.crypto.randomUUID)
+        ? window.crypto.randomUUID()
+        : ('g-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 12));
+      localStorage.setItem('johen_lc_guest', id);
+    }
+    return id;
+  }
+
+  function guestParam() {
+    return encodeURIComponent(getGuestId());
+  }
+
+  function messagePostUrl() {
+    return IS_GUEST ? '/api/live-chat/guest/messages' : '/api/live-chat/messages';
+  }
 
   let state = {
     isOpen: false,
@@ -237,22 +258,27 @@
     const msg = state.messages.find(m => m.id === msgId);
     if (!msg) return;
 
-    const canDelete = msg.sender_id === AUTH_USER?.id;
+    const canDelete = !IS_GUEST && msg.sender_id === AUTH_USER?.id;
     const menu = document.createElement('div');
     menu.className = 'lc-context-menu';
     menu.dataset.msgId = msgId;
 
-    let items = `
+    const replyItem = `
       <button class="lc-menu-item" onclick="window.LiveChat.replyTo(${msg.id})">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 00-4-4H4"/></svg>
         Balas
-      </button>
+      </button>`;
+
+    let items = replyItem;
+    if (!IS_GUEST) {
+      items += `
       <button class="lc-menu-item" onclick="window.LiveChat.showReactions(${msg.id}, this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M8 14s1.4 2 4 2 4-2 4-2"/></svg>Reaksi</button>
       <button class="lc-menu-item" onclick="window.LiveChat.toggleStar(${msg.id})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z"/></svg>Beri bintang</button>
       <button class="lc-menu-item lc-menu-danger" onclick="window.LiveChat.showDeleteOptions(${msg.id}, ${canDelete})">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
           Hapus
         </button>`;
+    }
 
     menu.innerHTML = items;
     document.body.appendChild(menu);
@@ -305,7 +331,8 @@
 
   async function fetchChannels() {
     try {
-      const res = await fetch(CHANNELS_API, { headers: headers() });
+      const url = IS_GUEST ? GUEST_CHANNELS_API + '?guest_id=' + guestParam() : CHANNELS_API;
+      const res = await fetch(url, { headers: headers() });
       if (!res.ok) throw new Error('Failed');
       state.channels = await res.json();
       renderPanel();
@@ -318,15 +345,9 @@
     const container = document.getElementById('lc-body');
     if (!container) return;
 
-    if (!AUTH_USER) {
-      container.innerHTML = `
-        <div class="lc-login-prompt">
-          <h4>Masuk untuk Chat</h4>
-          <p>Silakan masuk atau daftar untuk mengirim pesan live chat</p>
-          <a href="/login" class="lc-login-btn">Masuk</a>
-        </div>`;
-      return;
-    }
+    const guestBanner = IS_GUEST
+      ? '<div class="lc-login-prompt" style="padding:10px 14px;margin-bottom:8px"><p style="margin:0;font-size:12px">Chat sebagai tamu — admin membalas tanpa perlu login.</p></div>'
+      : '';
 
     const gameCards = state.channels.map(ch => {
       const isOnline = ch.is_online;
@@ -394,6 +415,7 @@
         <div class="lc-panel-header">
           <div class="lc-panel-title">LIVE CHAT ADMIN</div>
         </div>
+        ${guestBanner}
         <div class="lc-panel-grid">${gameCards}</div>
         <div class="lc-panel-divider"></div>
         <div class="lc-panel-section-title">PERCAKAPAN AKTIF</div>
@@ -476,32 +498,55 @@
   }
 
   async function openChannel(slug) {
-    if (!AUTH_USER) { window.location.href = '/login'; return; }
+    if (IS_GUEST && !state.channels.length) {
+      try { await fetchChannels(); } catch (e) {}
+    }
     closeAllMenus();
     try {
-      const res = await fetch(`/api/live-chat/conversation/${slug}`, { headers: headers() });
+      const res = IS_GUEST
+        ? await fetch('/api/live-chat/guest/conversation', {
+            method: 'POST',
+            headers: { ...headers(), 'Content-Type': 'application/json' },
+            body: JSON.stringify({ channel_slug: slug, guest_id: getGuestId() })
+          })
+        : await fetch(`/api/live-chat/conversation/${slug}`, { headers: headers() });
       if (!res.ok) throw new Error('Failed');
       const data = await res.json();
       state.activeChannel = state.channels.find(c => c.slug === slug);
+      if (!state.activeChannel && IS_GUEST) state.activeChannel = { slug, name: data.conversation?.channel?.name || 'Live Chat' };
       state.conversation = data.conversation;
       state.view = 'chat';
       state.replyToMsg = null;
       renderChat(data.active_operator);
       await fetchMessages();
       startPolling();
-      fetch(`/api/live-chat/conversation/${state.conversation.id}/read`, { method: 'PATCH', headers: headers() });
+      markConversationRead();
       updateBadge();
     } catch (e) {
       console.error('LiveChat: open channel error', e);
     }
   }
 
+  function markConversationRead() {
+    if (!state.conversation) return;
+    if (IS_GUEST) {
+      fetch(`/api/live-chat/guest/conversation/${state.conversation.id}/read`, {
+        method: 'PATCH',
+        headers: { ...headers(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guest_id: getGuestId() })
+      });
+    } else {
+      fetch(`/api/live-chat/conversation/${state.conversation.id}/read`, { method: 'PATCH', headers: headers() });
+    }
+  }
+
   async function fetchMessages() {
     if (!state.conversation) return;
     try {
-      const url = state.messages.length > 0
-        ? `/api/live-chat/messages/${state.conversation.id}?after=${state.messages[state.messages.length - 1].id}`
-        : `/api/live-chat/messages/${state.conversation.id}`;
+      const after = state.messages.length > 0 ? `after=${state.messages[state.messages.length - 1].id}` : '';
+      const url = IS_GUEST
+        ? `/api/live-chat/guest/messages/${state.conversation.id}?guest_id=${guestParam()}${after ? '&' + after : ''}`
+        : `/api/live-chat/messages/${state.conversation.id}${after ? '?' + after : ''}`;
       const res = await fetch(url, { headers: headers() });
       if (!res.ok) throw new Error('Failed');
       const newMessages = await res.json();
@@ -512,7 +557,7 @@
         setTimeout(scrollToBottom, 100);
         dismissActiveToast();
       }
-      if (state.conversation.user_unread_count > 0) {
+      if (!IS_GUEST && state.conversation.user_unread_count > 0) {
         fetch(`/api/live-chat/conversation/${state.conversation.channel?.slug || state.activeChannel?.slug}`, { headers: headers() });
       }
     } catch (e) {
@@ -957,11 +1002,12 @@
     try {
       const formData = new FormData();
       formData.append('conversation_id', state.conversation.id);
+      if (IS_GUEST) formData.append('guest_id', getGuestId());
       formData.append('message_type', 'audio');
       formData.append('media[]', file);
       formData.append('media_duration', String(Math.round(duration)));
       if (replyId) formData.append('reply_to_message_id', replyId);
-      const res = await fetch('/api/live-chat/messages', {
+      const res = await fetch(messagePostUrl(), {
         method: 'POST',
         headers: { 'X-CSRF-TOKEN': getToken(), 'Accept': 'application/json' },
         body: formData,
@@ -1113,12 +1159,13 @@
         try {
           const formData = new FormData();
           formData.append('conversation_id', state.conversation.id);
+          if (IS_GUEST) formData.append('guest_id', getGuestId());
           formData.append('message_type', 'image');
           const caption = imageItems.map(i => i.caption).find(c => c) || '';
           if (caption) formData.append('message', caption);
           if (replyId) formData.append('reply_to_message_id', replyId);
           imageItems.forEach(fi => formData.append('media[]', fi.file));
-          const res = await fetch('/api/live-chat/messages', {
+          const res = await fetch(messagePostUrl(), {
             method: 'POST',
             headers: { 'X-CSRF-TOKEN': getToken(), 'Accept': 'application/json' },
             body: formData,
