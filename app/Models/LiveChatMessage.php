@@ -22,12 +22,14 @@ class LiveChatMessage extends Model
         'media_name',
         'media_mime',
         'media_size',
+        'media_duration',
         'reply_to_message_id',
         'read_at',
     ];
 
     protected $casts = [
         'media_size' => 'integer',
+        'media_duration' => 'integer',
         'read_at' => 'datetime',
     ];
 

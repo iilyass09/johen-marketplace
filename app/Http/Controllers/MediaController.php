@@ -26,7 +26,12 @@ class MediaController extends Controller
         }
 
         if (Storage::disk('public')->exists($path)) {
-            return Storage::disk('public')->response($path);
+            // BinaryFileResponse mendukung HTTP Range (seek audio/video) dan streaming per-chunk.
+            return response()
+                ->file(Storage::disk('public')->path($path), [
+                    'Cache-Control' => 'public, max-age=31536000, immutable',
+                    'X-Content-Type-Options' => 'nosniff',
+                ]);
         }
 
         abort(404);

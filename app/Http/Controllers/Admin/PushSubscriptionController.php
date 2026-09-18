@@ -9,6 +9,7 @@ use App\Models\PushSubscription;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 
 class PushSubscriptionController extends Controller
 {
@@ -233,7 +234,7 @@ class PushSubscriptionController extends Controller
 
         $channel = $conversation->channel;
         $operator = $channel?->getActiveOperator();
-        $shown = $operator?->name ?? $conversation->lastMessage->sender?->name ?? 'Admin';
+        $shown = $operator?->display_name ?? $conversation->lastMessage->sender?->name ?? 'Admin';
 
         return response()->json([
             'title' => $shown,
@@ -256,6 +257,10 @@ class PushSubscriptionController extends Controller
             ->with(['user', 'channel', 'lastMessage.sender'])
             ->where('admin_unread_count', '>', 0)
             ->orderByDesc('last_message_at');
+
+        if (Schema::hasColumn('live_chat_conversations', 'archived_at')) {
+            $query->whereNull('archived_at');
+        }
 
         if ($guard === 'lcadmin') {
             $channelIds = $admin->assignedOperators()->pluck('channel_id');
@@ -289,6 +294,7 @@ class PushSubscriptionController extends Controller
         return match ($message->message_type) {
             'image' => $message->attachments()->count() > 0 ? '📷 '.$message->attachments()->count().' Foto' : '📷 Foto',
             'video' => $message->attachments()->count() > 0 ? '🎬 '.$message->attachments()->count().' Video' : '🎬 Video',
+            'audio' => '🎤 Pesan suara',
             default => $message->message && mb_strlen((string) $message->message) > 150
                 ? mb_substr((string) $message->message, 0, 150).'…'
                 : (string) $message->message,

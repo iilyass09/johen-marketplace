@@ -13,12 +13,14 @@ class LiveChatMessageAttachment extends Model
         'media_name',
         'media_mime',
         'media_size',
+        'media_duration',
         'poster_path',
         'sort_order',
     ];
 
     protected $casts = [
         'media_size' => 'integer',
+        'media_duration' => 'integer',
         'sort_order' => 'integer',
     ];
 

@@ -17,6 +17,8 @@ class LiveChatConversation extends Model
         'user_unread_count',
         'admin_unread_count',
         'is_favorited',
+        'archived_at',
+        'is_pinned',
     ];
 
     protected $casts = [
@@ -24,6 +26,8 @@ class LiveChatConversation extends Model
         'user_unread_count' => 'integer',
         'admin_unread_count' => 'integer',
         'is_favorited' => 'boolean',
+        'archived_at' => 'datetime',
+        'is_pinned' => 'boolean',
     ];
 
     public function channel(): BelongsTo

@@ -149,6 +149,7 @@ class PushService
             $preview = match ($message->message_type) {
                 'image' => '📷 Foto',
                 'video' => '🎬 Video',
+                'audio' => '🎤 Pesan suara',
                 'text' => $message->message && mb_strlen((string) $message->message) > 150
                     ? mb_substr((string) $message->message, 0, 150).'…'
                     : (string) $message->message,

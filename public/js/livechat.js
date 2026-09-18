@@ -17,6 +17,13 @@
     activeIndex: 0,
     replyToMsg: null,
     activeMenuMsgId: null,
+    recorder: null,
+    recChunks: [],
+    recStream: null,
+    recTimer: null,
+    recMime: '',
+    recStartTs: 0,
+    recSeconds: 0,
   };
 
   function getToken() {
@@ -56,6 +63,12 @@
   function galleryHtml(msg, messageId) {
     const atts = attachmentsOf(msg);
     if (!atts.length) return '';
+
+    if (msg.message_type === 'audio') {
+      const a = atts[0];
+      const dur = a.media_duration ? formatVoiceTime(a.media_duration) : '';
+      return `<div class="lc-msg-media"><div class="lc-voice" data-dur="${a.media_duration || ''}" onclick="window.LiveChat.toggleVoicePlay(this)"><span class="lc-voice-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span><span class="lc-voice-progress"><span class="lc-voice-fill"></span></span><span class="lc-voice-time">${dur}</span><audio src="/media/${a.media_path}" preload="metadata"></audio></div></div>`;
+    }
 
     if (msg.message_type === 'video') {
       const a = atts[0];
@@ -165,6 +178,8 @@
         rContent = `<span class="lc-quote-media">📷 ${n > 1 ? n + ' ' : ''}Foto</span>`;
       } else if (msg.reply_to.message_type === 'video' && msg.reply_to.media_path) {
         rContent = '<span class="lc-quote-media">🎬 Video</span>';
+      } else if (msg.reply_to.message_type === 'audio') {
+        rContent = '<span class="lc-quote-media">🎤 Pesan suara</span>';
       } else {
         rContent = escapeHtml((msg.reply_to.message || 'Pesan telah dihapus').substring(0, 80));
       }
@@ -192,7 +207,8 @@
     const empty = container.querySelector('.lc-empty');
     if (empty) empty.remove();
     const isVideo = file && file.type.startsWith('video/');
-    const icon = isVideo ? '🎬' : '🖼️';
+    const isAudio = file && file.type.startsWith('audio/');
+    const icon = isVideo ? '🎬' : isAudio ? '🎤' : '🖼️';
     container.insertAdjacentHTML('beforeend', `<div class="lc-msg lc-msg-user" data-msg-id="temp-${tempId}" data-temp="1"><div class="lc-msg-body"><div class="lc-msg-media lc-msg-loading"><div class="lc-loading-thumb">${icon}</div><div class="lc-loading-spinner"><div></div><div></div><div></div></div><span>Mengirim...</span></div></div></div>`);
     scrollToBottom();
   }
@@ -254,7 +270,31 @@
 
   async function toggleStar(id) { const r = await fetch(`/api/live-chat/messages/${id}/star`, { method:'POST', headers:headers() }); if (r.ok) { const d=await r.json(), m=state.messages.find(x=>x.id===id); if(m)m.is_starred=d.is_starred; closeAllMenus(); renderMessages(); } }
   function showReactions(id, button) { const p=document.createElement('div'); p.className='lc-reaction-picker'; p.innerHTML='👍 ❤️ 😂 😮'; p.onclick=async e=>{const emoji=e.target.textContent.trim(); if(!emoji)return; const r=await fetch(`/api/live-chat/messages/${id}/reaction`,{method:'POST',headers:{...headers(),'Content-Type':'application/json'},body:JSON.stringify({emoji})}); if(r.ok){const d=await r.json(),m=state.messages.find(x=>x.id===id);if(m)m.reaction_summary=d.reaction_summary;closeAllMenus();renderMessages();}}; button.parentElement.appendChild(p); }
-  function showDeleteOptions(id, canDelete) { const m=document.querySelector(`.lc-context-menu[data-msg-id="${id}"]`); if(!m)return; m.innerHTML=`<button class="lc-menu-item" onclick="window.LiveChat.hideForMe(${id})">Hapus untuk saya</button><button class="lc-menu-item lc-menu-danger" onclick="window.LiveChat.deleteMsg(${id})" ${canDelete?'':'disabled'}>Hapus untuk semua orang</button><button class="lc-menu-item" onclick="window.LiveChat.closeMenus()">Batal</button>`; }
+  function showDeleteOptions(id, canDelete) {
+    closeAllMenus();
+    const anchorEl = document.querySelector(`[data-msg-id="${id}"] .lc-msg-anchor`);
+    if (!anchorEl) return;
+    const menu = document.createElement('div');
+    menu.className = 'lc-context-menu';
+    menu.dataset.msgId = id;
+    menu.innerHTML = `
+      <button class="lc-menu-item lc-menu-danger" onclick="window.LiveChat.hideForMe(${id})">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+        Hapus untuk saya
+      </button>
+      <button class="lc-menu-item lc-menu-danger" onclick="window.LiveChat.deleteMsg(${id})" ${canDelete?'':'disabled'}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+        Hapus untuk semua orang
+      </button>
+      <button class="lc-menu-item" onclick="window.LiveChat.closeMenus()">Batal</button>`;
+    document.body.appendChild(menu);
+    const rect = anchorEl.getBoundingClientRect();
+    let top = rect.top;
+    let left = Math.max(8, Math.min(rect.right - 172, window.innerWidth - 180));
+    if (top + 176 > window.innerHeight) top = Math.max(8, rect.bottom - 176);
+    menu.style.top = top + 'px';
+    menu.style.left = left + 'px';
+  }
   async function hideForMe(id) { if(!confirm('Hapus pesan ini hanya dari chat Anda?'))return; const r=await fetch(`/api/live-chat/messages/${id}/hide`,{method:'POST',headers:headers()});if(r.ok){state.messages=state.messages.filter(m=>m.id!==id);closeAllMenus();renderMessages();} }
 
   function getSenderName(msg) {
@@ -324,7 +364,10 @@
       ? activeConvs.map(ch => {
           const initial = getInitials(ch.name);
           const preview = ch.last_message
-            ? (ch.last_message.message_type !== 'text' ? '📷 Media' : escapeHtml(ch.last_message.message?.substring(0, 50) || ''))
+            ? (ch.last_message.message_type === 'image' ? '📷 Foto'
+              : ch.last_message.message_type === 'video' ? '🎬 Video'
+              : ch.last_message.message_type === 'audio' ? '🎤 Pesan suara'
+              : escapeHtml(ch.last_message.message?.substring(0, 50) || ''))
             : 'Mulai percakapan';
           const time = ch.last_message_at ? timeAgo(ch.last_message_at) : '';
           const badge = ch.unread_count > 0 ? `<span class="lc-conv-badge">${ch.unread_count}</span>` : '';
@@ -564,17 +607,36 @@
     if (!container) return;
 
     const channelName = escapeHtml(state.activeChannel?.name || 'Live Chat');
-    const operatorAvatar = operator?.photo ? `<img src="${operator.photo}" alt="" class="lc-chat-avatar">` : '<div class="lc-chat-avatar lc-chat-avatar-fallback">JC</div>';
-    const operatorHtml = operator
-      ? `<div class="lc-chat-identity">${operatorAvatar}<div><div class="lc-chat-channel-name">${channelName}</div><div class="lc-chat-served">Sedang dilayani oleh <strong>${escapeHtml(operator.name)}</strong></div><div class="lc-chat-presence"><span class="online">● Online</span>${operator.schedule ? ` • Shift ${escapeHtml(operator.schedule)}` : ''}</div></div></div>`
-      : `<div class="lc-chat-identity">${operatorAvatar}<div><div class="lc-chat-channel-name">${channelName}</div><div class="lc-chat-served">Admin sedang offline</div><div class="lc-chat-presence">Pesan akan dibalas pada jam operasional</div></div></div>`;
+    const isOnline = !!operator;
+
+    const avatarImg = operator?.photo
+      ? `<img src="${operator.photo}" alt="" class="lc-chat-avatar">`
+      : `<div class="lc-chat-avatar lc-chat-avatar-fallback">${getInitials(state.activeChannel?.name || 'Live Chat')}</div>`;
+    const avatarHtml = `<div class="lc-chat-avatar-wrap">${avatarImg}<span class="lc-avatar-status ${isOnline ? '' : 'offline'}"></span></div>`;
+
+    const statusPill = isOnline
+      ? `<span class="lc-status-pill is-online"><span class="lc-pulse-dot"></span>Online</span>`
+      : `<span class="lc-status-pill is-offline"><span class="lc-pulse-dot"></span>Offline</span>`;
+
+    const servedHtml = operator
+      ? `<div class="lc-chat-served">Sedang dilayani oleh <strong>${escapeHtml(operator.name)}</strong></div><div class="lc-chat-presence">${operator.schedule ? `Shift ${escapeHtml(operator.schedule)}` : 'Berespons cepat pada jam operasional'}</div>`
+      : `<div class="lc-chat-served">Admin sedang offline</div><div class="lc-chat-presence">Pesan akan dibalas pada jam operasional</div>`;
 
     container.innerHTML = `
       <div class="lc-chat" style="position:relative">
         <div class="lc-chat-header">
-          <button class="lc-chat-back" onclick="window.LiveChat.backToList()">←</button>
-          <div class="lc-chat-info">
-            <div class="lc-chat-operator">${operatorHtml}</div>
+          <button class="lc-chat-back" onclick="window.LiveChat.backToList()" title="Kembali">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <div class="lc-chat-title-row">
+            ${avatarHtml}
+            <div class="lc-chat-info">
+              <div class="lc-chat-title">${channelName}${isOnline ? '<span class="lc-live-pulse"></span>' : ''}</div>
+              ${servedHtml}
+            </div>
+          </div>
+          <div class="lc-chat-actions">
+            ${statusPill}
           </div>
         </div>
         <div class="lc-messages" id="lc-messages-body">
@@ -601,11 +663,45 @@
           </div>
         </div>
         <div class="lc-composer">
+          <div class="lc-rec-bar" id="lc-rec-bar" style="display:none">
+            <span class="lc-rec-dot"></span>
+            <span class="lc-rec-time" id="lc-rec-time">0:00</span>
+            <span class="lc-rec-hint">Merekam...</span>
+            <div class="lc-rec-spacer"></div>
+            <button type="button" class="lc-rec-btn lc-rec-cancel" onclick="window.LiveChat.cancelVoiceRec()" title="Batal" aria-label="Batal rekaman"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+            <button type="button" class="lc-rec-btn lc-rec-send" onclick="window.LiveChat.finishVoiceRec()" title="Kirim" aria-label="Kirim pesan suara"><svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+          </div>
           <input type="file" id="lc-file-input" accept="image/*,video/*" multiple style="display:none" onchange="window.LiveChat.onFileSelect(event)">
-          <button class="lc-composer-attach" onclick="document.getElementById('lc-file-input').click()" title="Kirim gambar/video">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
-          </button>
+          <input type="file" id="lc-doc-input" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar,.7z" multiple style="display:none" onchange="window.LiveChat.onFileSelect(event)">
+          <input type="file" id="lc-camera-input" accept="image/*" capture="environment" style="display:none" onchange="window.LiveChat.onFileSelect(event)">
+          <input type="file" id="lc-audio-input" accept="audio/*" style="display:none" onchange="window.LiveChat.onFileSelect(event)">
+          <div class="lc-attach-wrap">
+            <button class="lc-composer-attach" id="lc-attach-btn" onclick="window.LiveChat.toggleAttachMenu(event)" title="Lampiran">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+            </button>
+            <div class="lc-attach-menu" id="lc-attach-menu" role="menu">
+              <button class="lc-attach-item lc-attach-doc" onclick="window.LiveChat.attachAction('doc')">
+                <span class="lc-attach-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>
+                <span class="lc-attach-label">Dokumen</span>
+              </button>
+              <button class="lc-attach-item lc-attach-photo" onclick="window.LiveChat.attachAction('media')">
+                <span class="lc-attach-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span>
+                <span class="lc-attach-label">Foto &amp; Video</span>
+              </button>
+              <button class="lc-attach-item lc-attach-camera" onclick="window.LiveChat.attachAction('camera')">
+                <span class="lc-attach-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></span>
+                <span class="lc-attach-label">Kamera</span>
+              </button>
+              <button class="lc-attach-item lc-attach-audio" onclick="window.LiveChat.attachAction('audio')">
+                <span class="lc-attach-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg></span>
+                <span class="lc-attach-label">Audio</span>
+              </button>
+            </div>
+          </div>
           <textarea class="lc-composer-input" id="lc-input" rows="1" placeholder="Ketik pesan..." onkeydown="window.LiveChat.onKeydown(event)" oninput="window.LiveChat.autoResize(this)"></textarea>
+          <button class="lc-composer-mic" id="lc-mic-btn" onclick="window.LiveChat.startVoiceRec()" title="Rekam pesan suara" aria-label="Rekam pesan suara">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4"/></svg>
+          </button>
           <button class="lc-composer-btn" id="lc-send-btn" onclick="window.LiveChat.sendText()" disabled>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
           </button>
@@ -631,6 +727,7 @@
   }
 
   function backToList() {
+    cancelVoiceRec();
     stopPolling();
     closeAllMenus();
     state.view = 'panel';
@@ -658,15 +755,271 @@
     const newFiles = Array.from(e.target.files);
     if (!newFiles.length) return;
     e.target.value = '';
+    let supported = 0;
     newFiles.forEach(f => {
+      const isImg = f.type.startsWith('image/');
+      const isVideo = f.type.startsWith('video/');
+      const isAudio = f.type.startsWith('audio/');
+      if (isAudio) {
+        supported++;
+        if (state.conversation) {
+          sendVoiceFile(f, 0);
+        } else {
+          showToast('Mulai percakapan terlebih dahulu untuk mengirim pesan suara.', 'error');
+        }
+        return;
+      }
+      if (!isImg && !isVideo) return;
+      supported++;
       const url = URL.createObjectURL(f);
-      const type = f.type.startsWith('image/') ? 'image' : 'video';
-      state.mediaList.push({ file: f, url, type, caption: '' });
+      state.mediaList.push({ file: f, url, type: isImg ? 'image' : 'video', caption: '' });
     });
+    if (supported < newFiles.length) {
+      showToast('Format file tidak didukung. Hanya gambar, video & audio yang bisa dikirim.', 'error');
+    }
+    if (supported === 0) return;
     if (state.mediaList.length > 0 && document.getElementById('lc-media-editor')?.style.display !== 'flex') {
       state.activeIndex = 0;
     }
     openMediaEditor();
+  }
+
+  function toggleAttachMenu(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    const menu = document.getElementById('lc-attach-menu');
+    if (menu) menu.classList.toggle('open');
+  }
+  function attachAction(action) {
+    closeAttachMenu();
+    if (action === 'doc') document.getElementById('lc-doc-input').click();
+    else if (action === 'media') document.getElementById('lc-file-input').click();
+    else if (action === 'camera') document.getElementById('lc-camera-input').click();
+    else if (action === 'audio') startVoiceRec();
+  }
+  function closeAttachMenu() {
+    const menu = document.getElementById('lc-attach-menu');
+    if (menu) menu.classList.remove('open');
+  }
+
+  /* ---- VOICE NOTE ---- */
+  function formatVoiceTime(sec) {
+    sec = Math.round(Number(sec) || 0);
+    if (sec < 0) sec = 0;
+    const m = Math.floor(sec / 60);
+    const s = String(sec % 60).padStart(2, '0');
+    return m + ':' + s;
+  }
+  function voiceRecMime() {
+    const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
+    for (let i = 0; i < candidates.length; i++) {
+      if (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(candidates[i])) return candidates[i];
+    }
+    return 'audio/webm';
+  }
+  function voiceExt(mime) {
+    if (/mp4|m4a/i.test(mime)) return 'm4a';
+    if (/ogg|opus/i.test(mime)) return 'ogg';
+    return 'webm';
+  }
+  function stopVoiceTracks() {
+    if (state.recStream) {
+      try { state.recStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+      state.recStream = null;
+    }
+  }
+  function resetRecorder() {
+    clearInterval(state.recTimer);
+    state.recTimer = null;
+    state.recorder = null;
+    state.recChunks = [];
+    state.recMime = '';
+    state.recStartTs = 0;
+    state.recSeconds = 0;
+    stopVoiceTracks();
+  }
+  function setRecBar(visible) {
+    const bar = document.getElementById('lc-rec-bar');
+    if (bar) bar.style.display = visible ? 'flex' : 'none';
+    const mic = document.getElementById('lc-mic-btn');
+    if (mic) mic.style.display = visible ? 'none' : '';
+    const input = document.getElementById('lc-input');
+    if (input) input.style.display = visible ? 'none' : '';
+    const send = document.getElementById('lc-send-btn');
+    if (send) send.style.display = visible ? 'none' : '';
+    const attach = document.querySelector('.lc-composer .lc-attach-wrap');
+    if (attach) attach.style.display = visible ? 'none' : '';
+    if (visible) closeAttachMenu();
+  }
+  function voiceErrMsg(err) {
+    const name = (err && err.name) || '';
+    if (!window.isSecureContext) {
+      return 'Mikrofon hanya tersedia via HTTPS atau http://localhost. Origin saat ini tidak aman (' + location.origin + ').';
+    }
+    if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+      return 'Akses mikrofon diblokir. Cek ikon kunci di address bar, izin situs, dan pengaturan mikrofon Windows.';
+    }
+    if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+      return 'Tidak ada mikrofon yang terdeteksi.';
+    }
+    if (name === 'NotReadableError' || name === 'TrackStartError') {
+      return 'Mikrofon sedang dipakai aplikasi lain. Tutup aplikasi tersebut lalu coba lagi.';
+    }
+    if (name === 'OverconstrainedError') {
+      return 'Mikrofon tidak mendukung pengaturan yang diminta.';
+    }
+    return 'Gagal mengakses mikrofon (' + (name || 'Error') + '): ' + ((err && err.message) || 'tidak diketahui');
+  }
+  async function startVoiceRec() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      showToast(window.isSecureContext ? 'Browser tidak mendukung perekaman suara.' : 'Mikrofon hanya tersedia via HTTPS atau http://localhost.', 'error');
+      return;
+    }
+    if (!state.conversation) {
+      showToast('Mulai percakapan terlebih dahulu.', 'error');
+      return;
+    }
+    if (state.recorder) {
+      try { state.recorder.resume(); } catch (e) {}
+      return;
+    }
+    closeAttachMenu();
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      state.recStream = stream;
+      state.recMime = voiceRecMime();
+      let recorder;
+      try {
+        recorder = state.recMime ? new MediaRecorder(stream, { mimeType: state.recMime }) : new MediaRecorder(stream);
+      } catch (e) {
+        recorder = new MediaRecorder(stream);
+      }
+      state.recMime = recorder.mimeType || state.recMime || 'audio/webm';
+      state.recChunks = [];
+      recorder.ondataavailable = (e) => { if (e.data && e.data.size) state.recChunks.push(e.data); };
+      recorder.start();
+      state.recorder = recorder;
+      state.recStartTs = Date.now();
+      state.recSeconds = 0;
+      setRecBar(true);
+      const timeEl = document.getElementById('lc-rec-time');
+      if (timeEl) {
+        timeEl.textContent = '0:00';
+        state.recTimer = setInterval(() => {
+          state.recSeconds = Math.floor((Date.now() - state.recStartTs) / 1000);
+          timeEl.textContent = formatVoiceTime(state.recSeconds);
+          if (state.recSeconds >= 1800) finishVoiceRec();
+        }, 500);
+      }
+    } catch (err) {
+      console.error('LiveChat: mic error', err);
+      showToast(voiceErrMsg(err), 'error');
+    }
+  }
+  function cancelVoiceRec() {
+    const rec = state.recorder;
+    clearInterval(state.recTimer);
+    state.recTimer = null;
+    if (rec && rec.state !== 'inactive') {
+      rec.onstop = () => resetRecorder();
+      try { rec.stop(); } catch (e) { resetRecorder(); }
+    } else {
+      resetRecorder();
+    }
+    setRecBar(false);
+  }
+  function finishVoiceRec() {
+    const rec = state.recorder;
+    if (!rec || rec.state === 'inactive') return;
+    setRecBar(false);
+    const duration = Math.max(1, state.recSeconds || Math.floor((Date.now() - state.recStartTs) / 1000));
+    const mime = state.recMime || 'audio/webm';
+    rec.onstop = () => {
+      const blob = new Blob(state.recChunks, { type: mime });
+      if (blob.size === 0) {
+        resetRecorder();
+        showToast('Rekaman kosong.', 'error');
+        return;
+      }
+      resetRecorder();
+      const file = new File([blob], 'voice-note-' + Date.now() + '.' + voiceExt(mime), { type: mime });
+      sendVoiceFile(file, duration);
+    };
+    try { rec.stop(); } catch (e) { resetRecorder(); setRecBar(false); }
+    setTimeout(() => setRecBar(false), 4000);
+  }
+  async function sendVoiceFile(file, duration) {
+    if (!state.conversation) return;
+    const tempId = Date.now();
+    const replyId = state.replyToMsg?.id || null;
+    addLoadingMsg(tempId, file);
+    clearReplyPreview();
+    try {
+      const formData = new FormData();
+      formData.append('conversation_id', state.conversation.id);
+      formData.append('message_type', 'audio');
+      formData.append('media[]', file);
+      formData.append('media_duration', String(Math.round(duration)));
+      if (replyId) formData.append('reply_to_message_id', replyId);
+      const res = await fetch('/api/live-chat/messages', {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': getToken(), 'Accept': 'application/json' },
+        body: formData,
+      });
+      removeLoadingMsg(tempId);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        showToast(err.message || 'Gagal mengirim pesan suara', 'error');
+        return;
+      }
+      const msg = await res.json();
+      state.messages.push(msg);
+      appendUserMsg(msg);
+      scrollToBottom();
+      updateBadge();
+    } catch (e) {
+      removeLoadingMsg(tempId);
+      showToast('Gagal mengirim pesan suara', 'error');
+    }
+  }
+  function toggleVoicePlay(el) {
+    const audio = el.querySelector('audio');
+    if (!audio || !audio.src) return;
+    const btn = el.querySelector('.lc-voice-btn');
+    const fill = el.querySelector('.lc-voice-fill');
+    const time = el.querySelector('.lc-voice-time');
+    const setPlaying = (p) => btn && btn.classList.toggle('is-playing', p);
+    if (window.__lcActiveVoice && window.__lcActiveVoice !== audio) {
+      try { window.__lcActiveVoice.pause(); } catch (e) {}
+    }
+    window.__lcActiveVoice = audio.paused ? audio : null;
+    if (!audio.dataset.lcBound) {
+      audio.dataset.lcBound = '1';
+      audio.addEventListener('play', () => setPlaying(true));
+      audio.addEventListener('pause', () => setPlaying(false));
+      audio.addEventListener('ended', () => {
+        setPlaying(false);
+        if (fill) fill.style.width = '0%';
+        const d = el.dataset.dur;
+        if (time) time.textContent = d ? formatVoiceTime(d) : '0:00';
+        window.__lcActiveVoice = null;
+      });
+      audio.addEventListener('timeupdate', () => {
+        if (!audio.duration || !isFinite(audio.duration)) return;
+        if (fill) fill.style.width = ((audio.currentTime / audio.duration) * 100).toFixed(1) + '%';
+        if (time) time.textContent = formatVoiceTime(audio.currentTime);
+      });
+    }
+    if (audio.paused) {
+      try {
+        if (fill) fill.style.width = '0%';
+        if (time) time.textContent = '0:00';
+        const p = audio.play();
+        if (p && p.catch) p.catch(() => setPlaying(false));
+      } catch (e) { setPlaying(false); }
+    } else {
+      audio.pause();
+    }
   }
   function openMediaEditor() {
     if (state.mediaList.length === 0) { cancelMediaEditor(); return; }
@@ -861,6 +1214,7 @@
       const n = attachmentsOf(msg).length;
       preview = n > 1 ? `📷 ${n} Foto` : '📷 Foto';
     } else if (msg.message_type === 'video') preview = '🎬 Video';
+    else if (msg.message_type === 'audio') preview = '🎤 Pesan suara';
     else preview = escapeHtml((msg.message || '').substring(0, 80));
     const replyPreview = document.getElementById('lc-reply-preview');
     if (replyPreview) {
@@ -957,6 +1311,7 @@
   }
 
   function close() {
+    cancelVoiceRec();
     state.isOpen = false;
     document.getElementById('lc-popup')?.classList.remove('active');
     document.getElementById('lc-overlay')?.classList.remove('active');
@@ -1111,6 +1466,8 @@
     toggle, close, openChannel, backToList, onKeydown, autoResize,
     sendText, onFileSelect, cancelMediaEditor, setActiveIndex, navMedia, removeMediaItem, updateActiveCaption,
     replyTo, cancelReply, deleteMsg, scrollToMsg, showMenu, updateBadge, openImage, openGallery, showReactions, toggleStar, showDeleteOptions, hideForMe, closeMenus: closeAllMenus, playVideoMessage,
+    toggleAttachMenu, attachAction, closeAttachMenu,
+    startVoiceRec, cancelVoiceRec, finishVoiceRec, toggleVoicePlay,
     toggleNotif,
   };
 
@@ -1120,9 +1477,11 @@
     const overlay = document.getElementById('lc-overlay');
     if (overlay) overlay.addEventListener('click', close);
     document.addEventListener('click', function(e) {
+      if (!e.target.isConnected) return;
       if (!e.target.closest('.lc-context-menu') && !e.target.closest('.lc-msg-anchor')) {
         closeAllMenus();
       }
+      if (!e.target.closest('.lc-attach-wrap')) closeAttachMenu();
     });
 
     const params = new URLSearchParams(window.location.search);

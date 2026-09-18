@@ -12,7 +12,7 @@
                     <div style="font-size:12px;color:var(--text-dim)">
                         User: {{ $conversation->user->name ?? 'User' }} ({{ $conversation->user->email ?? '' }})
                         @if($activeOperator)
-                        • Operator: {{ $activeOperator->name ?? 'Admin' }} <span style="color:var(--success)">● Online</span>
+                        • Operator: {{ $activeOperator->display_name }} <span style="color:var(--success)">● Online</span>
                         @else
                         • <span style="color:var(--error)">● Offline</span>
                         @endif
@@ -30,19 +30,28 @@
 
         <div id="chat-messages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px">
             @forelse($messages as $msg)
-            <div class="chat-msg {{ $msg->sender_type === 'user' ? 'chat-msg-user' : ($msg->sender_type === 'admin' ? 'chat-msg-admin' : 'chat-msg-system') }}" data-msg-id="{{ $msg->id }}">
+            <div class="chat-msg {{ $msg->sender_type === 'user' ? 'chat-msg-user' : ($msg->sender_type === 'admin' ? 'chat-msg-admin' : 'chat-msg-system') }}" data-msg-id="{{ $msg->id }}" data-sender-type="{{ $msg->sender_type }}" data-sender-id="{{ $msg->sender_id ?? '' }}">
                 @if($msg->sender_type === 'system')
                     <div class="chat-bubble-system">{{ $msg->message }}</div>
                 @else
                     @if($msg->reply_to)
                     <div class="chat-reply" onclick="scrollToMsg({{ $msg->reply_to_id }})">
-                        ↳ {{ Str::limit($msg->reply_to->message ?? 'Media', 50) }}
+                        ↳ {{ Str::limit($msg->reply_to->message ?? ($msg->reply_to->message_type === 'audio' ? '🎤 Pesan suara' : ($msg->reply_to->message_type === 'video' ? 'Video' : 'Foto')), 50) }}
                     </div>
                     @endif
                     @if($msg->message_type === 'image' && ($msg->media_path || $msg->attachments->isNotEmpty()))
                     @include('partials.livechat-gallery', ['msg' => $msg])
                     @elseif($msg->message_type === 'video' && $msg->media_path)
                     @include('partials.livechat-gallery', ['msg' => $msg])
+                    @elseif($msg->message_type === 'audio' && $msg->media_path)
+                    <div class="chat-media">
+                        <div class="chat-voice" data-dur="{{ $msg->media_duration ?? '' }}" onclick="toggleChatVoice(this)">
+                            <span class="chat-voice-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
+                            <span class="chat-voice-progress"><span class="chat-voice-fill"></span></span>
+                            <span class="chat-voice-time">{{ $msg->media_duration ? gmdate('i:s', $msg->media_duration) : '' }}</span>
+                            <audio src="/media/{{ $msg->media_path }}" preload="metadata"></audio>
+                        </div>
+                    </div>
                     @endif
                     @if($msg->message)
                     <div class="chat-bubble">{{ $msg->message }}</div>
@@ -51,6 +60,11 @@
                         {{ $msg->created_at->format('H:i') }}
                         @if($msg->sender_type === 'admin')
                             @if($msg->read_at) ✓✓ @else ✓ @endif
+                        @endif
+                        @if($msg->sender_type !== 'system')
+                        <span class="chat-msg-actions">
+                            <button type="button" class="chat-del-trigger" onclick="toggleDelMenu(event, {{ $msg->id }})">Hapus</button>
+                        </span>
                         @endif
                     </div>
                 @endif
@@ -66,9 +80,20 @@
         @if($conversation->status !== 'closed')
         <div class="chat-composer" style="flex-shrink:0;border-top:1px solid var(--border);padding:12px">
             <input type="file" id="admin-file-input" accept="image/*,video/*" style="display:none" onchange="adminFileSelect(event)">
-            <div style="display:flex;align-items:flex-end;gap:8px">
+            <input type="file" id="admin-audio-input" accept="audio/*" style="display:none" onchange="adminAudioFileSelect(event)">
+            <div id="admin-rec-bar" style="display:none;align-items:center;gap:8px;margin-bottom:8px">
+                <span style="width:9px;height:9px;border-radius:50%;background:#ef4444;flex-shrink:0;animation:lcRecPulse 1.2s ease-in-out infinite"></span>
+                <span id="admin-rec-time" style="font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--text);min-width:34px">0:00</span>
+                <span style="flex:1;font-size:11px;color:var(--text-dim)">Merekam...</span>
+                <button type="button" onclick="cancelAdminVoiceRec()" title="Batal" style="width:28px;height:28px;border-radius:50%;border:none;background:rgba(239,68,68,.85);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg viewBox="0 0 24 24" width="14" height="14" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+                <button type="button" onclick="finishAdminVoiceRec()" title="Kirim" style="width:28px;height:28px;border-radius:50%;border:none;background:var(--accent);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg viewBox="0 0 24 24" width="14" height="14" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+            </div>
+            <div id="admin-controls" style="display:flex;align-items:flex-end;gap:8px">
                 <button class="btn-icon" onclick="document.getElementById('admin-file-input').click()" title="Kirim gambar/video" style="width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:transparent;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+                </button>
+                <button class="btn-icon" onclick="startAdminVoiceRec()" title="Rekam pesan suara" style="width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:transparent;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4"/></svg>
                 </button>
                 <textarea id="admin-chat-input" class="input-field" rows="1" placeholder="Ketik pesan..." style="flex:1;resize:none;max-height:80px;border-radius:20px" onkeydown="adminKeydown(event)" oninput="autoResizeInput(this)"></textarea>
                 <button class="btn btn-primary" id="admin-send-btn" onclick="adminSendText()" disabled style="border-radius:50%;width:36px;height:36px;padding:0;display:flex;align-items:center;justify-content:center">
@@ -103,6 +128,15 @@
 .chat-video-play svg { width: 20px; height: 20px; fill: #fff; margin-left: 2px; }
 .chat-video-play:hover { background: rgba(124,58,237,.85); transform: translate(-50%,-50%) scale(1.08); }
 .chat-video-play.is-hidden { display: none; }
+.chat-voice { display: flex; align-items: center; gap: 10px; max-width: 240px; min-width: 170px; padding: 6px 12px; border-radius: 14px; background: var(--bg-input); cursor: pointer; user-select: none; }
+.chat-voice-btn { width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.chat-voice-btn svg { width: 14px; height: 14px; fill: #fff; }
+.chat-voice-btn:not(.is-playing) svg { transform: translateX(1px); }
+.chat-voice-btn.is-playing svg { transform: none; }
+.chat-voice-progress { flex: 1; height: 4px; border-radius: 2px; background: rgba(255,255,255,.16); overflow: hidden; min-width: 40px; }
+.chat-voice-fill { display: block; height: 100%; width: 0%; background: var(--accent); border-radius: 2px; transition: width .12s linear; }
+.chat-voice-time { font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-dim); flex-shrink: 0; }
+@keyframes lcRecPulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .4; transform: scale(.8); } }
 .chat-msg-gallery { display: grid; gap: 3px; margin-bottom: 4px; width: 100%; max-width: 260px; }
 .chat-grid-1 { grid-template-columns: minmax(0, 1fr); }
 .chat-grid-2, .chat-grid-3, .chat-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -131,11 +165,19 @@
 .chat-image-lightbox-tools .is-active { color: #facc15; }
 .chat-reply { background: var(--bg-input); border-left: 3px solid var(--accent); padding: 4px 8px; margin-bottom: 6px; border-radius: 4px; font-size: 11px; color: var(--text-dim); cursor: pointer; }
 .chat-reply:hover { background: var(--sidebar-hover); }
+.chat-msg-actions { position: relative; display: inline-flex; }
+.chat-del-trigger { background: none; border: none; cursor: pointer; font-size: 10px; opacity: 0.5; color: inherit; padding: 0 3px; display: inline-flex; align-items: center; }
+.chat-del-trigger:hover { opacity: 1; }
+.chat-del-menu { position: absolute; bottom: 100%; right: 0; z-index: 50; min-width: 168px; background: var(--surface, #1e1136); border: 1px solid var(--border, rgba(255,255,255,.1)); border-radius: 10px; padding: 4px; box-shadow: 0 12px 34px rgba(0,0,0,.38); display: flex; flex-direction: column; margin-bottom: 4px; }
+.chat-del-menu button { background: transparent; border: 0; text-align: left; padding: 7px 10px; border-radius: 8px; font-size: 12px; color: var(--text, #f5f3fb); cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.chat-del-menu button:hover { background: var(--surface-2, rgba(255,255,255,.06)); }
+.chat-del-menu button.danger { color: #f87171; }
 </style>
 
 <script>
 const CSRF_TOKEN = '{{ csrf_token() }}';
 const CONVERSATION_ID = {{ $conversation->id }};
+const ADMIN_ID = {{ auth('admin')->id() }};
 
 let pollTimer = null;
 let adminReplyToId = null;
@@ -154,6 +196,61 @@ function playChatVideo(btn) {
     btn.classList.add('is-hidden');
     const pr = video.play();
     if (pr && pr.catch) pr.catch(() => { btn.classList.remove('is-hidden'); });
+}
+
+function fmtVoiceTime(sec) {
+    sec = Math.round(Number(sec) || 0);
+    if (sec < 0) sec = 0;
+    const m = Math.floor(sec / 60);
+    const s = String(sec % 60).padStart(2, '0');
+    return m + ':' + s;
+}
+
+function buildVoiceHtml(msg) {
+    const a = attachmentsOfMsg(msg)[0];
+    if (!a) return '';
+    const dur = a.media_duration ? fmtVoiceTime(a.media_duration) : '';
+    return `<div class="chat-media"><div class="chat-voice" data-dur="${a.media_duration || ''}" onclick="toggleChatVoice(this)"><span class="chat-voice-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span><span class="chat-voice-progress"><span class="chat-voice-fill"></span></span><span class="chat-voice-time">${dur}</span><audio src="/media/${a.media_path}" preload="metadata"></audio></div></div>`;
+}
+
+function toggleChatVoice(el) {
+    const audio = el.querySelector('audio');
+    if (!audio || !audio.src) return;
+    const btn = el.querySelector('.chat-voice-btn');
+    const fill = el.querySelector('.chat-voice-fill');
+    const time = el.querySelector('.chat-voice-time');
+    const setPlaying = (p) => btn && btn.classList.toggle('is-playing', p);
+    if (window.__AdminActiveVoice && window.__AdminActiveVoice !== audio) {
+        try { window.__AdminActiveVoice.pause(); } catch (e) {}
+    }
+    window.__AdminActiveVoice = audio.paused ? audio : null;
+    if (!audio.dataset.lcBound) {
+        audio.dataset.lcBound = '1';
+        audio.addEventListener('play', () => setPlaying(true));
+        audio.addEventListener('pause', () => setPlaying(false));
+        audio.addEventListener('ended', () => {
+            setPlaying(false);
+            if (fill) fill.style.width = '0%';
+            const d = el.dataset.dur;
+            if (time) time.textContent = d ? fmtVoiceTime(d) : '0:00';
+            window.__AdminActiveVoice = null;
+        });
+        audio.addEventListener('timeupdate', () => {
+            if (!audio.duration || !isFinite(audio.duration)) return;
+            if (fill) fill.style.width = ((audio.currentTime / audio.duration) * 100).toFixed(1) + '%';
+            if (time) time.textContent = fmtVoiceTime(audio.currentTime);
+        });
+    }
+    if (audio.paused) {
+        try {
+            if (fill) fill.style.width = '0%';
+            if (time) time.textContent = '0:00';
+            const p = audio.play();
+            if (p && p.catch) p.catch(() => setPlaying(false));
+        } catch (e) { setPlaying(false); }
+    } else {
+        audio.pause();
+    }
 }
 
 function startPoll() {
@@ -301,21 +398,33 @@ function appendMessage(msg) {
     const div = document.createElement('div');
     div.className = `chat-msg ${msg.sender_type === 'user' ? 'chat-msg-user' : 'chat-msg-admin'}`;
     div.dataset.msgId = msg.id;
+    div.dataset.senderType = msg.sender_type;
+    div.dataset.senderId = msg.sender_id;
 
     let html = '';
     if (msg.reply_to) {
-        html += `<div class="chat-reply">↳ ${escapeHtml((msg.reply_to.message || '').substring(0, 50))}</div>`;
+        const rp = msg.reply_to.message_type === 'audio' ? '🎤 Pesan suara'
+            : msg.reply_to.message_type === 'video' ? 'Video'
+            : msg.reply_to.message_type === 'image' ? 'Foto'
+            : ((msg.reply_to.message || '').substring(0, 50));
+        html += `<div class="chat-reply">↳ ${escapeHtml(rp)}</div>`;
     }
     if (msg.message_type === 'image' && (msg.media_path || (msg.attachments && msg.attachments.length))) {
         html += buildGalleryHtml(msg);
     } else if (msg.message_type === 'video' && msg.media_path) {
         html += buildGalleryHtml(msg);
+    } else if (msg.message_type === 'audio' && msg.media_path) {
+        html += buildVoiceHtml(msg);
     }
     if (msg.message) {
         html += `<div class="chat-bubble">${escapeHtml(msg.message)}</div>`;
     }
     const time = new Date(msg.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-    html += `<div class="chat-time">${time}</div>`;
+    let actionBtns = '';
+    if (msg.sender_type !== 'system') {
+        actionBtns += `<span class="chat-msg-actions"><button type="button" class="chat-del-trigger" onclick="toggleDelMenu(event, ${msg.id})">Hapus</button></span>`;
+    }
+    html += `<div class="chat-time">${time}${actionBtns}</div>`;
 
     div.innerHTML = html;
     container.appendChild(div);
@@ -384,6 +493,168 @@ function adminFileSelect(e) {
     e.target.value = '';
     adminPreviewFile = file;
     showAdminPreview(file);
+}
+
+/* ---- VOICE NOTE (admin) ---- */
+let adminRec = { recorder: null, chunks: [], stream: null, timer: null, mime: '', startTs: 0, seconds: 0 };
+
+function adminVoiceRecMime() {
+    const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
+    for (let i = 0; i < candidates.length; i++) {
+        if (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(candidates[i])) return candidates[i];
+    }
+    return 'audio/webm';
+}
+function adminVoiceExt(mime) {
+    if (/mp4|m4a/i.test(mime)) return 'm4a';
+    if (/ogg|opus/i.test(mime)) return 'ogg';
+    return 'webm';
+}
+function adminResetRec() {
+    clearInterval(adminRec.timer);
+    adminRec.timer = null;
+    adminRec.recorder = null;
+    adminRec.chunks = [];
+    adminRec.mime = '';
+    adminRec.startTs = 0;
+    adminRec.seconds = 0;
+    if (adminRec.stream) {
+        try { adminRec.stream.getTracks().forEach(t => t.stop()); } catch (e) {}
+        adminRec.stream = null;
+    }
+}
+function adminSetRecBar(visible) {
+    const bar = document.getElementById('admin-rec-bar');
+    if (bar) bar.style.display = visible ? 'flex' : 'none';
+    const controls = document.getElementById('admin-controls');
+    if (controls) controls.style.display = visible ? 'none' : 'flex';
+}
+function adminVoiceErrMsg(err) {
+    const name = (err && err.name) || '';
+    if (!window.isSecureContext) {
+        return 'Mikrofon hanya tersedia via HTTPS atau http://localhost. Origin saat ini tidak aman (' + location.origin + ').';
+    }
+    if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+        return 'Akses mikrofon diblokir. Cek ikon kunci di address bar, izin situs, dan pengaturan mikrofon Windows.';
+    }
+    if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+        return 'Tidak ada mikrofon yang terdeteksi.';
+    }
+    if (name === 'NotReadableError' || name === 'TrackStartError') {
+        return 'Mikrofon sedang dipakai aplikasi lain. Tutup aplikasi tersebut lalu coba lagi.';
+    }
+    if (name === 'OverconstrainedError') {
+        return 'Mikrofon tidak mendukung pengaturan yang diminta.';
+    }
+    return 'Gagal mengakses mikrofon (' + (name || 'Error') + '): ' + ((err && err.message) || 'tidak diketahui');
+}
+async function startAdminVoiceRec() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert(window.isSecureContext ? 'Browser tidak mendukung perekaman suara.' : 'Mikrofon hanya tersedia via HTTPS atau http://localhost.');
+        return;
+    }
+    if (adminRec.recorder) {
+        try { adminRec.recorder.resume(); } catch (e) {}
+        return;
+    }
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        adminRec.stream = stream;
+        adminRec.mime = adminVoiceRecMime();
+        let recorder;
+        try {
+            recorder = adminRec.mime ? new MediaRecorder(stream, { mimeType: adminRec.mime }) : new MediaRecorder(stream);
+        } catch (e) {
+            recorder = new MediaRecorder(stream);
+        }
+        adminRec.mime = recorder.mimeType || adminRec.mime || 'audio/webm';
+        adminRec.chunks = [];
+        recorder.ondataavailable = (e) => { if (e.data && e.data.size) adminRec.chunks.push(e.data); };
+        recorder.start();
+        adminRec.recorder = recorder;
+        adminRec.startTs = Date.now();
+        adminRec.seconds = 0;
+        adminSetRecBar(true);
+        const timeEl = document.getElementById('admin-rec-time');
+        if (timeEl) {
+            timeEl.textContent = '0:00';
+            adminRec.timer = setInterval(() => {
+                adminRec.seconds = Math.floor((Date.now() - adminRec.startTs) / 1000);
+                timeEl.textContent = fmtVoiceTime(adminRec.seconds);
+                if (adminRec.seconds >= 1800) finishAdminVoiceRec();
+            }, 500);
+        }
+    } catch (err) {
+        console.error('LCAdmin legacy: mic error', err);
+        alert(adminVoiceErrMsg(err));
+        adminSetRecBar(false);
+    }
+}
+function cancelAdminVoiceRec() {
+    const r = adminRec.recorder;
+    clearInterval(adminRec.timer);
+    adminRec.timer = null;
+    if (r && r.state !== 'inactive') {
+        r.onstop = () => adminResetRec();
+        try { r.stop(); } catch (e) { adminResetRec(); }
+    } else {
+        adminResetRec();
+    }
+    adminSetRecBar(false);
+}
+function finishAdminVoiceRec() {
+    const r = adminRec.recorder;
+    if (!r || r.state === 'inactive') return;
+    adminSetRecBar(false);
+    const duration = Math.max(1, adminRec.seconds || Math.floor((Date.now() - adminRec.startTs) / 1000));
+    const mime = adminRec.mime || 'audio/webm';
+    r.onstop = () => {
+        const blob = new Blob(adminRec.chunks, { type: mime });
+        if (blob.size === 0) {
+            adminResetRec();
+            showAdminToast('Rekaman kosong.', 'error');
+            return;
+        }
+        adminResetRec();
+        const file = new File([blob], 'voice-note-' + Date.now() + '.' + adminVoiceExt(mime), { type: mime });
+        adminSendVoiceFile(file, duration);
+    };
+    try { r.stop(); } catch (e) { adminResetRec(); adminSetRecBar(false); }
+    setTimeout(() => adminSetRecBar(false), 4000);
+}
+function adminAudioFileSelect(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    e.target.value = '';
+    adminSendVoiceFile(file, 0);
+}
+async function adminSendVoiceFile(file, duration) {
+    try {
+        const formData = new FormData();
+        formData.append('message_type', 'audio');
+        formData.append('media[]', file);
+        formData.append('media_duration', String(Math.round(duration)));
+        if (adminReplyToId) formData.append('reply_to_message_id', adminReplyToId);
+        const res = await fetch(`/lcadmin/conversations/${CONVERSATION_ID}/reply`, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': CSRF_TOKEN, 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: formData
+        });
+        if (!res.ok) throw new Error();
+        const msg = await res.json();
+        appendMessage(msg);
+        adminReplyToId = null;
+        document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
+    } catch (e) {
+        showAdminToast('Gagal mengirim pesan suara', 'error');
+    }
+}
+function showAdminToast(message, type) {
+    const t = document.createElement('div');
+    t.textContent = message;
+    t.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:10px;font-size:13px;font-weight:500;color:#fff;z-index:100010;background:' + (type === 'error' ? '#ef4444' : '#10b981') + ';box-shadow:0 8px 24px -4px rgba(0,0,0,.3)';
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3000);
 }
 
 function showAdminPreview(file) {
@@ -515,6 +786,61 @@ async function closeConversation(id) {
         location.reload();
     } catch (e) {}
 }
+
+async function deleteMsg(id) {
+    if (!confirm('Hapus pesan ini untuk semua orang?')) return;
+    try {
+        const res = await fetch(`/lcadmin/messages/${id}`, {
+            method: 'DELETE',
+            headers: { 'X-CSRF-TOKEN': CSRF_TOKEN, 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        if (!res.ok) throw new Error();
+        const el = document.querySelector(`[data-msg-id="${id}"]`);
+        if (el) el.remove();
+    } catch (e) {}
+}
+
+async function hideMsg(id) {
+    if (!confirm('Hapus pesan ini hanya dari chat Anda?')) return;
+    try {
+        const res = await fetch(`/lcadmin/messages/${id}/hide`, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': CSRF_TOKEN, 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        if (!res.ok) throw new Error();
+        const el = document.querySelector(`[data-msg-id="${id}"]`);
+        if (el) el.remove();
+    } catch (e) {}
+}
+
+function toggleDelMenu(e, id) {
+    e.stopPropagation();
+    const existing = document.querySelector(`.chat-del-menu[data-msg-id="${id}"]`);
+    document.querySelectorAll('.chat-del-menu').forEach(m => m.remove());
+    if (existing) return;
+    const anchor = document.querySelector(`[data-msg-id="${id}"] .chat-msg-actions`);
+    if (!anchor) return;
+    const node = document.querySelector(`[data-msg-id="${id}"]`);
+    const canDelete = node && node.dataset.senderType === 'admin' && String(node.dataset.senderId) === String(ADMIN_ID);
+    const menu = document.createElement('div');
+    menu.className = 'chat-del-menu';
+    menu.dataset.msgId = id;
+    menu.innerHTML = `
+        <button type="button" class="danger" onclick="hideMsg(${id})">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+            Hapus untuk saya
+        </button>
+        ${canDelete ? `<button type="button" class="danger" onclick="deleteMsg(${id})">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+            Hapus untuk semua orang
+        </button>` : ''}
+        <button type="button" onclick="this.closest('.chat-del-menu').remove()">Batal</button>`;
+    anchor.appendChild(menu);
+}
+document.addEventListener('click', function(e) {
+    if (!e.target.isConnected) return;
+    document.querySelectorAll('.chat-del-menu').forEach(m => m.remove());
+});
 
 async function reopenConversation(id) {
     try {

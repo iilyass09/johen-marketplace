@@ -44,6 +44,12 @@ class LiveChatOperator extends Model
         return $query->where('channel_id', $channelId);
     }
 
+    public function getDisplayNameAttribute(): string
+    {
+        return $this->name
+            ?: ($this->user?->name ?: 'Admin');
+    }
+
     public function isOnDuty(): bool
     {
         $now = now();

@@ -15,6 +15,7 @@ use App\Services\PushService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
 class LiveChatController extends Controller
@@ -34,16 +35,18 @@ class LiveChatController extends Controller
                 ->where('user_id', $userId)
                 ->first();
 
+            $hasMessages = $conversation && $conversation->messages()->exists();
+
             $activeOperator = $channel->getActiveOperator();
             $admin = $channel->admins()->where('is_active', true)->first();
 
-            $channel->unread_count = $conversation ? $conversation->user_unread_count : 0;
-            $channel->last_message = $conversation ? $conversation->lastMessage : null;
-            $channel->last_message_at = $conversation ? $conversation->last_message_at : null;
-            $channel->has_conversation = $conversation !== null;
+            $channel->unread_count = $hasMessages ? $conversation->user_unread_count : 0;
+            $channel->last_message = $hasMessages ? $conversation->lastMessage : null;
+            $channel->last_message_at = $hasMessages ? $conversation->last_message_at : null;
+            $channel->has_conversation = $hasMessages;
             $channel->conversation_id = $conversation ? $conversation->id : null;
             $channel->is_online = $activeOperator !== null;
-            $channel->operator_name = $activeOperator ? $activeOperator->name : null;
+            $channel->operator_name = $activeOperator ? $activeOperator->display_name : null;
             $channel->admin_photo = $admin && $admin->photo_path ? asset('storage/' . $admin->photo_path) : null;
         });
 
@@ -73,7 +76,7 @@ class LiveChatController extends Controller
         return response()->json([
             'conversation' => $conversation,
             'active_operator' => $activeOperator ? [
-                'name' => $activeOperator->name,
+                'name' => $activeOperator->display_name,
                 'photo' => $admin && $admin->photo_path ? asset('storage/' . $admin->photo_path) : null,
                 'schedule' => $activeOperator->getCurrentSchedule()?->schedule_label,
                 'is_on_duty' => true,
@@ -107,11 +110,12 @@ class LiveChatController extends Controller
     {
         $request->validate([
             'conversation_id' => 'required|exists:live_chat_conversations,id',
-            'message_type' => 'required|in:text,image,video',
+            'message_type' => 'required|in:text,image,video,audio',
             'message' => 'nullable|string|max:5000',
             'reply_to_message_id' => 'nullable|exists:live_chat_messages,id',
             'media' => 'nullable|array',
-            'media.*' => 'file|max:1048576|mimes:jpg,jpeg,png,gif,webp,mp4,mov,avi,mkv,webm,flv,3gp',
+            'media.*' => 'file|max:1048576|mimes:jpg,jpeg,png,gif,webp,mp4,mov,avi,mkv,webm,flv,3gp,wav,oga,ogg,opus,mp3,m4a,aac,weba',
+            'media_duration' => 'nullable|integer|min:0|max:1800',
             'thumbnail' => 'nullable|array',
             'thumbnail.*' => 'file|max:5120|mimes:jpg,jpeg,png,webp',
             'thumbnail_indexes' => 'nullable|array',
@@ -149,7 +153,8 @@ class LiveChatController extends Controller
                     $posterFiles[(int) $index] = $thumb;
                 }
             }
-            $rows = LiveChatMedia::storeBatch($files, $posterFiles);
+            $durations = $request->message_type === 'audio' ? [0 => (int) $request->media_duration] : [];
+            $rows = LiveChatMedia::storeBatch($files, $posterFiles, $durations, $request->message_type !== 'audio');
             $message->attachments()->createMany($rows);
             LiveChatMedia::applyCompatColumns($message, $rows);
         }
@@ -167,7 +172,7 @@ class LiveChatController extends Controller
 
         if ($operator && $shouldAutoReply) {
             $userName = Auth::user()->name ?? 'Pangeran';
-            $operatorName = $operator->name ?? 'Admin';
+            $operatorName = $operator->display_name ?? 'Admin';
             $channelName = str_replace('Johen ', '', $channel->name);
 
             LiveChatMessage::create([
@@ -193,6 +198,10 @@ class LiveChatController extends Controller
 
     protected function notifyAdmins(LiveChatMessage $message, LiveChatConversation $conversation, string $messageType): void
     {
+        if (Schema::hasColumn('live_chat_conversations', 'archived_at') && $conversation->archived_at) {
+            return;
+        }
+
         try {
             $user = Auth::user();
             $userName = $user?->name ?: 'User';
@@ -201,6 +210,7 @@ class LiveChatController extends Controller
             $body = match ($messageType) {
                 'image' => $attachmentCount > 0 ? "📷 {$attachmentCount} Foto" : '📷 Foto',
                 'video' => $attachmentCount > 0 ? "🎬 {$attachmentCount} Video" : '🎬 Video',
+                'audio' => '🎤 Pesan suara',
                 default => mb_strlen((string) $message->message) > 150
                     ? mb_substr((string) $message->message, 0, 150).'…'
                     : (string) $message->message,

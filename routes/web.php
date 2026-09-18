@@ -206,6 +206,7 @@ Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->gro
     Route::patch('/live-chat/conversations/{conversation}/close', [LiveChatConversationController::class, 'close'])->name('live-chat.conversations.close');
     Route::patch('/live-chat/conversations/{conversation}/reopen', [LiveChatConversationController::class, 'reopen'])->name('live-chat.conversations.reopen');
     Route::delete('/live-chat/messages/{message}', [LiveChatChatController::class, 'deleteMessage'])->name('live-chat.messages.delete');
+    Route::post('/live-chat/messages/{message}/hide', [LiveChatChatController::class, 'hideMessage'])->name('live-chat.messages.hide');
 
     Route::post('/push/{guard}/subscribe', [PushSubscriptionController::class, 'subscribe'])->whereIn('guard', ['admin', 'lcadmin'])->name('push.subscribe');
     Route::post('/push/{guard}/unsubscribe', [PushSubscriptionController::class, 'unsubscribe'])->whereIn('guard', ['admin', 'lcadmin'])->name('push.unsubscribe');
@@ -226,15 +227,21 @@ Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->gro
 Route::middleware(['auth:admin', 'live-chat-admin'])->prefix('lcadmin')->name('lcadmin.')->group(function () {
     Route::get('/dashboard', [LCAdminDashboardController::class, 'index'])->name('dashboard');
     Route::get('/conversations', [LCAdminConversationController::class, 'index'])->name('conversations');
+    Route::get('/conversations/archived', [LCAdminConversationController::class, 'archived'])->name('conversations.archived');
+    Route::get('/conversations/archived-unread', [LCAdminConversationController::class, 'archivedUnread'])->name('conversations.archived-unread');
+    Route::patch('/conversations/{conversation}/restore', [LCAdminConversationController::class, 'restore'])->name('conversations.restore');
     Route::get('/conversations/{conversation}', [LCAdminConversationController::class, 'show'])->name('conversations.show');
     Route::get('/conversations/{conversation}/poll', [LCAdminConversationController::class, 'poll'])->name('conversations.poll');
     Route::post('/conversations/{conversation}/reply', [LCAdminConversationController::class, 'reply'])->name('conversations.reply');
     Route::patch('/conversations/{conversation}/close', [LCAdminConversationController::class, 'close'])->name('conversations.close');
     Route::patch('/conversations/{conversation}/reopen', [LCAdminConversationController::class, 'reopen'])->name('conversations.reopen');
             Route::patch('/conversations/{conversation}/favorite', [LCAdminConversationController::class, 'toggleFavorite'])->name('conversations.favorite');
+            Route::patch('/conversations/{conversation}/pin', [LCAdminConversationController::class, 'togglePin'])->name('conversations.pin');
             Route::delete('/conversations/{conversation}', [LCAdminConversationController::class, 'deleteConversation'])->name('conversations.delete');
             Route::get('/conversations/{conversation}/messages', [LCAdminConversationController::class, 'loadMessages'])->name('conversations.messages');
+            Route::patch('/conversations/{conversation}/archive', [LCAdminConversationController::class, 'archive'])->name('conversations.archive');
     Route::delete('/messages/{message}', [LCAdminConversationController::class, 'deleteMessage'])->name('messages.delete');
+    Route::post('/messages/{message}/hide', [LCAdminConversationController::class, 'hideMessage'])->name('messages.hide');
 
     Route::post('/push/{guard}/subscribe', [PushSubscriptionController::class, 'subscribe'])->whereIn('guard', ['admin', 'lcadmin'])->name('push.subscribe');
     Route::post('/push/{guard}/unsubscribe', [PushSubscriptionController::class, 'unsubscribe'])->whereIn('guard', ['admin', 'lcadmin'])->name('push.unsubscribe');

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\LiveChatConversation;
 use App\Models\LiveChatMessage;
+use App\Models\LiveChatMessageHiddenUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -52,7 +53,10 @@ class LiveChatChatController extends Controller
 
         $conversation->markAdminRead();
 
+        $adminId = Auth::id();
+
         $messages = LiveChatMessage::where('conversation_id', $conversation->id)
+            ->whereDoesntHave('hiddenUsers', fn ($hidden) => $hidden->where('user_id', $adminId))
             ->with(['sender', 'replyTo'])
             ->ordered()
             ->get();
@@ -66,8 +70,11 @@ class LiveChatChatController extends Controller
     {
         $afterId = $request->input('after', 0);
 
+        $adminId = Auth::id();
+
         $messages = LiveChatMessage::where('conversation_id', $conversation->id)
             ->where('id', '>', $afterId)
+            ->whereDoesntHave('hiddenUsers', fn ($hidden) => $hidden->where('user_id', $adminId))
             ->with(['sender', 'replyTo'])
             ->ordered()
             ->get();
@@ -80,10 +87,11 @@ class LiveChatChatController extends Controller
     public function reply(Request $request, LiveChatConversation $conversation)
     {
         $request->validate([
-            'message_type' => 'required|in:text,image,video',
+            'message_type' => 'required|in:text,image,video,audio',
             'message' => 'nullable|string|max:5000',
             'reply_to_message_id' => 'nullable|exists:live_chat_messages,id',
-            'media' => 'required_if:message_type,image,video|file|max:1048576|mimes:jpg,jpeg,png,gif,webp,mp4,mov,avi,mkv,webm,flv,3gp',
+            'media' => 'required_if:message_type,image,video,audio|file|max:1048576|mimes:jpg,jpeg,png,gif,webp,mp4,mov,avi,mkv,webm,flv,3gp,wav,oga,ogg,opus,mp3,m4a,aac,weba',
+            'media_duration' => 'nullable|integer|min:0|max:1800',
             'thumbnail' => 'nullable|file|max:5120|mimes:jpg,jpeg,png,webp',
         ]);
 
@@ -105,6 +113,7 @@ class LiveChatChatController extends Controller
             $data['media_name'] = $file->getClientOriginalName();
             $data['media_mime'] = $file->getMimeType();
             $data['media_size'] = $file->getSize();
+            $data['media_duration'] = $request->message_type === 'audio' ? (int) $request->media_duration : null;
         }
 
         if ($request->hasFile('thumbnail')) {
@@ -126,7 +135,21 @@ class LiveChatChatController extends Controller
 
     public function deleteMessage(LiveChatMessage $message)
     {
+        if ($message->sender_type !== 'admin' || $message->sender_id !== Auth::id()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
         $message->delete();
+
+        return response()->json(['success' => true]);
+    }
+
+    public function hideMessage(LiveChatMessage $message)
+    {
+        LiveChatMessageHiddenUser::firstOrCreate([
+            'live_chat_message_id' => $message->id,
+            'user_id' => Auth::id(),
+        ]);
 
         return response()->json(['success' => true]);
     }

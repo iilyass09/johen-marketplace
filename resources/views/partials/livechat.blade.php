@@ -22,8 +22,8 @@
 <script>
 window.LIVECHAT_USER = @json(auth('web')->check() ? ['id' => auth('web')->id(), 'name' => auth('web')->user()->name] : null);
 </script>
-<link rel="stylesheet" href="{{ asset('css/livechat.css') }}?v=32">
-<script src="{{ asset('js/livechat.js') }}?v=32"></script>
+<link rel="stylesheet" href="{{ asset('css/livechat.css') }}?v=44">
+<script src="{{ asset('js/livechat.js') }}?v=44"></script>
 
 <script>
 (function() {

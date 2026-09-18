@@ -47,7 +47,10 @@ class LiveChatConversationController extends Controller
 
         $conversation->markAdminRead();
 
+        $adminId = Auth::id();
+
         $messages = LiveChatMessage::where('conversation_id', $conversation->id)
+            ->whereDoesntHave('hiddenUsers', fn ($hidden) => $hidden->where('user_id', $adminId))
             ->with(['sender', 'replyTo', 'attachments'])
             ->ordered()
             ->get();
@@ -61,8 +64,11 @@ class LiveChatConversationController extends Controller
     {
         $afterId = $request->input('after', 0);
 
+        $adminId = Auth::id();
+
         $messages = LiveChatMessage::where('conversation_id', $conversation->id)
             ->where('id', '>', $afterId)
+            ->whereDoesntHave('hiddenUsers', fn ($hidden) => $hidden->where('user_id', $adminId))
             ->with(['sender', 'replyTo', 'attachments'])
             ->ordered()
             ->get();
@@ -75,11 +81,12 @@ class LiveChatConversationController extends Controller
     public function reply(Request $request, LiveChatConversation $conversation)
     {
         $request->validate([
-            'message_type' => 'required|in:text,image,video',
+            'message_type' => 'required|in:text,image,video,audio',
             'message' => 'nullable|string|max:5000',
             'reply_to_message_id' => 'nullable|exists:live_chat_messages,id',
             'media' => 'nullable|array',
-            'media.*' => 'file|max:1048576|mimes:jpg,jpeg,png,gif,webp,mp4,mov,avi,mkv,webm,flv,3gp',
+            'media.*' => 'file|max:1048576|mimes:jpg,jpeg,png,gif,webp,mp4,mov,avi,mkv,webm,flv,3gp,wav,oga,ogg,opus,mp3,m4a,aac,weba',
+            'media_duration' => 'nullable|integer|min:0|max:1800',
             'thumbnail' => 'nullable|array',
             'thumbnail.*' => 'file|max:5120|mimes:jpg,jpeg,png,webp',
             'thumbnail_indexes' => 'nullable|array',
@@ -109,7 +116,8 @@ class LiveChatConversationController extends Controller
                     $posterFiles[(int) $index] = $thumb;
                 }
             }
-            $rows = LiveChatMedia::storeBatch($files, $posterFiles);
+            $durations = $request->message_type === 'audio' ? [0 => (int) $request->media_duration] : [];
+            $rows = LiveChatMedia::storeBatch($files, $posterFiles, $durations, $request->message_type !== 'audio');
             $message->attachments()->createMany($rows);
             LiveChatMedia::applyCompatColumns($message, $rows);
         }
