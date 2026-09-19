@@ -179,5 +179,6 @@
         });
     </script>
     @stack('scripts')
+    @include('partials.push-subscribe', ['pushGuard' => 'csadmin'])
 </body>
 </html>

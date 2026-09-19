@@ -1,6 +1,10 @@
 @php
     $pushGuard = $pushGuard ?? 'admin';
-    $basePath = $pushGuard === 'lcadmin' ? '/lcadmin' : '/admin';
+    $basePath = match ($pushGuard) {
+        'lcadmin' => '/lcadmin',
+        'csadmin' => '/csadmin',
+        default => '/admin',
+    };
 @endphp
 @include('partials.push-manager', [
     'pushGuard' => $pushGuard,

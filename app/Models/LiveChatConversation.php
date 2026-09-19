@@ -9,6 +9,10 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class LiveChatConversation extends Model
 {
+    public const SESSION_TIMEOUT_MINUTES = 5;
+
+    public const STATUS_ENDED = 'ended';
+
     protected $fillable = [
         'channel_id',
         'user_id',
@@ -55,6 +59,45 @@ class LiveChatConversation extends Model
     public function isGuest(): bool
     {
         return $this->user_id === null && $this->guest_id !== null;
+    }
+
+    public function sessionAnchor(): ?\Illuminate\Support\Carbon
+    {
+        return $this->last_message_at ?: $this->created_at;
+    }
+
+    public function isSessionExpired(): bool
+    {
+        if (! $this->isGuest()) {
+            return false;
+        }
+
+        $anchor = $this->sessionAnchor();
+
+        return $anchor !== null
+            && $anchor->diffInSeconds(now()) >= self::SESSION_TIMEOUT_MINUTES * 60;
+    }
+
+    public function applySessionTimeout(): bool
+    {
+        if ($this->status !== 'open' || ! $this->isSessionExpired()) {
+            return false;
+        }
+
+        $this->update(['status' => self::STATUS_ENDED]);
+
+        return true;
+    }
+
+    public static function expireStaleGuestSessions(?int $channelId = null): void
+    {
+        static::query()
+            ->when($channelId, fn ($q) => $q->where('channel_id', $channelId))
+            ->whereNull('user_id')
+            ->whereNotNull('guest_id')
+            ->where('status', 'open')
+            ->get(['id', 'status', 'user_id', 'guest_id', 'last_message_at', 'created_at'])
+            ->each(fn (self $conversation) => $conversation->applySessionTimeout());
     }
 
     public function scopeForUser($query, $userId)

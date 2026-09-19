@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\CsAdmin;
 
 use App\Http\Controllers\Controller;
+use App\Models\LiveChatChannel;
 use App\Models\LiveChatConversation;
 use App\Models\LiveChatMessage;
 use App\Models\LiveChatMessageHiddenUser;
@@ -15,12 +16,14 @@ class CsConversationController extends Controller
 {
     public function index(Request $request)
     {
-        $query = LiveChatConversation::with(['user', 'channel', 'lastMessage.sender'])
-            ->whereNotNull('guest_id');
+        $csChannelId = LiveChatChannel::csChannel()->id;
 
-        if ($request->filled('channel_id')) {
-            $query->where('channel_id', $request->channel_id);
-        }
+        LiveChatConversation::expireStaleGuestSessions($csChannelId);
+
+        $query = LiveChatConversation::with(['channel', 'lastMessage.sender'])
+            ->whereNotNull('guest_id')
+            ->where('channel_id', $csChannelId)
+            ->whereNull('archived_at');
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -32,37 +35,36 @@ class CsConversationController extends Controller
 
         $conversations = $query
             ->orderByDesc('is_pinned')
-            ->orderBy('last_message_at', 'desc')
-            ->paginate(20);
+            ->orderByDesc('last_message_at')
+            ->limit(200)
+            ->get();
 
-        $channels = \App\Models\LiveChatChannel::active()->ordered()->get();
+        $totalUnread = LiveChatConversation::whereNotNull('guest_id')
+            ->where('channel_id', $csChannelId)
+            ->whereNull('archived_at')
+            ->where('admin_unread_count', '>', 0)
+            ->count();
 
-        return view('admin.csadmin.conversations.index', compact('conversations', 'channels'));
+        $archivedCount = LiveChatConversation::whereNotNull('guest_id')
+            ->where('channel_id', $csChannelId)
+            ->whereNotNull('archived_at')
+            ->count();
+
+        return view('admin.csadmin.conversations.index', compact('conversations', 'totalUnread', 'archivedCount'));
     }
 
     public function show(LiveChatConversation $conversation)
     {
         $this->guardGuest($conversation);
 
-        $conversation->load(['user', 'channel', 'lastMessage.sender']);
-        $conversation->markAdminRead();
-
-        $adminId = Auth::guard('admin')->id();
-
-        $messages = LiveChatMessage::where('conversation_id', $conversation->id)
-            ->whereDoesntHave('hiddenUsers', fn ($hidden) => $hidden->where('user_id', $adminId))
-            ->with(['sender', 'replyTo', 'attachments'])
-            ->ordered()
-            ->get();
-
-        $activeOperator = $conversation->channel->getActiveOperator();
-
-        return view('admin.csadmin.conversations.show', compact('conversation', 'messages', 'activeOperator'));
+        return redirect()->route('csadmin.conversations', ['open' => $conversation->id]);
     }
 
     public function loadMessages(LiveChatConversation $conversation): JsonResponse
     {
         $this->guardGuest($conversation);
+
+        $conversation->applySessionTimeout();
 
         $conversation->load(['user', 'channel']);
         $conversation->markAdminRead();
@@ -88,6 +90,8 @@ class CsConversationController extends Controller
     {
         $this->guardGuest($conversation);
 
+        $conversation->applySessionTimeout();
+
         $afterId = $request->input('after', 0);
 
         $adminId = Auth::guard('admin')->id();
@@ -101,12 +105,22 @@ class CsConversationController extends Controller
 
         $conversation->markAdminRead();
 
-        return response()->json($messages);
+        return response()->json([
+            'messages' => $messages,
+            'conversation' => $conversation,
+        ]);
     }
 
     public function reply(Request $request, LiveChatConversation $conversation): JsonResponse
     {
         $this->guardGuest($conversation);
+
+        if ($conversation->applySessionTimeout() || $conversation->isSessionExpired()) {
+            return response()->json([
+                'error' => 'Sesi chat telah berakhir, tamu tidak dapat menerima balasan lagi.',
+                'session_expired' => true,
+            ], 423);
+        }
 
         $request->validate([
             'message_type' => 'required|in:text,image,video,audio',
@@ -204,8 +218,76 @@ class CsConversationController extends Controller
         return response()->json(['success' => true]);
     }
 
+    public function archived()
+    {
+        $csChannelId = LiveChatChannel::csChannel()->id;
+
+        $conversations = LiveChatConversation::with(['channel', 'lastMessage.sender'])
+            ->whereNotNull('guest_id')
+            ->where('channel_id', $csChannelId)
+            ->whereNotNull('archived_at')
+            ->orderBy('last_message_at', 'desc')
+            ->limit(100)
+            ->get();
+
+        $html = '';
+        foreach ($conversations as $conv) {
+            $html .= view('admin.csadmin.conversations._list-item', ['conv' => $conv])->render();
+        }
+
+        return response()->json([
+            'html' => $html,
+            'count' => $conversations->count(),
+        ]);
+    }
+
+    public function archivedCount(): JsonResponse
+    {
+        $csChannelId = LiveChatChannel::csChannel()->id;
+
+        $count = LiveChatConversation::whereNotNull('guest_id')
+            ->where('channel_id', $csChannelId)
+            ->whereNotNull('archived_at')
+            ->count();
+
+        return response()->json(['count' => $count]);
+    }
+
+    public function archive(LiveChatConversation $conversation): JsonResponse
+    {
+        $this->guardGuest($conversation);
+
+        $conversation->update(['archived_at' => now()]);
+
+        return response()->json(['success' => true, 'archived_at' => $conversation->archived_at]);
+    }
+
+    public function restore(LiveChatConversation $conversation): JsonResponse
+    {
+        $this->guardGuest($conversation);
+
+        $conversation->update(['archived_at' => null]);
+
+        return response()->json(['success' => true]);
+    }
+
+    public function deleteConversation(LiveChatConversation $conversation): JsonResponse
+    {
+        $this->guardGuest($conversation);
+
+        $conversation->messages()->delete();
+        $conversation->delete();
+
+        return response()->json(['success' => true]);
+    }
+
     private function guardGuest(LiveChatConversation $conversation): void
     {
-        abort_if($conversation->user_id !== null || $conversation->guest_id === null, 404);
+        abort_if(
+            $conversation->user_id !== null
+            || $conversation->guest_id === null
+            || $conversation->channel_id !== LiveChatChannel::csChannel()->id,
+            404
+        );
     }
 }

@@ -1,7 +1,7 @@
 <x-guest-layout>
 @section('title', 'Daftar — ' . config('app.name'))
 @push('styles')
-<style>.auth-container{max-width:600px!important}</style>
+<style>.auth-container{width:min(540px,100%)!important}</style>
 @endpush
 
 <div class="auth-header">

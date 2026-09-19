@@ -20,7 +20,7 @@ class PushSubscriptionController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        if (! in_array($guard, ['admin', 'lcadmin'], true)) {
+        if (! in_array($guard, ['admin', 'lcadmin', 'csadmin'], true)) {
             return response()->json(['error' => 'Invalid guard'], 422);
         }
 
@@ -85,7 +85,7 @@ class PushSubscriptionController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        if (! in_array($guard, ['admin', 'lcadmin'], true)) {
+        if (! in_array($guard, ['admin', 'lcadmin', 'csadmin'], true)) {
             return response()->json(['error' => 'Invalid guard'], 422);
         }
 
@@ -148,13 +148,15 @@ class PushSubscriptionController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        if (! in_array($guard, ['admin', 'lcadmin'], true)) {
+        if (! in_array($guard, ['admin', 'lcadmin', 'csadmin'], true)) {
             return response()->json(['error' => 'Invalid guard'], 422);
         }
 
         $url = $guard === 'lcadmin'
             ? '/lcadmin/conversations'
-            : '/admin/live-chat/conversations';
+            : ($guard === 'csadmin'
+                ? '/csadmin/conversations'
+                : '/admin/live-chat/conversations');
 
         $sent = app(\App\Services\PushService::class)->sendToTargets(
             [
@@ -251,7 +253,9 @@ class PushSubscriptionController extends Controller
     protected function latestForAdmin(): JsonResponse
     {
         $admin = Auth::guard('admin')->user();
-        $guard = $admin && $admin->isLiveChatAdmin() ? 'lcadmin' : 'admin';
+        $guard = $admin && $admin->isLiveChatCs()
+            ? 'csadmin'
+            : ($admin && $admin->isLiveChatAdmin() ? 'lcadmin' : 'admin');
 
         $query = LiveChatConversation::query()
             ->with(['user', 'channel', 'lastMessage.sender'])
@@ -267,6 +271,10 @@ class PushSubscriptionController extends Controller
             $query->whereIn('channel_id', $channelIds);
         }
 
+        if ($guard === 'csadmin') {
+            $query->whereNotNull('guest_id');
+        }
+
         $conversation = $query->first();
 
         if (! $conversation || ! $conversation->lastMessage) {
@@ -275,10 +283,12 @@ class PushSubscriptionController extends Controller
 
         $url = $guard === 'lcadmin'
             ? '/lcadmin/conversations?open='.$conversation->id
-            : '/admin/live-chat/conversations/'.$conversation->id;
+            : ($guard === 'csadmin'
+                ? '/csadmin/conversations?open='.$conversation->id
+                : '/admin/live-chat/conversations/'.$conversation->id);
 
         return response()->json([
-            'title' => $conversation->user?->name ?? 'User',
+            'title' => $conversation->isGuest() ? ($conversation->guest_name ?? 'Guest') : ($conversation->user?->name ?? 'User'),
             'body' => $this->messagePreview($conversation->lastMessage),
             'url' => $url,
             'app_name' => config('services.vapid.notif_brand', 'Johen Gaming'),

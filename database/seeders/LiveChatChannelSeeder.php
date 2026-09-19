@@ -18,6 +18,7 @@ class LiveChatChannelSeeder extends Seeder
             ['name' => 'Johen FC Mobile', 'slug' => 'johen-fc-mobile', 'description' => 'Live chat untuk game FC Mobile', 'sort_order' => 6],
             ['name' => 'Johen Valorant', 'slug' => 'johen-valorant', 'description' => 'Live chat untuk game Valorant', 'sort_order' => 7],
             ['name' => 'Monkey PUBG', 'slug' => 'monkey-pubg', 'description' => 'Live chat untuk Monkey PUBG', 'sort_order' => 8],
+            ['name' => 'Johen CS', 'slug' => \App\Models\LiveChatChannel::CS_SLUG, 'description' => 'Live chat Admin CS untuk pengunjung (guest)', 'sort_order' => 99],
         ];
 
         foreach ($channels as $channel) {

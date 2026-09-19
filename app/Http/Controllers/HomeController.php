@@ -477,7 +477,9 @@ class HomeController extends Controller
             ->orderBy('product_name')
             ->get();
 
-        return view('pages.jual-beli-akun-detail', compact('listing', 'related'));
+        $gameSlug = array_search($listing->game, static::JBA_GAME_SLUGS) ?: null;
+
+        return view('pages.jual-beli-akun-detail', compact('listing', 'related', 'gameSlug'));
     }
 
     public function jualBeliAkunCheckout(AccountListing $listing)

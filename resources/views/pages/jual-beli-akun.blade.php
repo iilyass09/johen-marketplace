@@ -890,7 +890,7 @@
   align-items: center;
 }
 @media(max-width:920px){
-  .jba-grid{grid-template-columns:repeat(3,1fr);}
+  .jba-grid{grid-template-columns:repeat(2,1fr);}
 }
 @media(max-width:640px){
   .jba-page{padding:1rem 1.1rem 1.5rem;}

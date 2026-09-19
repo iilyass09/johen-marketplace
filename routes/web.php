@@ -255,14 +255,24 @@ Route::middleware(['auth:admin', 'live-chat-admin'])->prefix('lcadmin')->name('l
 
 Route::middleware(['auth:admin', 'live-chat-cs'])->prefix('csadmin')->name('csadmin.')->group(function () {
     Route::get('/conversations', [CsConversationController::class, 'index'])->name('conversations');
+    Route::get('/conversations/archived', [CsConversationController::class, 'archived'])->name('conversations.archived');
+    Route::get('/conversations/archived-count', [CsConversationController::class, 'archivedCount'])->name('conversations.archived-count');
     Route::get('/conversations/{conversation}', [CsConversationController::class, 'show'])->name('conversations.show');
     Route::get('/conversations/{conversation}/poll', [CsConversationController::class, 'poll'])->name('conversations.poll');
     Route::get('/conversations/{conversation}/messages', [CsConversationController::class, 'loadMessages'])->name('conversations.messages');
     Route::post('/conversations/{conversation}/reply', [CsConversationController::class, 'reply'])->name('conversations.reply');
     Route::patch('/conversations/{conversation}/close', [CsConversationController::class, 'close'])->name('conversations.close');
     Route::patch('/conversations/{conversation}/reopen', [CsConversationController::class, 'reopen'])->name('conversations.reopen');
+    Route::patch('/conversations/{conversation}/archive', [CsConversationController::class, 'archive'])->name('conversations.archive');
+    Route::patch('/conversations/{conversation}/restore', [CsConversationController::class, 'restore'])->name('conversations.restore');
+    Route::delete('/conversations/{conversation}', [CsConversationController::class, 'deleteConversation'])->name('conversations.delete');
     Route::delete('/messages/{message}', [CsConversationController::class, 'deleteMessage'])->name('messages.delete');
     Route::post('/messages/{message}/hide', [CsConversationController::class, 'hideMessage'])->name('messages.hide');
+
+    Route::post('/push/{guard}/subscribe', [PushSubscriptionController::class, 'subscribe'])->whereIn('guard', ['csadmin'])->name('push.subscribe');
+    Route::post('/push/{guard}/unsubscribe', [PushSubscriptionController::class, 'unsubscribe'])->whereIn('guard', ['csadmin'])->name('push.unsubscribe');
+    Route::post('/push/{guard}/test', [PushSubscriptionController::class, 'test'])->whereIn('guard', ['csadmin'])->name('push.test');
+    Route::get('/push/{guard}/status', [PushSubscriptionController::class, 'status'])->whereIn('guard', ['csadmin'])->name('push.status');
 });
 
 Route::middleware(['auth:web'])->prefix('api')->name('api.')->group(function () {

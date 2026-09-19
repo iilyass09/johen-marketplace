@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class LiveChatChannel extends Model
 {
+    public const CS_SLUG = 'johen-cs';
+
     protected $fillable = [
         'name',
         'slug',
@@ -74,6 +76,24 @@ class LiveChatChannel extends Model
             })
             ->with('user')
             ->first();
+    }
+
+    public function isCsChannel(): bool
+    {
+        return $this->slug === static::CS_SLUG;
+    }
+
+    public static function csChannel(): self
+    {
+        return static::firstOrCreate(
+            ['slug' => static::CS_SLUG],
+            [
+                'name' => 'Johen CS',
+                'description' => 'Live chat Admin CS untuk pengunjung (guest)',
+                'sort_order' => 99,
+                'is_active' => true,
+            ]
+        );
     }
 
     public function scopeActive($query)

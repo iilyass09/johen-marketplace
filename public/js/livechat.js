@@ -5,17 +5,26 @@
   const CHANNELS_API = '/api/live-chat/channels';
   const GUEST_CHANNELS_API = '/api/live-chat/guest/channels';
   const IS_GUEST = !AUTH_USER;
+  const CS_SLUG = (window.LIVECHAT_CS_SLUG || 'johen-cs');
   const POLL_INTERVAL = 3000;
+  const SESSION_TIMEOUT_MS = 5 * 60 * 1000;
+  const GUEST_STORAGE_KEY = 'johen_lc_guest';
 
   function getGuestId() {
-    let id = localStorage.getItem('johen_lc_guest');
+    let id = null;
+    try { id = sessionStorage.getItem(GUEST_STORAGE_KEY); } catch (e) {}
     if (!id) {
       id = (window.crypto && window.crypto.randomUUID)
         ? window.crypto.randomUUID()
         : ('g-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 12));
-      localStorage.setItem('johen_lc_guest', id);
+      try { sessionStorage.setItem(GUEST_STORAGE_KEY, id); } catch (e) {}
     }
     return id;
+  }
+
+  function resetGuestSession() {
+    try { sessionStorage.removeItem(GUEST_STORAGE_KEY); } catch (e) {}
+    try { localStorage.removeItem(GUEST_STORAGE_KEY); } catch (e) {}
   }
 
   function guestParam() {
@@ -24,6 +33,54 @@
 
   function messagePostUrl() {
     return IS_GUEST ? '/api/live-chat/guest/messages' : '/api/live-chat/messages';
+  }
+
+  function touchActivity() {
+    state.lastActivity = Date.now();
+  }
+
+  function endSession(message) {
+    if (state.sessionEnded) return;
+    state.sessionEnded = true;
+    state.view = 'ended';
+    stopPolling();
+    cancelVoiceRec();
+    closeAllMenus();
+    renderEnded(message || 'Tidak ada interaksi selama 5 menit sehingga sesi chat berakhir. Mulai chat baru untuk terhubung kembali.');
+  }
+
+  async function readError(res, fallback) {
+    let err = {};
+    try { err = await res.json(); } catch (e) {}
+    if (err && err.session_expired) {
+      endSession(err.error || err.message);
+      return (err.error || err.message || fallback);
+    }
+    return (err && err.message) || (err && err.error) || fallback;
+  }
+
+  function renderEnded(message) {
+    const container = document.getElementById('lc-body');
+    if (!container) return;
+    container.innerHTML = `
+      <div class="lc-session-ended">
+        <div class="lc-ended-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+        </div>
+        <div class="lc-ended-title">Sesi chat berakhir</div>
+        <div class="lc-ended-sub">${escapeHtml(message)}</div>
+        <button type="button" class="lc-new-session-btn" onclick="window.LiveChat.startNewSession()">Mulai Chat Baru</button>
+      </div>`;
+  }
+
+  function startNewSession() {
+    resetGuestSession();
+    state.conversation = null;
+    state.messages = [];
+    state.sessionEnded = false;
+    state.lastActivity = null;
+    state.view = 'chat';
+    openChannel(CS_SLUG);
   }
 
   let state = {
@@ -45,6 +102,8 @@
     recMime: '',
     recStartTs: 0,
     recSeconds: 0,
+    lastActivity: null,
+    sessionEnded: false,
   };
 
   function getToken() {
@@ -498,9 +557,6 @@
   }
 
   async function openChannel(slug) {
-    if (IS_GUEST && !state.channels.length) {
-      try { await fetchChannels(); } catch (e) {}
-    }
     closeAllMenus();
     try {
       const res = IS_GUEST
@@ -514,6 +570,16 @@
       const data = await res.json();
       state.activeChannel = state.channels.find(c => c.slug === slug);
       if (!state.activeChannel && IS_GUEST) state.activeChannel = { slug, name: data.conversation?.channel?.name || 'Live Chat' };
+      if (IS_GUEST) {
+        if (data.session_expired || data.conversation?.status === 'ended') {
+          state.conversation = data.conversation;
+          touchActivity();
+          endSession('Sesi chat Anda telah berakhir. Mulai chat baru untuk terhubung kembali.');
+          return;
+        }
+        const anchor = data.conversation?.last_message_at || data.conversation?.created_at;
+        state.lastActivity = anchor ? new Date(anchor).getTime() : Date.now();
+      }
       state.conversation = data.conversation;
       state.view = 'chat';
       state.replyToMsg = null;
@@ -541,7 +607,7 @@
   }
 
   async function fetchMessages() {
-    if (!state.conversation) return;
+    if (!state.conversation || state.sessionEnded) return;
     try {
       const after = state.messages.length > 0 ? `after=${state.messages[state.messages.length - 1].id}` : '';
       const url = IS_GUEST
@@ -551,6 +617,7 @@
       if (!res.ok) throw new Error('Failed');
       const newMessages = await res.json();
       if (newMessages.length > 0) {
+        touchActivity();
         state.messages.push(...newMessages);
         newMessages.forEach(m => appendUserMsg(m));
         scrollToBottom();
@@ -659,13 +726,17 @@
       : `<div class="lc-chat-avatar lc-chat-avatar-fallback">${getInitials(state.activeChannel?.name || 'Live Chat')}</div>`;
     const avatarHtml = `<div class="lc-chat-avatar-wrap">${avatarImg}<span class="lc-avatar-status ${isOnline ? '' : 'offline'}"></span></div>`;
 
-    const statusPill = isOnline
-      ? `<span class="lc-status-pill is-online"><span class="lc-pulse-dot"></span>Online</span>`
-      : `<span class="lc-status-pill is-offline"><span class="lc-pulse-dot"></span>Offline</span>`;
+    const statusPill = IS_GUEST
+      ? `<span class="lc-status-pill is-online"><span class="lc-pulse-dot"></span>Admin CS</span>`
+      : (isOnline
+          ? `<span class="lc-status-pill is-online"><span class="lc-pulse-dot"></span>Online</span>`
+          : `<span class="lc-status-pill is-offline"><span class="lc-pulse-dot"></span>Offline</span>`);
 
-    const servedHtml = operator
-      ? `<div class="lc-chat-served">Sedang dilayani oleh <strong>${escapeHtml(operator.name)}</strong></div><div class="lc-chat-presence">${operator.schedule ? `Shift ${escapeHtml(operator.schedule)}` : 'Berespons cepat pada jam operasional'}</div>`
-      : `<div class="lc-chat-served">Admin sedang offline</div><div class="lc-chat-presence">Pesan akan dibalas pada jam operasional</div>`;
+    const servedHtml = IS_GUEST
+      ? `<div class="lc-chat-served">Terhubung dengan <strong>Admin CS Johen</strong></div><div class="lc-chat-presence">Admin akan membalas pesanmu di sini</div>`
+      : (operator
+          ? `<div class="lc-chat-served">Sedang dilayani oleh <strong>${escapeHtml(operator.name)}</strong></div><div class="lc-chat-presence">${operator.schedule ? `Shift ${escapeHtml(operator.schedule)}` : 'Berespons cepat pada jam operasional'}</div>`
+          : `<div class="lc-chat-served">Admin sedang offline</div><div class="lc-chat-presence">Pesan akan dibalas pada jam operasional</div>`);
 
     container.innerHTML = `
       <div class="lc-chat" style="position:relative">
@@ -775,6 +846,10 @@
     cancelVoiceRec();
     stopPolling();
     closeAllMenus();
+    if (IS_GUEST) {
+      close();
+      return;
+    }
     state.view = 'panel';
     state.activeChannel = null;
     state.conversation = null;
@@ -1014,11 +1089,11 @@
       });
       removeLoadingMsg(tempId);
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        showToast(err.message || 'Gagal mengirim pesan suara', 'error');
+        showToast(await readError(res, 'Gagal mengirim pesan suara'), 'error');
         return;
       }
       const msg = await res.json();
+      touchActivity();
       state.messages.push(msg);
       appendUserMsg(msg);
       scrollToBottom();
@@ -1172,9 +1247,10 @@
           });
           removeLoadingMsg(tempId);
           if (!res.ok) {
-            showToast('Gagal mengirim gambar', 'error');
+            showToast(await readError(res, 'Gagal mengirim gambar'), 'error');
           } else {
             const msg = await res.json();
+            touchActivity();
             state.messages.push(msg);
             appendUserMsg(msg);
           }
@@ -1188,6 +1264,7 @@
         try {
           const formData = new FormData();
           formData.append('conversation_id', state.conversation.id);
+          if (IS_GUEST) formData.append('guest_id', getGuestId());
           formData.append('message_type', 'video');
           formData.append('media[]', item.file);
           if (item.caption) formData.append('message', item.caption);
@@ -1197,14 +1274,15 @@
             formData.append('thumbnail[]', thumbBlob, 'thumb.jpg');
             formData.append('thumbnail_indexes[]', '0');
           }
-          const res = await fetch('/api/live-chat/messages', {
+          const res = await fetch(messagePostUrl(), {
             method: 'POST',
             headers: { 'X-CSRF-TOKEN': getToken(), 'Accept': 'application/json' },
             body: formData,
           });
           removeLoadingMsg(tempId);
-          if (!res.ok) { showToast('Gagal mengirim file', 'error'); continue; }
+          if (!res.ok) { showToast(await readError(res, 'Gagal mengirim file'), 'error'); continue; }
           const msg = await res.json();
+          touchActivity();
           state.messages.push(msg);
           appendUserMsg(msg);
         } catch (e) { removeLoadingMsg(tempId); showToast('Gagal mengirim file', 'error'); }
@@ -1219,21 +1297,22 @@
     try {
       const formData = new FormData();
       formData.append('conversation_id', state.conversation.id);
+      if (IS_GUEST) formData.append('guest_id', getGuestId());
       formData.append('message_type', 'text');
       formData.append('message', text);
       if (replyId) formData.append('reply_to_message_id', replyId);
 
-      const res = await fetch('/api/live-chat/messages', {
+      const res = await fetch(messagePostUrl(), {
         method: 'POST',
         headers: { 'X-CSRF-TOKEN': getToken(), 'Accept': 'application/json' },
         body: formData,
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || 'Gagal mengirim pesan');
+        throw new Error(await readError(res, 'Gagal mengirim pesan'));
       }
       removeLoadingMsg(tempId);
       const msg = await res.json();
+      touchActivity();
       state.messages.push(msg);
       appendUserMsg(msg);
       scrollToBottom();
@@ -1331,7 +1410,14 @@
   function startPolling() {
     stopPolling();
     state.pollingTimer = setInterval(() => {
-      if (state.view === 'chat' && state.conversation) fetchMessages();
+      if (state.sessionEnded) return;
+      if (state.view === 'chat' && state.conversation) {
+        if (IS_GUEST && state.lastActivity && Date.now() - state.lastActivity >= SESSION_TIMEOUT_MS) {
+          endSession();
+          return;
+        }
+        fetchMessages();
+      }
     }, POLL_INTERVAL);
   }
 
@@ -1347,7 +1433,11 @@
       popup?.classList.add('active');
       overlay?.classList.add('active');
       document.body.style.overflow = 'hidden';
-      if (state.view === 'panel') fetchChannels();
+      if (IS_GUEST) {
+        openChannel(CS_SLUG).catch(function () {});
+      } else if (state.view === 'panel') {
+        fetchChannels();
+      }
     } else {
       popup?.classList.remove('active');
       overlay?.classList.remove('active');
@@ -1368,6 +1458,7 @@
   }
 
   function updateBadge() {
+    if (IS_GUEST) return;
     const badge = document.getElementById('lc-fab-badge');
     if (!badge) return;
     fetch('/api/live-chat/unread', { headers: headers() })
@@ -1515,7 +1606,7 @@
     replyTo, cancelReply, deleteMsg, scrollToMsg, showMenu, updateBadge, openImage, openGallery, showReactions, toggleStar, showDeleteOptions, hideForMe, closeMenus: closeAllMenus, playVideoMessage,
     toggleAttachMenu, attachAction, closeAttachMenu,
     startVoiceRec, cancelVoiceRec, finishVoiceRec, toggleVoicePlay,
-    toggleNotif,
+    toggleNotif, startNewSession,
   };
 
   document.addEventListener('DOMContentLoaded', function() {
@@ -1539,11 +1630,15 @@
       popup?.classList.add('active');
       overlayEl?.classList.add('active');
       document.body.style.overflow = 'hidden';
-      const channel = params.get('channel');
-      if (channel && AUTH_USER) {
-        openChannel(channel).catch(function () {});
-      } else if (state.view === 'panel') {
-        fetchChannels();
+      if (IS_GUEST) {
+        openChannel(CS_SLUG).catch(function () {});
+      } else {
+        const channel = params.get('channel');
+        if (channel) {
+          openChannel(channel).catch(function () {});
+        } else if (state.view === 'panel') {
+          fetchChannels();
+        }
       }
     }
   });
