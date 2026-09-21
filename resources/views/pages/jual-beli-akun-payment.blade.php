@@ -1,6 +1,6 @@
 @extends('layouts.topup')
 
-@section('title', 'Pembayaran - ' . $listing->product_name . ' - Johen Gaming')
+@section('title', 'Pembayaran - ' . $listing->product_name . ' - ' . config('app.name'))
 
 @section('content')
 <div class="jpay-wrap">

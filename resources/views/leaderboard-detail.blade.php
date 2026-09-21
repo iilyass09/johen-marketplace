@@ -1,6 +1,6 @@
 @extends('layouts.topup')
 
-@section('title', $title . ' — Johen Gaming')
+@section('title', $title . ' — ' . config('app.name'))
 
 @section('content')
 <div class="lbd-page">

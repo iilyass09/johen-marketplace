@@ -1,6 +1,6 @@
 @extends('layouts.topup')
 
-@section('title', 'Testimoni Pelanggan - Johen Gaming')
+@section('title', 'Testimoni Pelanggan - ' . config('app.name'))
 
 @section('content')
 <div class="testi-page">

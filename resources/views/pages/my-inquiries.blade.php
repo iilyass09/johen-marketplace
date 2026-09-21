@@ -1,6 +1,6 @@
 @extends('layouts.topup')
 
-@section('title', 'Riwayat Pesan - Johen Gaming')
+@section('title', 'Riwayat Pesan - ' . config('app.name'))
 
 @push('styles')
 <style>

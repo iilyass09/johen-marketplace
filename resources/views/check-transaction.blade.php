@@ -1,6 +1,6 @@
 @extends('layouts.topup')
 
-@section('title', 'Cek Transaksi — Johen Gaming')
+@section('title', 'Cek Transaksi — ' . config('app.name'))
 
 @section('content')
 <section class="page-section" style="padding-top:8rem;padding-bottom:4rem;min-height:60vh;padding-left:1rem;padding-right:1rem">

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="light">
     <meta name="supported-color-schemes" content="light">
-    <title>Balasan Pesan - Johen Gaming</title>
+    <title>Balasan Pesan - {{ config('app.name') }}</title>
 </head>
 <body style="margin:0;padding:0;width:100%;background-color:#ffffff !important;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;font-family:'Inter',Arial,sans-serif;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="background-color:#ffffff !important;">

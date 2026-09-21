@@ -1,6 +1,6 @@
 @extends('layouts.topup')
 
-@section('title', 'Syarat & Ketentuan - Johen Gaming')
+@section('title', 'Syarat & Ketentuan - ' . config('app.name'))
 
 @section('content')
 <div class="simple-page">

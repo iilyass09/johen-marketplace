@@ -1,6 +1,6 @@
 @extends('layouts.topup')
 
-@section('title', 'Leaderboard — Johen Gaming')
+@section('title', 'Leaderboard — ' . config('app.name'))
 
 @section('content')
 <div class="lb-page">

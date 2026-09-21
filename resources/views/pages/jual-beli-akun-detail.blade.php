@@ -1,6 +1,6 @@
 @extends('layouts.topup')
 
-@section('title', $listing->product_name . ' - Jual Beli Akun - Johen Gaming')
+@section('title', $listing->product_name . ' - Jual Beli Akun - ' . config('app.name'))
 
 @section('content')
 <div class="jba-detail-page">

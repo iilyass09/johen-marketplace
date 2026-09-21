@@ -1,6 +1,6 @@
 @extends('layouts.topup')
 
-@section('title', 'Checkout - ' . $listing->product_name . ' - Johen Gaming')
+@section('title', 'Checkout - ' . $listing->product_name . ' - ' . config('app.name'))
 
 @section('content')
 <div class="jco-page">

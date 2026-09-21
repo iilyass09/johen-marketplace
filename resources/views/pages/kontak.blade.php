@@ -1,6 +1,6 @@
 @extends('layouts.topup')
 
-@section('title', 'Hubungi Kami - Johen Gaming')
+@section('title', 'Hubungi Kami - ' . config('app.name'))
 
 @section('content')
 @php
