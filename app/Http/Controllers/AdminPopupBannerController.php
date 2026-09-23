@@ -6,6 +6,7 @@ use App\Models\PopupBanner;
 use App\Services\ImageOptimizer;
 use App\Services\MediaStore;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class AdminPopupBannerController extends Controller
@@ -21,7 +22,7 @@ class AdminPopupBannerController extends Controller
         $validator = validator($request->all(), [
             'title' => 'nullable|string|max:255',
             'description' => 'nullable|string|max:500',
-            'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:5120',
+            'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:5120|dimensions:max_width=4096,max_height=4096',
             'orientation' => 'required|string|in:portrait,landscape',
             'image_fit' => 'nullable|string|in:contain,cover',
             'image_position' => 'nullable|string|in:top,center,bottom',
@@ -33,10 +34,7 @@ class AdminPopupBannerController extends Controller
         ]);
 
         if ($validator->fails()) {
-            if ($request->ajax() || $request->wantsJson()) {
-                return response()->json(['errors' => $validator->errors()->messages()], 422);
-            }
-            return redirect()->back()->withErrors($validator)->withInput();
+            return $this->validationFailure($request, $validator);
         }
 
         $data = [
@@ -52,11 +50,15 @@ class AdminPopupBannerController extends Controller
             'ends_at' => $request->filled('ends_at') ? $request->ends_at : null,
         ];
 
-        if ($request->hasFile('image') && $request->file('image')->isValid()) {
-            $data['image'] = $this->storeImage($request);
-        }
+        try {
+            if ($request->hasFile('image') && $request->file('image')->isValid()) {
+                $data['image'] = $this->storeImage($request);
+            }
 
-        PopupBanner::create($data);
+            PopupBanner::create($data);
+        } catch (\Throwable $e) {
+            return $this->imageError($request, $e);
+        }
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json(['success' => true, 'message' => 'Popup banner berhasil ditambahkan']);
@@ -70,7 +72,7 @@ class AdminPopupBannerController extends Controller
         $validator = validator($request->all(), [
             'title' => 'nullable|string|max:255',
             'description' => 'nullable|string|max:500',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120|dimensions:max_width=4096,max_height=4096',
             'orientation' => 'required|string|in:portrait,landscape',
             'image_fit' => 'nullable|string|in:contain,cover',
             'image_position' => 'nullable|string|in:top,center,bottom',
@@ -82,10 +84,7 @@ class AdminPopupBannerController extends Controller
         ]);
 
         if ($validator->fails()) {
-            if ($request->ajax() || $request->wantsJson()) {
-                return response()->json(['errors' => $validator->errors()->messages()], 422);
-            }
-            return redirect()->back()->withErrors($validator)->withInput();
+            return $this->validationFailure($request, $validator);
         }
 
         $data = [
@@ -101,20 +100,55 @@ class AdminPopupBannerController extends Controller
             'ends_at' => $request->filled('ends_at') ? $request->ends_at : null,
         ];
 
-        if ($request->hasFile('image') && $request->file('image')->isValid()) {
-            if ($popupBanner->image) {
-                MediaStore::delete($popupBanner->image);
+        try {
+            if ($request->hasFile('image') && $request->file('image')->isValid()) {
+                if ($popupBanner->image) {
+                    MediaStore::delete($popupBanner->image);
+                }
+                $data['image'] = $this->storeImage($request);
             }
-            $data['image'] = $this->storeImage($request);
-        }
 
-        $popupBanner->update($data);
+            $popupBanner->update($data);
+        } catch (\Throwable $e) {
+            return $this->imageError($request, $e);
+        }
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json(['success' => true, 'message' => 'Popup banner berhasil diperbarui']);
         }
 
         return redirect()->route('admin.popup-banners')->with('success', 'Popup banner berhasil diperbarui');
+    }
+
+    /**
+     * Kembalikan respons gagal validasi (JSON untuk AJAX, redirect untuk form biasa).
+     */
+    private function validationFailure(Request $request, $validator)
+    {
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['errors' => $validator->errors()->messages()], 422);
+        }
+
+        return redirect()->back()->withErrors($validator)->withInput();
+    }
+
+    /**
+     * Tangani kegagalan pemrosesan gambar agar pesan aslinya terlihat.
+     */
+    private function imageError(Request $request, \Throwable $e)
+    {
+        Log::warning('Popup banner upload gagal: ' . $e->getMessage(), [
+            'at' => $e->getFile() . ':' . $e->getLine(),
+        ]);
+
+        $message = 'Gambar gagal diproses. Gunakan file JPG/PNG/WebP maksimal 5MB. '
+            . 'Jika server tidak mendukung optimasi gambar, file asli tetap disimpan.';
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['errors' => ['image' => [$message]]], 422);
+        }
+
+        return redirect()->back()->withInput()->withErrors(['image' => $message]);
     }
 
     private function storeImage(Request $request): string

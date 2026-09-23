@@ -18,7 +18,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="icon" type="image/png" href="{{ $themeFavicon }}">
 <link rel="shortcut icon" href="{{ $themeFavicon }}">
-<link rel="stylesheet" href="{{ asset('css/topup.css') }}?v=22">
+<link rel="stylesheet" href="{{ asset('css/topup.css') }}?v=25">
 @if(!empty($activeThemeCss))
 <style>:root{{{ $activeThemeCss }}}</style>
 @endif
@@ -231,11 +231,11 @@
             @if($popup->link)
               <a href="{{ $popup->link }}" class="popup-link" target="_blank" rel="noopener">
                 <img src="{{ $popup->image_url }}" alt="{{ $popup->title ?? 'Promo' }}" class="popup-image"
-                     style="object-fit:{{ $popup->image_fit ?? 'contain' }};object-position:{{ $popup->image_position ?? 'center' }}">
+                     style="object-fit:contain;object-position:{{ $popup->image_position ?? 'center' }}">
               </a>
             @else
               <img src="{{ $popup->image_url }}" alt="{{ $popup->title ?? 'Promo' }}" class="popup-image"
-                   style="object-fit:{{ $popup->image_fit ?? 'contain' }};object-position:{{ $popup->image_position ?? 'center' }}">
+                   style="object-fit:contain;object-position:{{ $popup->image_position ?? 'center' }}">
             @endif
           </div>
           @if($popup->title || $popup->description)

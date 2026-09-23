@@ -11,7 +11,24 @@
     'refund' => ['label' => 'REFUND', 'color' => '#94a3b8'],
     default => ['label' => 'MENUNGGU PEMBAYARAN', 'color' => '#854DEA'],
   };
-  $paymentMethod = $order->transaction?->payment_type;
+  $paidType = $order->transaction?->payment_type;
+  $paymentMethod = $order->payment_method ?: 'qris';
+  $methodLabels = [
+    'qris' => 'QRIS',
+    'dana' => 'DANA',
+    'gopay' => 'GoPay',
+    'ovo' => 'OVO',
+    'shopeepay' => 'ShopeePay',
+    'linkaja' => 'LinkAja',
+    'bca_va' => 'BCA Virtual Account', 'bca' => 'BCA Virtual Account',
+    'bni_va' => 'BNI Virtual Account', 'bni' => 'BNI Virtual Account',
+    'bri_va' => 'BRI Virtual Account', 'bri' => 'BRI Virtual Account',
+    'mandiri_va' => 'Mandiri Virtual Account', 'mandiri' => 'Mandiri Virtual Account',
+    'permata_va' => 'Permata Virtual Account', 'permata' => 'Permata Virtual Account',
+    'alfamart' => 'Alfamart',
+    'indomaret' => 'Indomaret',
+  ];
+  $methodLabel = $methodLabels[strtolower((string) $paymentMethod)] ?? ($paidType ?: 'QRIS');
   $paymentLogo = match($paymentMethod) {
     'shopeepay' => 'https://i.imgur.com/sXK3l5l.png',
     'gopay' => 'https://i.imgur.com/ZUw3GLr.png',
@@ -120,7 +137,7 @@
               <span class="pd-detail-label">Metode</span>
               <span class="pd-detail-value">
                 @if($paymentLogo)<img src="{{ $paymentLogo }}" alt="" class="pd-detail-paylogo">@endif
-                <span id="pdDetailMethod">{{ $paymentMethod ? ucwords(str_replace('_', ' ', $paymentMethod)) : ($isQris ? 'QRIS' : '-') }}</span>
+                <span id="pdDetailMethod">{{ $methodLabel }}</span>
               </span>
             </div>
             <div class="pd-detail-item">

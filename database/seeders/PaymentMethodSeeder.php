@@ -10,9 +10,10 @@ class PaymentMethodSeeder extends Seeder
     /**
      * Sinkronkan daftar metode pembayaran dengan data lokal (idempotent).
      *
-     * Karena aplikasi saat ini hanya benar-benar memproses pembayaran QRIS
-     * (atau Invoice) Xendit, metode lain ditampilkan sebagai pilihan namun
-     * real transaksinya tetap via gateway yang dikonfigurasi.
+     * Semua metode di sini di-charge langsung ke Xendit (QRIS / VA / e-wallet /
+     * minimarket / Invoice). Channel yang tidak diaktifkan di akun Xendit tetap
+     * tersimpan tapi disaring oleh PaymentGatewayService::filterAvailableMethods(),
+     * sehingga yang tampil ke pelanggan hanya channel yang benar-benar aktif.
      */
     public function run(): void
     {
@@ -23,7 +24,7 @@ class PaymentMethodSeeder extends Seeder
                 'category' => 'ewallet',
                 'photo' => 'payments/gopay.svg',
                 'photo_light' => 'payments/gopay-dark.png',
-                'is_active' => false,
+                'is_active' => true,
             ],
             [
                 'name' => 'Dana',
@@ -38,14 +39,15 @@ class PaymentMethodSeeder extends Seeder
                 'category' => 'ewallet',
                 'photo' => null,
                 'photo_light' => null,
-                'is_active' => true,
+                // LinkAja sudah discontinued di Xendit, nonaktifkan agar tidak muncul.
+                'is_active' => false,
             ],
             [
                 'name' => 'ShopeePay',
                 'code' => 'shopeepay',
                 'category' => 'ewallet',
                 'photo' => 'payments/shopeepay.svg',
-                'is_active' => false,
+                'is_active' => true,
             ],
             [
                 'name' => 'Ovo',

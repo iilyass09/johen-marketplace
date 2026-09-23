@@ -342,41 +342,75 @@ document.getElementById('popupForm').addEventListener('submit', async function(e
     const btn = document.getElementById('popupSubmitBtn');
     btn.disabled = true;
     btn.textContent = 'Menyimpan...';
+    const isEdit = editPopupId !== null;
+    const btnText = isEdit ? 'Simpan Perubahan' : 'Simpan';
+
+    const imageInput = document.getElementById('popupImageInput');
+    const imageFile = imageInput && imageInput.files && imageInput.files[0];
+    if (imageFile && imageFile.size > 5 * 1024 * 1024) {
+        showModal('error', 'Ukuran file melebihi 5MB. Pilih gambar yang lebih kecil lalu coba lagi.');
+        btn.disabled = false;
+        btn.textContent = btnText;
+        return;
+    }
+    if (imageFile && !/^image\/(jpeg|png|webp)$/.test(imageFile.type)) {
+        showModal('error', 'Format file tidak didukung. Gunakan JPG, PNG, atau WebP.');
+        btn.disabled = false;
+        btn.textContent = btnText;
+        return;
+    }
 
     const formData = new FormData(this);
-    const isEdit = editPopupId !== null;
     if (isEdit) formData.set('_method', 'PUT');
 
     const url = isEdit
         ? '{{ route('admin.popup-banners.update', '__ID__') }}'.replace('__ID__', editPopupId)
         : '{{ route('admin.popup-banners.store') }}';
 
+    let res;
     try {
-        const res = await fetch(url, {
+        res = await fetch(url, {
             method: 'POST',
             headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
             body: formData
         });
-        const data = await res.json();
-        if (res.ok) {
-            closePopupModal();
-            showModal('success', data.message || (isEdit ? 'Popup banner berhasil diperbarui' : 'Popup banner berhasil ditambahkan'));
-            setTimeout(() => location.reload(), 800);
-        } else {
-            const errors = data.errors || {};
-            clearPopupErrors();
-            for (const field in errors) {
-                const el = document.getElementById('err_' + field);
-                if (el) { el.textContent = errors[field][0]; el.classList.remove('hidden'); }
-            }
-            btn.disabled = false;
-            btn.textContent = isEdit ? 'Simpan Perubahan' : 'Simpan';
-        }
     } catch (err) {
-        showModal('error', 'Terjadi kesalahan. Silakan coba lagi.');
+        showModal('error', 'Koneksi gagal. Periksa internet Anda lalu coba lagi.');
         btn.disabled = false;
-        btn.textContent = isEdit ? 'Simpan Perubahan' : 'Simpan';
+        btn.textContent = btnText;
+        return;
     }
+
+    let data = {};
+    try { data = await res.json(); } catch (err) { /* respons non-JSON */ }
+
+    if (res.ok) {
+        closePopupModal();
+        showModal('success', data.message || (isEdit ? 'Popup banner berhasil diperbarui' : 'Popup banner berhasil ditambahkan'));
+        setTimeout(() => location.reload(), 800);
+        return;
+    }
+
+    const errors = data.errors || {};
+    clearPopupErrors();
+    let hasFieldErrors = false;
+    for (const field in errors) {
+        const el = document.getElementById('err_' + field);
+        if (el) { el.textContent = errors[field][0]; el.classList.remove('hidden'); hasFieldErrors = true; }
+    }
+
+    if (!hasFieldErrors) {
+        const msg = data.message
+            || (res.status === 413 ? 'Ukuran file terlalu besar. Maksimal 5MB per gambar.'
+            : (res.status === 419 ? 'Sesi Anda kedaluwarsa. Muat ulang halaman lalu coba lagi.'
+            : (res.status === 422 ? 'Data tidak valid. Periksa kembali isian form, terutama gambar.'
+            : (res.status === 500 ? 'Server gagal memproses gambar. Gunakan file JPG/PNG/WebP maksimal 5MB dengan resolusi sedikit lebih rendah, atau hubungi admin.'
+            : 'Terjadi kesalahan (HTTP ' + res.status + '). Silakan coba lagi.'))));
+        showModal('error', msg);
+    }
+
+    btn.disabled = false;
+    btn.textContent = btnText;
 });
 
 document.addEventListener('keydown', function(e) {

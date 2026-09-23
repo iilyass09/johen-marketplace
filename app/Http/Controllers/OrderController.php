@@ -44,6 +44,7 @@ class OrderController extends Controller
             'customer_number' => 'required|string|max:100',
             'zone_id' => 'nullable|string|max:20|regex:/^[A-Za-z0-9]+$/',
             'customer_name' => 'nullable|string|max:100',
+            'phone' => 'nullable|string|max:30',
             'email' => 'nullable|email',
             'quantity' => 'nullable|integer|min:1|max:99',
             'payment_method' => 'nullable|string|max:50',
@@ -74,15 +75,24 @@ class OrderController extends Controller
 
         $quantity = (int) ($request->quantity ?? 1);
 
-        $order = $this->createTopupOrder($product, [
-            'customer_number' => trim($request->customer_number),
-            'zone_id' => $zoneId,
-            'customer_name' => $request->customer_name,
-            'email' => $request->email,
-            'quantity' => $quantity,
-            'promo_code' => $request->promo_code,
-            'payment_method' => $request->payment_method,
-        ]);
+        try {
+            $order = $this->createTopupOrder($product, [
+                'customer_number' => trim($request->customer_number),
+                'zone_id' => $zoneId,
+                'customer_name' => $request->customer_name,
+                'phone' => $request->phone,
+                'email' => $request->email,
+                'quantity' => $quantity,
+                'promo_code' => $request->promo_code,
+                'payment_method' => $request->payment_method,
+            ]);
+        } catch (\RuntimeException $e) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            }
+
+            return back()->with('error', $e->getMessage())->withInput();
+        }
 
         $demo = $order->gateway_invoice_id ? false : true;
 
@@ -113,13 +123,21 @@ class OrderController extends Controller
             return back()->with('error', 'Maaf, stok produk ini sedang kosong');
         }
 
-        $order = $this->createTopupOrder($product, [
-            'customer_number' => $source->customer_number,
-            'zone_id' => $source->effective_zone_id,
-            'customer_name' => $source->customer_name,
-            'email' => $source->email,
-            'quantity' => (int) ($source->quantity ?: 1),
-        ]);
+        try {
+            $order = $this->createTopupOrder($product, [
+                'customer_number' => $source->customer_number,
+                'zone_id' => $source->effective_zone_id,
+                'customer_name' => $source->customer_name,
+                'email' => $source->email,
+                'quantity' => (int) ($source->quantity ?: 1),
+            ]);
+        } catch (\RuntimeException $e) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            }
+
+            return back()->with('error', $e->getMessage());
+        }
 
         if ($request->wantsJson()) {
             return response()->json(['success' => true, 'redirect' => route('payment.detail', $order), 'demo' => true]);
@@ -137,9 +155,10 @@ class OrderController extends Controller
         $customerNumber = $input['customer_number'];
         $zoneId = $input['zone_id'] ?? null;
         $customerName = $input['customer_name'] ?? null;
+        $customerPhone = $input['phone'] ?? ($input['customer_phone'] ?? null);
         $email = $input['email'] ?? null;
 
-        return DB::transaction(function () use ($product, $input, $quantity, $customerNumber, $zoneId, $customerName, $email) {
+        return DB::transaction(function () use ($product, $input, $quantity, $customerNumber, $zoneId, $customerName, $customerPhone, $email) {
             // Resolve flash deal aktif secara atomik. Jika kuota tersisa,
             // order memakai harga flash dan kuota terkunci untuk pesanan ini.
             $flash = FlashDeal::active()
@@ -176,6 +195,7 @@ class OrderController extends Controller
                 'customer_number' => $customerNumber,
                 'zone_id' => $zoneId,
                 'customer_name' => $customerName,
+                'customer_phone' => $customerPhone,
                 'email' => $email,
                 'product_name' => $product->product_name,
                 'brand' => $product->brand,
@@ -190,10 +210,18 @@ class OrderController extends Controller
             if (!config('services.payment.simulation') && $this->xendit->isConfigured()) {
                 $method = !empty($input['payment_method']) ? $input['payment_method'] : config('services.payment.channel', 'qris');
 
-                $this->gateway->charge($order, $method, [
+                $charged = $this->gateway->charge($order, $method, [
                     'item_name' => $product->product_name,
                     'unit_price' => $unitPrice,
                 ]);
+
+                if (!$charged) {
+                    $label = \App\Models\PaymentMethod::where('code', $method)->value('name') ?: $method;
+                    $minAmount = in_array($order->gateway_type, ['va', 'retail'], true) ? 'Rp 10.000' : 'Rp 1.000';
+                    $message = "Metode $label gagal dibuat untuk nominal ini (minimal $minAmount)."
+                        ." Silakan pilih QRIS atau metode lain. (order: {$order->order_id})";
+                    throw new \RuntimeException($message);
+                }
             }
 
             Transaction::create([

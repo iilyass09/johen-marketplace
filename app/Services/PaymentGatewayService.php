@@ -54,6 +54,24 @@ class PaymentGatewayService
     }
 
     /**
+     * Normalisasi nomor HP ke format internasional 62... (untuk OVO).
+     */
+    protected function normalizePhone(string $phone): string
+    {
+        $digits = preg_replace('/[^0-9]/', '', $phone);
+
+        if (str_starts_with($digits, '0')) {
+            return '62'.substr($digits, 1);
+        }
+
+        if (str_starts_with($digits, '62')) {
+            return $digits;
+        }
+
+        return $digits;
+    }
+
+    /**
      * Siapkan payment method yang benar berdasarkan code yang dipilih untuk
      * diteruskan sebagai reference pembayaran (disimpan di order.payment_method).
      */
@@ -202,9 +220,22 @@ class PaymentGatewayService
 
     protected function chargeEwallet(Order $order, int $amount, string $referenceId, array $resolved, ?string $device, string $email): bool
     {
-        $channelProperties = [];
-        if ($resolved['channel_code'] === 'ID_OVO') {
-            $channelProperties['mobile_number'] = $order->customer_number;
+        $channelCode = $resolved['channel_code'];
+        $callbackUrl = route('payment.detail', $order);
+
+        $channelProperties = [
+            'success_redirect_url' => $callbackUrl,
+            'failure_redirect_url' => $callbackUrl,
+            'cancel_redirect_url' => $callbackUrl,
+        ];
+
+        // OVO memerlukan app_id (Client ID Xendit) + mobile_number di channel_properties.
+        if ($channelCode === 'ID_OVO') {
+            $channelProperties['mobile_number'] = $this->normalizePhone($order->customer_phone ?: $order->customer_number);
+            $appId = (string) config('xendit.ovo_app_id', '');
+            if ($appId !== '') {
+                $channelProperties['app_id'] = $appId;
+            }
         }
 
         $result = $this->xendit->createEwalletCharge([
@@ -212,8 +243,9 @@ class PaymentGatewayService
             'currency' => 'IDR',
             'amount' => $amount,
             'checkout_method' => 'ONE_TIME_PAYMENT',
-            'channel_code' => $resolved['channel_code'],
+            'channel_code' => $channelCode,
             'channel_properties' => $channelProperties,
+            'callback_url' => route('payment.notification'),
             'metadata' => [
                 'order_id' => $referenceId,
             ],

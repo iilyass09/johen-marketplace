@@ -1169,6 +1169,9 @@ img{max-width:100%;display:block;}
 .gd-pay-category.open .gd-pay-cat-body{display:block;}
 .gd-pay-row{border-bottom:1px solid var(--border);}
 .gd-pay-row:last-child{border-bottom:none;}
+.gd-pay-row.disabled{opacity:.45;filter:grayscale(.55);pointer-events:none;}
+.gd-pay-min{display:block;font-size:.68rem;font-weight:600;color:var(--text-mute);margin-top:.1rem;}
+.gd-pay-row.disabled .gd-pay-min{color:var(--text-dim);}
 .gd-pay-row-head{
   width:100%;display:flex;align-items:center;gap:.8rem;padding:.75rem 1.1rem .75rem 2rem;
   background:none;border:none;color:var(--text);text-align:left;cursor:pointer;
@@ -1224,6 +1227,7 @@ img{max-width:100%;display:block;}
 .gd-detail-grid{display:grid;grid-template-columns:1fr;gap:1.5rem;}
 .gd-detail-side{display:flex;flex-direction:column;gap:1.1rem;}
 @media(min-width:960px){
+  .gd-header-badges{margin-left:224px;}
   .gd-detail-grid{grid-template-columns:1fr 400px;gap:2rem;align-items:start;}
   .gd-detail-main{min-width:0;}
   .gd-detail-side{position:sticky;top:90px;margin-top:calc(2.2rem + 1rem + 26px);}
@@ -1231,6 +1235,7 @@ img{max-width:100%;display:block;}
   .gd-summary-card{margin:0;}
 }
 @media(min-width:641px) and (max-width:959px){
+  .gd-header-badges{margin-left:184px;}
   .gd-thumb{width:160px;height:160px;border-radius:28px;margin-top:-80px;}
   .gd-thumb::after{width:44px;height:44px;border-radius:0 0 28px 0;
     background:
@@ -1248,9 +1253,12 @@ img{max-width:100%;display:block;}
       radial-gradient(circle at 100% 0, transparent 28px, rgba(12,8,24,.07) 28.5px, rgba(12,8,24,.12) 30px, transparent 31px),
       linear-gradient(315deg, rgba(12,8,24,.18) 0%, transparent 48%);}
   .gd-header-inner{gap:.8rem;}
+  .gd-header-badges{margin-left:0;flex-wrap:nowrap;overflow-x:auto;gap:.4rem;padding-bottom:.2rem;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+  .gd-header-badges::-webkit-scrollbar{display:none;}
+  .gd-header-badge{flex-shrink:0;white-space:nowrap;font-size:.6rem;padding:.26rem .45rem;gap:.3rem;}
   .gd-field-row{grid-template-columns:1fr;}
   .gd-group{padding:1rem;}
-  .game-hero{min-height:180px;}
+  .game-hero{min-height:150px;}
   .gd-region-tabs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
   .gd-region-tabs::-webkit-scrollbar{display:none;}
   .gd-pay-cat-head{padding:.65rem .8rem;}

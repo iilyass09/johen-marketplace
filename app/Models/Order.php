@@ -22,6 +22,7 @@ class Order extends Model
         'customer_number',
         'zone_id',
         'customer_name',
+        'customer_phone',
         'email',
         'product_name',
         'brand',

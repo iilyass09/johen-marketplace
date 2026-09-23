@@ -35,13 +35,26 @@
       if (in_array($code, ['alfamart', 'indomaret'], true)) return 'convenience_store';
       return 'ewallet';
   };
-  $payData = $paymentMethods->map(fn($m) => [
-      'key' => $m->code,
-      'title' => $m->name,
-      'category' => $channelCategory($m->code),
-      'photo' => $m->photo_url ?? null,
-      'fee' => 0,
-  ])->values();
+  // Minimal nominal per kategori channel Xendit (IDR): QRIS & e-wallet = 1.000,
+  // Virtual Account & minimarket = 10.000 (error "expectedAmount above 10000" bila kurang).
+  $channelMinAmount = function (string $cat): int {
+      return match ($cat) {
+          'qris', 'ewallet' => 1000,
+          default => 10000,
+      };
+  };
+  $payData = $paymentMethods->map(function ($m) use ($channelCategory, $channelMinAmount) {
+      $cat = $channelCategory($m->code);
+
+      return [
+          'key' => $m->code,
+          'title' => $m->name,
+          'category' => $cat,
+          'photo' => $m->photo_url ?? null,
+          'fee' => 0,
+          'min_amount' => $channelMinAmount($cat),
+      ];
+  })->values();
   $categories = [
       'qris' => 'QRIS',
       'ewallet' => 'E-Wallet',
@@ -73,21 +86,21 @@
       @if($brand->category)
         <span class="gd-header-cat">{{ ucfirst($brand->category) }}</span>
       @endif
-      <div class="gd-header-badges">
-        <span class="gd-header-badge">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h7l-1 8 10-12h-7z"/></svg>
-          Proses Cepat
-        </span>
-        <span class="gd-header-badge">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
-          Layanan 24/7
-        </span>
-        <span class="gd-header-badge">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          Transaksi Aman
-        </span>
-      </div>
     </div>
+  </div>
+  <div class="gd-header-badges">
+    <span class="gd-header-badge">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h7l-1 8 10-12h-7z"/></svg>
+      Proses Cepat
+    </span>
+    <span class="gd-header-badge">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+      Layanan 24/7
+    </span>
+    <span class="gd-header-badge">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Transaksi Aman
+    </span>
   </div>
 </div>
 
@@ -273,7 +286,13 @@
                       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
                     @endif
                   </span>
-                  <span class="gd-pay-label"><span class="gd-pay-t">{{ $pm->name }}</span></span>
+                  <span class="gd-pay-label">
+                    <span class="gd-pay-t">{{ $pm->name }}</span>
+                    @php($pmMin = $channelMinAmount($channelCategory($pm->code)))
+                    @if($pmMin > 1000)
+                      <span class="gd-pay-min">min. Rp {{ number_format($pmMin, 0, ',', '.') }}</span>
+                    @endif
+                  </span>
                   <span class="gd-pay-radio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
                 </button>
               </div>
@@ -513,6 +532,7 @@ qtyInput.addEventListener('change', () => { if (qtyLockCheck()) return; setQty(p
 qtyInput.addEventListener('input', () => { qtyInput.value = qtyInput.value.replace(/[^0-9]/g,''); });
 
 /* ---------- payment methods ---------- */
+let selectedPayKey = 'qris';
 let selectedPayFee = 0;
 let selectedPayLabel = '';
 const payGroup = $('#payGroup');
@@ -533,6 +553,20 @@ function togglePayLock() {
 userIdInput.addEventListener('input', togglePayLock);
 if (zoneIdInput) zoneIdInput.addEventListener('input', togglePayLock);
 togglePayLock();
+
+/* preselect metode pembayaran default (QRIS atau metode pertama yang tersedia) */
+(function(){
+    const qrRow = document.querySelector('.gd-pay-row[data-key="qris"]') || document.querySelector('.gd-pay-row');
+    if (qrRow) {
+        const method = paymentMethods.find(m => m.key === qrRow.dataset.key);
+        if (method) {
+            selectedPayKey = method.key;
+            selectedPayFee = method.fee || 0;
+            selectedPayLabel = method.title;
+        }
+        qrRow.classList.add('selected');
+    }
+})();
 
 /* ---------- deteksi akun real-time (indikator hijau) ---------- */
 const userIdOk = $('#userIdOk');
@@ -643,11 +677,13 @@ $('#payGroup').addEventListener('click', e => {
     const head = e.target.closest('.gd-pay-row-head');
     if (!head) return;
     const row = head.closest('.gd-pay-row');
-    if (!row || row.classList.contains('selected')) return;
+    if (!row || row.classList.contains('disabled')) return;
+    if (row.classList.contains('selected')) return;
     $$('.gd-pay-row').forEach(r => r.classList.remove('selected'));
     row.classList.add('selected');
     const method = paymentMethods.find(m => m.key === row.dataset.key);
     if (method) {
+        selectedPayKey = method.key;
         selectedPayFee = method.fee || 0;
         selectedPayLabel = method.title;
         updateSummary();
@@ -655,7 +691,47 @@ $('#payGroup').addEventListener('click', e => {
 });
 
 /* ---------- summary ---------- */
+function computePayTotal() {
+    return selectedPkg ? Math.max(0, selectedPkg.price * qty - promoDiscount) : 0;
+}
+
+/* Sembunyikan metode yang nominalnya di bawah minimal channel (VA & minimarket min Rp 10.000,
+   QRIS & e-wallet min Rp 1.000; dikonfirmasi dari error Xendit "expectedAmount above 10000.00").
+   Metode tetap tampil agar pengguna tahu batasannya, tapi dinonaktifkan (abu-abu). */
+function ensureValidPayMethod() {
+    const total = computePayTotal();
+    const rows = $$('.gd-pay-row');
+    rows.forEach(row => {
+        const method = paymentMethods.find(m => m.key === row.dataset.key);
+        const below = total > 0 && !!method && total < (method.min_amount || 0);
+        row.classList.toggle('disabled', below);
+    });
+
+    /* jika metode terpilih tidak tersedia lagi, alihkan ke metode valid pertama */
+    const selRow = document.querySelector('.gd-pay-row.selected');
+    const selMethod = selRow && paymentMethods.find(m => m.key === selRow.dataset.key);
+    if (total > 0 && selMethod && total < (selMethod.min_amount || 0)) {
+        const next = rows.find(r => !r.classList.contains('disabled'));
+        if (next) {
+            $$('.gd-pay-row').forEach(r => r.classList.remove('selected'));
+            next.classList.add('selected');
+            const method = paymentMethods.find(m => m.key === next.dataset.key);
+            if (method) {
+                selectedPayKey = method.key;
+                selectedPayFee = method.fee || 0;
+                selectedPayLabel = method.title;
+            }
+        } else {
+            selectedPayKey = 'qris';
+            selectedPayFee = 0;
+            selectedPayLabel = '';
+        }
+    }
+}
+
 function updateSummary() {
+    ensureValidPayMethod();
+
     const empty = !selectedPkg;
     // mobile accordion
     $('#sumEmpty').style.display = empty ? '' : 'none';
@@ -740,6 +816,7 @@ async function handleOrder(btn) {
     fd.append('promo_code', promoInput.value.trim());
     fd.append('email', emailInput.value.trim());
     fd.append('phone', waInput.value.trim());
+    if (selectedPayKey) fd.append('payment_method', selectedPayKey);
     try {
       const res = await fetch('{{ route('orders.store') }}', {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest','Accept':'application/json'}, body:fd});
       if (res.status === 401) { window.location.href = @json(route('login')); return; }

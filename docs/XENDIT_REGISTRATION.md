@@ -24,18 +24,19 @@ yang perlu dilakukan adalah konfigurasi di dashboard Xendit, deployment, dan isi
 
 ## 2. Yang harus disetel di dashboard Xendit
 
-Buka https://dashboard.xendit.co → **Settings → Webhooks**, lalu daftarkan **Callback URL**:
+Buka https://dashboard.xendit.co → **Settings → Webhooks**, lalu daftarkan **Callback URL**
+untuk setiap event di bawah. Semua mengarah ke endpoint yang sama
+(`payment/notification`) dengan token = `XENDIT_CALLBACK_TOKEN`.
 
-### Webhook 1 — QRIS (dipakai jika `PAYMENT_CHANNEL=qris`)
-- URL: `https://domainanda.com/payment/notification`
-- Token: nilai `XENDIT_CALLBACK_TOKEN` dari `.env`
-- Event: **QR Code payment** (`qr.payment`)
-- Pastikan versi API webhook = **2022-07-31** (dipakai kode `createQr`/`getQr`).
+| Webhook | Event | Kapan dipakai |
+|---------|-------|---------------|
+| QRIS | **QR Code payment** (`qr.payment`) | Pembayaran QRIS (self-hosted/embed) |
+| Virtual Account | **FVA paid** (`fva.paid`) | Pembayaran VA BCA/BNI/BRI/Mandiri/Permata |
+| E-wallet | **EWallet charge** (`ewallet.charge`) + **EWallet capture** (`ewallet.capture`) | Pembayaran GoPay/DANA/OVO/ShopeePay |
+| Retail Outlet | **Fixed payment code paid** (`ro_fpc.paid`) | Pembayaran Alfamart/Indomaret |
+| Invoice (V2) | **Invoice** (`invoice.paid`, `invoice.expired`, dan `invoice.settled` jika ada) | Fallback `PAYMENT_CHANNEL=invoice` |
 
-### Webhook 2 — Invoice (dipakai jika `PAYMENT_CHANNEL=invoice`)
-- URL: `https://domainanda.com/payment/notification`
-- Token: nilai `XENDIT_CALLBACK_TOKEN` dari `.env`
-- Event: **Invoice** → `invoice.paid`, `invoice.expired` (dan `invoice.settled` jika ada).
+URL webhook: `https://domainanda.com/payment/notification`
 
 > Token webhook di dashboard **wajib sama persis** dengan `XENDIT_CALLBACK_TOKEN`,
 > karena `XenditService::verifyCallbackToken()` menolak jika tidak cocok.
@@ -90,16 +91,48 @@ lalu `php artisan config:clear`.
 - Pastikan halaman payment menampilkan **QR code** (berarti `createQr` sukses → tersimpan
   `gateway_invoice_id` = id QR `qr_...`).
 
-### 4.3 Simulasikan pembayaran QRIS (tanpa bayar sungguhan)
-Di server, jalankan command berikut (pakai **Order ID** dari order yang barusan dibuat):
-```
-php artisan xendit:simulate-qris JM2026XXXXXX
-```
-Command ini memanggil endpoint test Xendit
-`POST /qr_codes/{id}/payments/simulate` yang menandai QR sebagai bayar, dan Xendit
-langsung mengirim webhook `qr.payment` ke `https://marketplace.johengaming.id/payment/notification`.
+### 4.3 Simulasikan pembayaran (tanpa bayar sungguhan)
 
-### 4.4 Verifikasi
+Setiap channel punya command simulasi mode-test yang menandai charge sebagai lunas
+dan memicu webhook ke endpoint kamu:
+
+| Channel | Command |
+|---------|---------|
+| QRIS | `php artisan xendit:simulate-qris JM2026XXXXXX` |
+| Virtual Account | `php artisan xendit:simulate-va TUP-ABC123XYZ` |
+| Retail Outlet | `php artisan xendit:simulate-retail TUP-ABC123XYZ` |
+
+> E-wallet (GoPay/DANA/OVO/ShopeePay) **tidak punya endpoint simulasi** di mode test
+> untuk `/ewallets/charges`. Cara memvalidasi alur e-wallet: buat order → pelanggan
+> di-redirect ke checkout Xendit → selesaikan di halaman sandbox, lalu webhook
+> `ewallet.charge/capture` masuk ke endpoint kamu.
+
+### 4.4 Verifikasi koneksi semua metode sekaligus
+
+Siapkan key test di `.env`, lalu jalankan diagnosa per-channel yang membuat charge
+Xendit sungguhan untuk setiap metode aktif (reference acak `CHK-…`, pembayaran fiktif):
+
+```
+php artisan xendit:check-channels
+```
+
+- Output berupa tabel: `Metode | Channel | Koneksi | Detail` (OK/GAGAL + pesan error API).
+- Filter satu metode: `php artisan xendit:check-channels --method=bca_va`
+- Ubah nominal uji: `php artisan xendit:check-channels --amount=50000`
+- Gagal untuk OVO? Pastikan `XENDIT_OVO_APP_ID` terisi & pengguna menginput nomor HP
+  (field "No. WhatsApp" di halaman top-up tersimpan ke `orders.customer_phone`).
+- Error `CALLBACK_URL_NOT_FOUND` pada e-wallet (`/ewallets/charges`)? Set callback URL
+  tipe `ewallet` via API (header `X-Callback-URL` & body `callback_url` IGNORED oleh Xendit):
+  ```
+  POST https://api.xendit.co/callback_urls/ewallet   { "url": "https://.../payment/notification" }
+  ```
+  atau lewat dashboard **Settings → Callbacks**. Di mode TEST ini sudah dilakukan dan
+  hasil akhirnya **12/12 metode OK** (QRIS, BCA/BNI/BRI/Mandiri/Permata VA, Alfamart,
+  Indomaret, DANA, GoPay, OVO, ShopeePay).
+- GoPay wajib `channel_properties.cancel_redirect_url` selain `success`/`failure_redirect_url`
+  (sudah ditambahkan di `PaymentGatewayService::chargeEwallet`, LG226-229).
+
+### 4.5 Verifikasi
 - Buka **https://dashboard.xendit.co/callbacks** → cari event `qr.payment` untuk order tsb →
   status respons endpoint = **200** dan body `{"status":"ok"}`.
 - Cek status order via `GET /payment/status/{order_id}` → harus berubah
@@ -118,16 +151,21 @@ Data metode pembayaran disimpan di tabel `payment_methods` (database), bukan di 
 Jika di server hanya tampil satu metode (mis. hanya QRIS), artinya data `payment_methods`
 di server belum sama dengan lokal.
 
-Seeder `PaymentMethodSeeder` sudah disinkronkan dengan data lokal (10 metode:
-QRIS, GoPay, Dana, OVO, ShopeePay, BCA/BNI/Mandiri VA, Alfamart, Indomaret — lengkap
-dengan kategori & path foto). Untuk menerapkannya di **server**:
+Seeder `PaymentMethodSeeder` sudah disinkronkan dengan data lokal
+(QRIS, GoPay, Dana, OVO, ShopeePay, BCA/BRI/BNI/Mandiri/Permata VA, Alfamart, Indomaret).
+LinkAja dinonaktifkan karena sudah discontinued di Xendit. Untuk menerapkannya di **server**:
 
 ```
 php artisan db:seed --class="Database\Seeders\PaymentMethodSeeder" --force
+php artisan cache:clear
 ```
 
-Seeder ini *idempotent*: meng-`updateOrCreate` 10 metode di atas dan menonaktifkan
+Seeder ini *idempotent*: meng-`updateOrCreate` metode di atas dan menonaktifkan
 metode lain (tidak menghapus datanya). Jalankan berulang kali aman.
+
+> Setelah seeder, channel yang benar-benar tampil ke pelanggan disaring otomatis
+> oleh `PaymentGatewayService::filterAvailableMethods()` berdasarkan channel yang
+> aktif di akun Xendit (GET `/payment_channels`, cache 10 menit → `cache:clear` jika perlu).
 
 ### Pastikan foto metode tampil
 Metode pembayaran memakai `photo` berikut yang tersimpan di `storage/app/public/payments/`:
@@ -140,22 +178,25 @@ Agar foto muncul, pastikan di server:
 1. File-file di atas ikut ter-deploy (folder `storage/app/public/payments/`), dan
 2. `php artisan storage:link` sudah dijalankan (agar `/storage/...` bisa diakses publik).
 
-> ### ⚠️ Catatan penting
-> Saat ini aplikasi **hanya benar-benar memproses pembayaran via QRIS** (atau Invoice)
-> Xendit. Metode lain (Dana, GoPay, VA, minimarket) **hanya tampilan pilihan** — pembayaran
-> riil tetap dibuat sebagai QRIS Xendit. Jangan menonaktifkan QRIS, karena itu satu-satunya
-> channel yang terintegrasi.
-
----
-
 ## 6. Catatan teknis kode (sudah diimplementasikan)
 
-- `app/Services/XenditService.php` — `createInvoice`, `getInvoice`, `createQr`,
-  `getQr`, `verifyCallbackToken`.
-- `app/Http/Controllers/PaymentController.php@notificationHandler` — verifikasi
-  callback token + proses webhook QRIS & Invoice, mencakup idempotency (`handlePaid`).
-- `app/Http/Controllers/OrderController.php` — membuat QRIS/Invoice saat checkout,
-  menyimpan `gateway_type`, `gateway_invoice_id`, `qr_string`.
-- `config/xendit.php` + variabel `.env` (XENDIT_*).
+- `app/Services/XenditService.php` — `createInvoice`, `getInvoice`, `createQr`/`getQr`,
+  `createVirtualAccount`/`getVirtualAccount`, `createEwalletCharge`/`getEwalletCharge`,
+  `createRetailOutlet`/`getRetailOutlet`, `availableChannels`, `verifyCallbackToken`.
+- `app/Services/PaymentGatewayService.php` — resolve & charge per metode (QRIS / VA /
+  e-wallet / minimarket / Invoice), `filterAvailableMethods()`, payload OVO (`app_id`,
+  `mobile_number`) & redirect URL e-wallet.
+- `app/Http/Controllers/PaymentController.php@notificationHandler` — verifikasi callback
+  token + proses semua webhook (qr.payment, fva.paid, ewallet.*, ro_fpc, invoice.*),
+  mencakup idempotency (`handlePaid`) & polling `syncFromGateway`.
+- `app/Http/Controllers/OrderController.php` — membuat charge saat checkout (memakai
+  `payment_method` dari form), menyimpan `gateway_type`, `gateway_invoice_id`, `qr_string`,
+  `va_number`, `payment_code`, `checkout_url`, `customer_phone`.
+- Command uji:
+  - `php artisan xendit:check-channels` — diagnosa koneksi semua metode (mode test).
+  - `php artisan xendit:simulate-qris`, `xendit:simulate-va`, `xendit:simulate-retail` —
+    simulasi pembayaran test per channel.
+- `config/xendit.php` + variabel `.env` (`XENDIT_SECRET_KEY`, `XENDIT_CALLBACK_TOKEN`,
+  `XENDIT_IS_PRODUCTION`, `XENDIT_OVO_APP_ID`).
 - `bootstrap/app.php` — CSRF dikecualikan untuk `payment/notification` &
   `digiflazz/callback`.

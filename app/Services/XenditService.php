@@ -229,9 +229,15 @@ class XenditService
         }
 
         try {
-            $response = Http::withBasicAuth($this->secretKey, '')
-                ->acceptJson()
-                ->post($this->baseUrl.'/ewallets/charges', $params);
+            $request = Http::withBasicAuth($this->secretKey, '')->acceptJson();
+
+            // E-wallet charge Wajib callback URL: dibaca dari header X-Callback-URL
+            // (atau diset di dashboard). Tanpa ini charge ditolak Xendit.
+            if (! empty($params['callback_url'])) {
+                $request->withHeaders(['X-Callback-URL' => $params['callback_url']]);
+            }
+
+            $response = $request->post($this->baseUrl.'/ewallets/charges', $params);
 
             if ($response->successful()) {
                 $data = $response->json();

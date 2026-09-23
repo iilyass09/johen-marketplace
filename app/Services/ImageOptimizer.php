@@ -23,7 +23,13 @@ class ImageOptimizer
         int $maxBytes = 512 * 1024
     ): string {
         $path = $file->store($dir, 'public');
-        $optimized = static::optimize($path, 'public', $maxWidth, $maxHeight, $maxBytes);
+
+        try {
+            $optimized = static::optimize($path, 'public', $maxWidth, $maxHeight, $maxBytes);
+        } catch (\Throwable $e) {
+            report($e);
+            $optimized = $path;
+        }
 
         if ($optimized !== $path) {
             Storage::disk('public')->delete($path);
@@ -32,6 +38,16 @@ class ImageOptimizer
         MediaStore::import($optimized);
 
         return $optimized;
+    }
+
+    /**
+     * Cek apakah GD + WebP tersedia di PHP server saat ini.
+     */
+    protected static function gdAvailable(): bool
+    {
+        return extension_loaded('gd')
+            && function_exists('imagecreatefromstring')
+            && function_exists('imagewebp');
     }
 
     /**
@@ -59,6 +75,11 @@ class ImageOptimizer
         ?string $outputPath = null
     ): string {
         $disk = Storage::disk($disk);
+
+        if (! static::gdAvailable()) {
+            return $diskPath;
+        }
+
         $source = static::openPath($disk->path($diskPath));
 
         if ($source === null) {
