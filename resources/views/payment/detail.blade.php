@@ -29,18 +29,26 @@
     'indomaret' => 'Indomaret',
   ];
   $methodLabel = $methodLabels[strtolower((string) $paymentMethod)] ?? ($paidType ?: 'QRIS');
-  $paymentLogo = match($paymentMethod) {
+  $codeAliases = [
+    'bca' => 'bca_va', 'bni' => 'bni_va', 'bri' => 'bri_va',
+    'mandiri' => 'mandiri_va', 'permata' => 'permata_va',
+  ];
+  $methodCode = strtolower((string) $paymentMethod);
+  $methodCode = $codeAliases[$methodCode] ?? $methodCode;
+  $payMethodModel = \App\Models\PaymentMethod::where('code', $methodCode)->first();
+  $fallbackLogos = [
     'shopeepay' => 'https://i.imgur.com/sXK3l5l.png',
     'gopay' => 'https://i.imgur.com/ZUw3GLr.png',
     'dana' => 'https://i.imgur.com/7PmQx5M.png',
     'qris' => 'https://i.imgur.com/6PQ8R0T.png',
-    'bca_va', 'bca' => 'https://i.imgur.com/QJ6qXzj.png',
-    'bni_va', 'bni' => 'https://i.imgur.com/9d5GqCj.png',
-    'bri_va', 'bri' => 'https://i.imgur.com/5Py3H0p.png',
-    'mandiri_va', 'mandiri' => 'https://i.imgur.com/CwT1dKO.png',
-    'permata_va', 'permata' => 'https://i.imgur.com/mXHsgdY.png',
-    default => null,
-  };
+    'bca_va' => 'https://i.imgur.com/QJ6qXzj.png',
+    'bni_va' => 'https://i.imgur.com/9d5GqCj.png',
+    'bri_va' => 'https://i.imgur.com/5Py3H0p.png',
+    'mandiri_va' => 'https://i.imgur.com/CwT1dKO.png',
+    'permata_va' => 'https://i.imgur.com/mXHsgdY.png',
+  ];
+  $paymentLogo = $payMethodModel?->photo_url ?: ($fallbackLogos[$methodCode] ?? null);
+  $paymentLogoLight = $payMethodModel?->photo_light_url;
 @endphp
 
 <div class="pd-wrap">
@@ -136,7 +144,7 @@
             <div class="pd-detail-item">
               <span class="pd-detail-label">Metode</span>
               <span class="pd-detail-value">
-                @if($paymentLogo)<img src="{{ $paymentLogo }}" alt="" class="pd-detail-paylogo">@endif
+                @if($paymentLogo)<img src="{{ $paymentLogo }}" alt="" class="pd-detail-paylogo"@if($paymentLogoLight) data-light="{{ $paymentLogoLight }}"@endif>@endif
                 <span id="pdDetailMethod">{{ $methodLabel }}</span>
               </span>
             </div>
@@ -223,7 +231,9 @@
           <div class="pd-method-result" id="pdMethodResult" style="display:none">
             <div class="pd-method-result-head">
               <div class="pd-method-result-icon" id="pdMethodIcon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--purple-light)" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                @if($paymentLogo)<img src="{{ $paymentLogo }}" alt="" style="width:100%;height:100%;object-fit:contain;"@if($paymentLogoLight) data-light="{{ $paymentLogoLight }}"@endif>
+                @else<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--purple-light)" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                @endif
               </div>
               <div>
                 <div class="pd-method-result-label">Pembayaran via</div>
@@ -1039,6 +1049,21 @@ if (reviewForm) {
             });
     });
 }
+
+/* theme-aware payment logo swap */
+function swapPaymentLogos() {
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    document.querySelectorAll('.pd-detail-paylogo[data-light], .pd-method-result-icon img[data-light]').forEach(img => {
+        if (isLight) {
+            img.dataset.dark = img.src;
+            img.src = img.dataset.light;
+        } else if (img.dataset.dark) {
+            img.src = img.dataset.dark;
+        }
+    });
+}
+swapPaymentLogos();
+document.addEventListener('themeChanged', swapPaymentLogos);
 
 })();
 </script>

@@ -1278,8 +1278,7 @@ img{max-width:100%;display:block;}
 }
 .gd-pay-icon .pay-badge-img{width:32px;height:32px;object-fit:contain;border-radius:6px;}
 .gd-pay-icon svg{width:16px;height:16px;color:var(--purple-light);}
-.gd-pay-icon img,.gd-pay-icon svg{opacity:0;transition:opacity .16s ease;}
-.gd-pay-row.selected .gd-pay-icon img,.gd-pay-row.selected .gd-pay-icon svg{opacity:1;}
+.gd-pay-icon img,.gd-pay-icon svg{opacity:1;transition:opacity .16s ease;}
 .gd-pay-label{flex:1;min-width:0;}
 .gd-pay-t{font-size:.82rem;font-weight:700;}
 .gd-pay-radio{
