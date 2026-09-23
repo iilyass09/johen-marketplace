@@ -18,7 +18,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="icon" type="image/png" href="{{ $themeFavicon }}">
 <link rel="shortcut icon" href="{{ $themeFavicon }}">
-<link rel="stylesheet" href="{{ asset('css/topup.css') }}?v=26">
+<link rel="stylesheet" href="{{ asset('css/topup.css') }}?v=27">
 @if(!empty($activeThemeCss))
 <style>:root{{{ $activeThemeCss }}}</style>
 @endif
