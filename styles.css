@@ -1253,9 +1253,10 @@ img{max-width:100%;display:block;}
       radial-gradient(circle at 100% 0, transparent 28px, rgba(12,8,24,.07) 28.5px, rgba(12,8,24,.12) 30px, transparent 31px),
       linear-gradient(315deg, rgba(12,8,24,.18) 0%, transparent 48%);}
   .gd-header-inner{gap:.8rem;}
-  .gd-header-badges{margin-left:0;flex-wrap:nowrap;overflow-x:auto;gap:.4rem;padding-bottom:.2rem;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+  .gd-header-badges{margin-left:0;flex-wrap:nowrap;gap:.5rem;padding-bottom:.1rem;}
   .gd-header-badges::-webkit-scrollbar{display:none;}
-  .gd-header-badge{flex-shrink:0;white-space:nowrap;font-size:.6rem;padding:.26rem .45rem;gap:.3rem;}
+  .gd-header-badge{flex-shrink:0;white-space:nowrap;font-size:.53rem;padding:.2rem .34rem;gap:.22rem;}
+  .gd-header-badge svg{width:11px;height:11px;}
   .gd-field-row{grid-template-columns:1fr;}
   .gd-group{padding:1rem;}
   .game-hero{min-height:150px;}
