@@ -2,6 +2,15 @@
 
 @section('title', 'Detail Pesanan Akun')
 
+@php
+$paymentLabels = [
+    'qris' => 'QRIS', 'gopay' => 'GoPay', 'dana' => 'DANA', 'ovo' => 'OVO', 'shopeepay' => 'ShopeePay', 'linkaja' => 'LinkAja',
+    'bca_va' => 'BCA Virtual Account', 'bni_va' => 'BNI Virtual Account', 'bri_va' => 'BRI Virtual Account',
+    'mandiri_va' => 'Mandiri Virtual Account', 'permata_va' => 'Permata Virtual Account',
+    'alfamart' => 'Alfamart', 'indomaret' => 'Indomaret',
+];
+@endphp
+
 @section('content')
 <div style="max-width:800px;margin:0 auto">
     <a href="{{ route('admin.account-orders') }}" class="btn btn-ghost mb-4" style="padding-left:0">
@@ -42,7 +51,7 @@
             </div>
             <div>
                 <p style="font-size:0.78rem;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.25rem">Pembayaran</p>
-                <p class="font-semibold">{{ $accountOrder->payment_method ?: 'QRIS' }}</p>
+                <p class="font-semibold">{{ $paymentLabels[strtolower((string) $accountOrder->payment_method)] ?? $accountOrder->payment_method ?: 'QRIS' }}</p>
                 <p style="font-size:0.85rem;color:var(--text-muted)">{{ $accountOrder->user ? 'Dipesan oleh ' . $accountOrder->user->name : '' }}</p>
             </div>
         </div>
@@ -57,6 +66,50 @@
         <div style="border-top:1px solid var(--glass-border);padding-top:1rem;display:flex;justify-content:space-between;align-items:center">
             <p style="color:var(--text-muted)">Total Pembayaran</p>
             <p style="font-size:1.6rem;font-weight:800;background:linear-gradient(135deg,var(--accent),#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Rp {{ number_format((float) $accountOrder->total_price, 0, ',', '.') }}</p>
+        </div>
+    </div>
+
+    <div class="card-glass p-6 mb-6">
+        <h3 class="font-semibold mb-4">
+            <i class="fas fa-credit-card" style="color:var(--accent);margin-right:0.5rem"></i>
+            Informasi Gateway Pembayaran
+        </h3>
+
+        <div class="grid grid-cols-2 gap-6">
+            <div>
+                <p style="font-size:0.78rem;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.25rem">Metode</p>
+                <p class="font-semibold">{{ $accountOrder->payment_method ?: '-' }}</p>
+            </div>
+            <div>
+                <p style="font-size:0.78rem;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.25rem">Tipe Gateway</p>
+                <p class="font-semibold">{{ $accountOrder->gateway_type ?: ($accountOrder->qr_string ? 'qris' : '-') }}</p>
+            </div>
+            <div>
+                <p style="font-size:0.78rem;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.25rem">Gateway Invoice ID</p>
+                <p class="font-semibold" style="font-family:monospace;word-break:break-all">{{ $accountOrder->gateway_invoice_id ?: '-' }}</p>
+            </div>
+            <div>
+                <p style="font-size:0.78rem;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.25rem">No. VA / Kode Pembayaran</p>
+                <p class="font-semibold" style="font-family:monospace">{{ $accountOrder->va_number ?: ($accountOrder->payment_code ?: '-') }}</p>
+            </div>
+            @if($accountOrder->qr_string)
+            <div style="grid-column:span 2">
+                <p style="font-size:0.78rem;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.25rem">QR String (QRIS Dinamis)</p>
+                <p style="font-size:0.8rem;color:var(--text-muted);font-family:monospace;word-break:break-all">{{ $accountOrder->qr_string }}</p>
+            </div>
+            @endif
+            @if($accountOrder->gateway_invoice_url)
+            <div>
+                <p style="font-size:0.78rem;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.25rem">Invoice URL</p>
+                <a href="{{ $accountOrder->gateway_invoice_url }}" target="_blank" rel="noopener" style="font-size:0.85rem">{{ $accountOrder->gateway_invoice_url }}</a>
+            </div>
+            @endif
+            @if($accountOrder->checkout_url)
+            <div>
+                <p style="font-size:0.78rem;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.25rem">Checkout URL (E-wallet)</p>
+                <a href="{{ $accountOrder->checkout_url }}" target="_blank" rel="noopener" style="font-size:0.85rem">{{ $accountOrder->checkout_url }}</a>
+            </div>
+            @endif
         </div>
     </div>
 

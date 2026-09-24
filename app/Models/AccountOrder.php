@@ -15,8 +15,13 @@ class AccountOrder extends Model
         'customer_phone',
         'payment_method',
         'gateway_invoice_id',
+        'gateway_invoice_url',
         'gateway_type',
         'qr_string',
+        'va_number',
+        'payment_code',
+        'checkout_url',
+        'gateway_extra',
         'status',
         'total_price',
         'notes',
@@ -24,6 +29,7 @@ class AccountOrder extends Model
 
     protected $casts = [
         'total_price' => 'decimal:2',
+        'gateway_extra' => 'array',
     ];
 
     public function listing()

@@ -6,6 +6,7 @@ use App\Models\AccountOrder;
 use App\Models\Brand;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\Review;
 use App\Services\DigiflazzService;
 use App\Services\XenditService;
 use Illuminate\Http\Request;
@@ -14,6 +15,7 @@ use Illuminate\Support\Facades\Log;
 class PaymentController extends Controller
 {
     protected DigiflazzService $digiflazz;
+
     protected XenditService $xendit;
 
     public function __construct(DigiflazzService $digiflazz, XenditService $xendit)
@@ -26,8 +28,8 @@ class PaymentController extends Controller
     {
         $invoiceUrl = $order->gateway_invoice_url;
         $isSimulation = (bool) config('services.payment.simulation');
-        $isDemo = $isSimulation || !$this->xendit->isConfigured() || empty($order->gateway_invoice_id);
-        $isQris = $order->gateway_type === 'qris' || (!empty($order->qr_string));
+        $isDemo = $isSimulation || ! $this->xendit->isConfigured() || empty($order->gateway_invoice_id);
+        $isQris = $order->gateway_type === 'qris' || (! empty($order->qr_string));
         $qrString = $order->qr_string;
         $gatewayType = $order->gateway_type ?: ($isQris ? 'qris' : 'invoice');
         $vaNumber = $order->va_number;
@@ -35,7 +37,7 @@ class PaymentController extends Controller
         $checkoutUrl = $order->checkout_url;
         $gatewayExtra = $order->gateway_extra ?: [];
         $brand = Brand::where('name', $order->brand)->first();
-        $hasReviewed = \App\Models\Review::where('order_id', $order->order_id)->exists();
+        $hasReviewed = Review::where('order_id', $order->order_id)->exists();
         $reorderProduct = Product::where('buyer_sku_code', $order->buyer_sku_code)
             ->where('is_active', true)
             ->where('stock', '>', 0)
@@ -81,7 +83,7 @@ class PaymentController extends Controller
 
     public function notificationHandler(Request $request)
     {
-        if (!$this->xendit->verifyCallbackToken($request->header('x-callback-token'))) {
+        if (! $this->xendit->verifyCallbackToken($request->header('x-callback-token'))) {
             return response()->json(['status' => 'error', 'message' => 'Invalid callback token'], 401);
         }
 
@@ -95,12 +97,12 @@ class PaymentController extends Controller
             }
 
             // Webhook Virtual Account (fva.paid) — pakai payment_id/external_id di level atas.
-            if (str_contains($event, 'fva.') || isset($payload['payment_id']) && !empty($payload['account_number'])) {
+            if (str_contains($event, 'fva.') || isset($payload['payment_id']) && ! empty($payload['account_number'])) {
                 return $this->handleVACallback($payload);
             }
 
             // Webhook Retail Outlet (ro_fpc.paid) — payment_id + payment_code/fixed_payment_code_id.
-            if (str_contains($event, 'ro_fpc.') || isset($payload['payment_id']) && !empty($payload['fixed_payment_code_id'])) {
+            if (str_contains($event, 'ro_fpc.') || isset($payload['payment_id']) && ! empty($payload['fixed_payment_code_id'])) {
                 return $this->handleRetailCallback($payload);
             }
 
@@ -115,8 +117,22 @@ class PaymentController extends Controller
 
             $order = Order::where('order_id', $externalId)->first();
 
-            if (!$order) {
+            if (! $order) {
+                // Webhook bisa berasal dari order jual-beli-akun (external_id = order_ref).
+                $accountOrder = $this->findAccountOrderByReference($externalId);
+
+                if ($accountOrder) {
+                    if (in_array($status, ['PAID', 'SETTLED'])) {
+                        $this->settleAccountOrder($accountOrder);
+                    } elseif ($status === 'EXPIRED') {
+                        $this->failAccountOrder($accountOrder);
+                    }
+
+                    return response()->json(['status' => 'ok']);
+                }
+
                 Log::warning('Xendit webhook: order tidak ditemukan', ['external_id' => $externalId]);
+
                 return response()->json(['status' => 'ok']);
             }
 
@@ -139,7 +155,8 @@ class PaymentController extends Controller
 
             return response()->json(['status' => 'ok']);
         } catch (\Exception $e) {
-            Log::error('Xendit webhook error: ' . $e->getMessage());
+            Log::error('Xendit webhook error: '.$e->getMessage());
+
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
     }
@@ -158,7 +175,7 @@ class PaymentController extends Controller
 
             $orderTransaction?->update([
                 'transaction_id' => $data['id'] ?? ($payload['id'] ?? null),
-                'payment_type' => 'QRIS - ' . (($data['payment_detail']['source'] ?? $data['channel_code'] ?? 'QRIS') ?: 'QRIS'),
+                'payment_type' => 'QRIS - '.(($data['payment_detail']['source'] ?? $data['channel_code'] ?? 'QRIS') ?: 'QRIS'),
                 'status' => strtolower($status),
                 'raw_response' => $payload,
             ]);
@@ -193,6 +210,7 @@ class PaymentController extends Controller
         }
 
         Log::warning('Xendit QR webhook: order tidak ditemukan', ['reference_id' => $referenceId]);
+
         return response()->json(['status' => 'ok']);
     }
 
@@ -203,14 +221,19 @@ class PaymentController extends Controller
 
         $order = $this->findOrderByReference($externalId);
 
-        if (!$order) {
+        if (! $order) {
+            if ($this->handleAccountWebhook($externalId, $paymentStatus, $payload)) {
+                return response()->json(['status' => 'ok']);
+            }
+
             Log::warning('Xendit VA webhook: order tidak ditemukan', ['external_id' => $externalId]);
+
             return response()->json(['status' => 'ok']);
         }
 
         $this->recordPayment($order, [
             'transaction_id' => $payload['id'] ?? ($payload['payment_id'] ?? null),
-            'payment_type' => 'Virtual Account - ' . strtoupper((string) ($payload['bank_code'] ?? 'VA')),
+            'payment_type' => 'Virtual Account - '.strtoupper((string) ($payload['bank_code'] ?? 'VA')),
             'status' => $paymentStatus === 'PAID' ? 'paid' : 'pending',
             'raw_response' => $payload,
         ]);
@@ -229,14 +252,19 @@ class PaymentController extends Controller
 
         $order = $this->findOrderByReference($externalId);
 
-        if (!$order) {
+        if (! $order) {
+            if ($this->handleAccountWebhook($externalId, $paymentStatus, $payload)) {
+                return response()->json(['status' => 'ok']);
+            }
+
             Log::warning('Xendit Retail webhook: order tidak ditemukan', ['external_id' => $externalId]);
+
             return response()->json(['status' => 'ok']);
         }
 
         $this->recordPayment($order, [
             'transaction_id' => $payload['id'] ?? ($payload['payment_id'] ?? null),
-            'payment_type' => 'Minimarket - ' . strtoupper((string) ($payload['retail_outlet_name'] ?? 'Retail')),
+            'payment_type' => 'Minimarket - '.strtoupper((string) ($payload['retail_outlet_name'] ?? 'Retail')),
             'status' => $paymentStatus === 'PAID' ? 'paid' : 'pending',
             'raw_response' => $payload,
         ]);
@@ -257,14 +285,19 @@ class PaymentController extends Controller
 
         $order = $this->findOrderByReference($referenceId);
 
-        if (!$order) {
+        if (! $order) {
+            if ($this->handleAccountWebhook($referenceId, $status, $payload)) {
+                return response()->json(['status' => 'ok']);
+            }
+
             Log::warning('Xendit E-wallet webhook: order tidak ditemukan', ['reference_id' => $referenceId]);
+
             return response()->json(['status' => 'ok']);
         }
 
         $this->recordPayment($order, [
             'transaction_id' => $data['id'] ?? ($payload['id'] ?? null),
-            'payment_type' => $channel . ' (E-wallet)',
+            'payment_type' => $channel.' (E-wallet)',
             'status' => in_array($status, ['CAPTURED', 'SUCCEEDED', 'COMPLETED', 'PAID']) ? 'paid' : 'pending',
             'raw_response' => $payload,
         ]);
@@ -282,7 +315,7 @@ class PaymentController extends Controller
      */
     private function findOrderByReference(?string $reference): ?Order
     {
-        if (!$reference) {
+        if (! $reference) {
             return null;
         }
 
@@ -292,11 +325,73 @@ class PaymentController extends Controller
     }
 
     /**
+     * Proses webhook Xendit yang ternyata milik order jual-beli-akun.
+     * Referensi akun = order_ref / gateway_invoice_id; status sukses langsung
+     * menandai listing terjual (tanpa topUp Digiflazz).
+     */
+    private function handleAccountWebhook(?string $reference, string $status, array $payload): bool
+    {
+        $accountOrder = $this->findAccountOrderByReference($reference);
+
+        if (! $accountOrder) {
+            return false;
+        }
+
+        if (in_array($status, ['PAID', 'SETTLED', 'SUCCEEDED', 'CAPTURED', 'COMPLETED'])) {
+            $this->settleAccountOrder($accountOrder);
+        } elseif (in_array($status, ['FAILED', 'EXPIRED', 'CANCELLED'])) {
+            $this->failAccountOrder($accountOrder);
+        }
+
+        Log::info('Account order webhook Xendit', [
+            'order_ref' => $accountOrder->order_ref,
+            'status' => $status,
+            'raw' => $payload,
+        ]);
+
+        return true;
+    }
+
+    private function findAccountOrderByReference(?string $reference): ?AccountOrder
+    {
+        if (! $reference) {
+            return null;
+        }
+
+        return AccountOrder::where('order_ref', $reference)
+            ->orWhere('gateway_invoice_id', $reference)
+            ->first();
+    }
+
+    /**
+     * Tandai account order lunas (idempotent): success + listing terjual.
+     */
+    private function settleAccountOrder(AccountOrder $accountOrder): void
+    {
+        if ($accountOrder->status !== 'pending') {
+            return;
+        }
+
+        $accountOrder->update(['status' => 'success']);
+        $accountOrder->listing?->update(['is_sold' => true]);
+        Log::info('Account order lunas', ['order_ref' => $accountOrder->order_ref]);
+    }
+
+    private function failAccountOrder(AccountOrder $accountOrder): void
+    {
+        if ($accountOrder->status !== 'pending') {
+            return;
+        }
+
+        $accountOrder->update(['status' => 'failed']);
+    }
+
+    /**
      * Tulis record transaksi pembayaran terbaru dari webhook/polling.
      */
     private function recordPayment(Order $order, array $info): void
     {
-        if (!$order->transaction) {
+        if (! $order->transaction) {
             return;
         }
 
@@ -337,17 +432,17 @@ class PaymentController extends Controller
             return;
         }
 
-        if (!$this->xendit->isConfigured()) {
+        if (! $this->xendit->isConfigured()) {
             return;
         }
 
         $type = $order->gateway_type ?? 'invoice';
 
         // QRIS (embedded) disinkronkan lewat Get QR Code.
-        if ($type === 'qris' || !empty($order->qr_string)) {
+        if ($type === 'qris' || ! empty($order->qr_string)) {
             $qr = $this->xendit->getQr($order->gateway_invoice_id);
 
-            if (!$qr || empty($qr['status'])) {
+            if (! $qr || empty($qr['status'])) {
                 return;
             }
 
@@ -355,7 +450,7 @@ class PaymentController extends Controller
 
             $this->recordPayment($order, [
                 'transaction_id' => $qr['id'] ?? null,
-                'payment_type' => 'QRIS - ' . (($qr['channel_code'] ?? 'QRIS') ?: 'QRIS'),
+                'payment_type' => 'QRIS - '.(($qr['channel_code'] ?? 'QRIS') ?: 'QRIS'),
                 'status' => 'pending',
                 'raw_response' => $qr,
             ]);
@@ -373,7 +468,7 @@ class PaymentController extends Controller
         if ($type === 'va') {
             $va = $this->xendit->getVirtualAccount($order->gateway_invoice_id);
 
-            if (!$va || empty($va['status'])) {
+            if (! $va || empty($va['status'])) {
                 return;
             }
 
@@ -381,7 +476,7 @@ class PaymentController extends Controller
 
             $this->recordPayment($order, [
                 'transaction_id' => $va['id'] ?? null,
-                'payment_type' => 'Virtual Account - ' . strtoupper((string) ($va['bank_code'] ?? 'VA')),
+                'payment_type' => 'Virtual Account - '.strtoupper((string) ($va['bank_code'] ?? 'VA')),
                 'status' => $status === 'INACTIVE' ? 'paid' : 'pending',
                 'raw_response' => $va,
             ]);
@@ -397,7 +492,7 @@ class PaymentController extends Controller
         if ($type === 'retail') {
             $retail = $this->xendit->getRetailOutlet($order->gateway_invoice_id);
 
-            if (!$retail || empty($retail['status'])) {
+            if (! $retail || empty($retail['status'])) {
                 return;
             }
 
@@ -405,7 +500,7 @@ class PaymentController extends Controller
 
             $this->recordPayment($order, [
                 'transaction_id' => $retail['id'] ?? null,
-                'payment_type' => 'Minimarket - ' . strtoupper((string) ($retail['retail_outlet_name'] ?? 'Retail')),
+                'payment_type' => 'Minimarket - '.strtoupper((string) ($retail['retail_outlet_name'] ?? 'Retail')),
                 'status' => $status === 'INACTIVE' ? 'paid' : 'pending',
                 'raw_response' => $retail,
             ]);
@@ -421,7 +516,7 @@ class PaymentController extends Controller
         if ($type === 'ewallet') {
             $charge = $this->xendit->getEwalletCharge($order->gateway_invoice_id);
 
-            if (!$charge || empty($charge['status'])) {
+            if (! $charge || empty($charge['status'])) {
                 return;
             }
 
@@ -429,7 +524,7 @@ class PaymentController extends Controller
 
             $this->recordPayment($order, [
                 'transaction_id' => $charge['id'] ?? null,
-                'payment_type' => (string) ($charge['channel_code'] ?? 'E-Wallet') . ' (E-wallet)',
+                'payment_type' => (string) ($charge['channel_code'] ?? 'E-Wallet').' (E-wallet)',
                 'status' => in_array($status, ['SUCCEEDED', 'COMPLETED', 'CAPTURED']) ? 'paid' : 'pending',
                 'raw_response' => $charge,
             ]);
@@ -443,7 +538,7 @@ class PaymentController extends Controller
 
         $invoice = $this->xendit->getInvoice($order->gateway_invoice_id);
 
-        if (!$invoice || empty($invoice['status'])) {
+        if (! $invoice || empty($invoice['status'])) {
             return;
         }
 
@@ -509,7 +604,7 @@ class PaymentController extends Controller
             ]);
             $order->transaction?->update(['status' => 'success', 'raw_response' => $result]);
 
-            $product = \App\Models\Product::where('buyer_sku_code', $order->buyer_sku_code)->first();
+            $product = Product::where('buyer_sku_code', $order->buyer_sku_code)->first();
             if ($product) {
                 $product->consumeStock((int) ($order->quantity ?? 1));
             }
@@ -533,10 +628,11 @@ class PaymentController extends Controller
     public function digiflazzCallback(Request $request)
     {
         $signature = (string) $request->header('X-Hub-Signature');
-        $expected = 'sha256=' . hash_hmac('sha256', $request->getContent(), $this->digiflazz->getKey());
+        $expected = 'sha256='.hash_hmac('sha256', $request->getContent(), $this->digiflazz->getKey());
 
-        if ($signature === '' || !hash_equals($expected, $signature)) {
+        if ($signature === '' || ! hash_equals($expected, $signature)) {
             Log::warning('Digiflazz callback: signature tidak valid');
+
             return response()->json(['status' => 'error', 'message' => 'Invalid signature'], 401);
         }
 
@@ -550,8 +646,9 @@ class PaymentController extends Controller
 
             $order = Order::where('order_id', $data['ref_id'])->first();
 
-            if (!$order) {
+            if (! $order) {
                 Log::warning('Digiflazz callback: order tidak ditemukan', ['ref_id' => $data['ref_id']]);
+
                 return response()->json(['status' => 'ok']);
             }
 
@@ -561,7 +658,8 @@ class PaymentController extends Controller
 
             return response()->json(['status' => 'ok']);
         } catch (\Exception $e) {
-            Log::error('Digiflazz callback error: ' . $e->getMessage());
+            Log::error('Digiflazz callback error: '.$e->getMessage());
+
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
     }
@@ -585,7 +683,7 @@ class PaymentController extends Controller
                 $this->applyDigiflazzResult($order, $result);
             }
         } catch (\Exception $e) {
-            Log::error('Digiflazz status poll failed: ' . $e->getMessage());
+            Log::error('Digiflazz status poll failed: '.$e->getMessage());
         }
     }
 
@@ -595,7 +693,7 @@ class PaymentController extends Controller
         $channel = $invoice['payment_channel'] ?? null;
 
         if ($method && $channel) {
-            return $method . ' - ' . $channel;
+            return $method.' - '.$channel;
         }
 
         return $method ?? $channel ?? 'unknown';

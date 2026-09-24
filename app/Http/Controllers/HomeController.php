@@ -11,6 +11,8 @@ use App\Models\FlashSaleBanner;
 use App\Models\Order;
 use App\Models\PaymentMethod;
 use App\Models\Product;
+use App\Models\Review;
+use App\Models\SiteSetting;
 use App\Services\GameAccountService;
 use App\Services\PaymentGatewayService;
 use App\Services\XenditService;
@@ -36,8 +38,8 @@ class HomeController extends Controller
     private static function jbaPageData(): array
     {
         $listings = AccountListing::where(function ($q) {
-                $q->where('is_active', true)->orWhere('is_sold', true);
-            })
+            $q->where('is_active', true)->orWhere('is_sold', true);
+        })
             ->orderBy('is_sold', 'asc')
             ->orderBy('game')
             ->orderBy('product_name')
@@ -49,7 +51,7 @@ class HomeController extends Controller
             ->orderBy('name')
             ->get();
 
-        $testimonials = array_values(array_filter(static::getTestimonials(), fn($t) => ($t['layanan'] ?? '') === 'jual-beli-akun'));
+        $testimonials = array_values(array_filter(static::getTestimonials(), fn ($t) => ($t['layanan'] ?? '') === 'jual-beli-akun'));
 
         $flashSaleBanners = FlashSaleBanner::activeBanners();
 
@@ -60,7 +62,7 @@ class HomeController extends Controller
                 'sub' => '300rb – 1.999jt',
                 'min' => 300000,
                 'max' => 1999000,
-                'image' => \App\Models\SiteSetting::get('jba_budget_pelajar_banner'),
+                'image' => SiteSetting::get('jba_budget_pelajar_banner'),
             ],
             [
                 'id' => 'umr',
@@ -68,7 +70,7 @@ class HomeController extends Controller
                 'sub' => '2jt – 5.9jt',
                 'min' => 2000000,
                 'max' => 5900000,
-                'image' => \App\Models\SiteSetting::get('jba_budget_umr_banner'),
+                'image' => SiteSetting::get('jba_budget_umr_banner'),
             ],
             [
                 'id' => 'sultan',
@@ -76,7 +78,7 @@ class HomeController extends Controller
                 'sub' => '6jt – 19.9jt',
                 'min' => 6000000,
                 'max' => 19900000,
-                'image' => \App\Models\SiteSetting::get('jba_budget_sultan_banner'),
+                'image' => SiteSetting::get('jba_budget_sultan_banner'),
             ],
             [
                 'id' => 'freedom',
@@ -84,7 +86,7 @@ class HomeController extends Controller
                 'sub' => '20jt – 50jt',
                 'min' => 20000000,
                 'max' => 50000000,
-                'image' => \App\Models\SiteSetting::get('jba_budget_freedom_banner'),
+                'image' => SiteSetting::get('jba_budget_freedom_banner'),
             ],
         ])->map(function ($b) {
             $b['image_url'] = $b['image'] ? media_url($b['image']) : null;
@@ -96,12 +98,12 @@ class HomeController extends Controller
 
         $gameBanners = [];
         foreach (static::JBA_GAME_SLUGS as $slug => $game) {
-            $path = \App\Models\SiteSetting::get('jba_game_banner_' . $slug);
+            $path = SiteSetting::get('jba_game_banner_'.$slug);
             $gameBanners[$slug] = $path ? media_url($path) : null;
         }
 
         $jbaTestis = static::getTestimonials();
-        $jbaRating = collect($jbaTestis)->filter(fn($t) => ($t['layanan'] ?? '') === 'jual-beli-akun')->avg('rating');
+        $jbaRating = collect($jbaTestis)->filter(fn ($t) => ($t['layanan'] ?? '') === 'jual-beli-akun')->avg('rating');
         $jbaRating = $jbaRating ? round((float) $jbaRating, 1) : 4.9;
 
         return compact('popularGames', 'listings', 'testimonials', 'flashSaleBanners', 'budgetBanners', 'gameSlugs', 'gameBanners', 'jbaRating');
@@ -109,7 +111,7 @@ class HomeController extends Controller
 
     public function index()
     {
-        if (Auth::guard('admin')->check() && !Auth::guard('web')->check()) {
+        if (Auth::guard('admin')->check() && ! Auth::guard('web')->check()) {
             return redirect()->route('admin.dashboard');
         }
 
@@ -149,7 +151,7 @@ class HomeController extends Controller
 
     public function gameDetail(Brand $brand)
     {
-        if (Auth::guard('admin')->check() && !Auth::guard('web')->check()) {
+        if (Auth::guard('admin')->check() && ! Auth::guard('web')->check()) {
             return redirect()->route('admin.dashboard');
         }
 
@@ -167,7 +169,7 @@ class HomeController extends Controller
 
         $paymentMethods = PaymentMethod::where('is_active', true)->get();
 
-        $paymentMethods = app(\App\Services\PaymentGatewayService::class)->filterAvailableMethods($paymentMethods);
+        $paymentMethods = app(PaymentGatewayService::class)->filterAvailableMethods($paymentMethods);
 
         return view('game-detail', compact('brand', 'products', 'paymentMethods', 'flashDeals'));
     }
@@ -188,6 +190,7 @@ class HomeController extends Controller
     public function getPaymentMethods()
     {
         $methods = PaymentMethod::where('is_active', true)->get(['name', 'code', 'icon', 'photo', 'photo_light']);
+
         return response()->json($methods);
     }
 
@@ -218,12 +221,12 @@ class HomeController extends Controller
         }
 
         $orders = Order::where(function ($query) use ($q) {
-                $query->where('order_id', $q)
-                    ->orWhere('customer_number', $q)
-                    ->orWhere('email', $q)
-                    ->orWhereHas('user', fn ($uq) => $uq->where('email', $q))
-                    ->orWhereHas('transaction', fn ($tq) => $tq->where('transaction_id', $q));
-            })
+            $query->where('order_id', $q)
+                ->orWhere('customer_number', $q)
+                ->orWhere('email', $q)
+                ->orWhereHas('user', fn ($uq) => $uq->where('email', $q))
+                ->orWhereHas('transaction', fn ($tq) => $tq->where('transaction_id', $q));
+        })
             ->orderByDesc('created_at')
             ->get();
 
@@ -264,18 +267,18 @@ class HomeController extends Controller
         $sort = $request->input('sort', 'largest');
 
         $baseQuery = Order::select(
-                'orders.user_id',
-                'orders.email',
-                DB::raw('MAX(COALESCE(users.name, orders.customer_name, orders.email, "Guest")) as name'),
-                DB::raw('SUM(orders.price) as total_amount'),
-                DB::raw('COUNT(orders.id) as total_count')
-            )
+            'orders.user_id',
+            'orders.email',
+            DB::raw('MAX(COALESCE(users.name, orders.customer_name, orders.email, "Guest")) as name'),
+            DB::raw('SUM(orders.price) as total_amount'),
+            DB::raw('COUNT(orders.id) as total_count')
+        )
             ->leftJoin('users', 'orders.user_id', '=', 'users.id')
             ->where('orders.status', 'success')
             ->where(function ($q2) {
                 $q2->whereNotNull('orders.user_id')
-                   ->orWhereNotNull('orders.email')
-                   ->orWhereNotNull('orders.customer_name');
+                    ->orWhereNotNull('orders.email')
+                    ->orWhereNotNull('orders.customer_name');
             });
 
         if ($gameFilter !== 'all') {
@@ -296,7 +299,7 @@ class HomeController extends Controller
                 ->orderByDesc($orderBy)
                 ->limit(10)
                 ->get()
-                ->map(fn($item, $i) => ['rank' => $i + 1, 'name' => $item->name, 'amount' => (int) $item->total_amount])
+                ->map(fn ($item, $i) => ['rank' => $i + 1, 'name' => $item->name, 'amount' => (int) $item->total_amount])
                 ->toArray();
         };
 
@@ -334,7 +337,7 @@ class HomeController extends Controller
             ->get();
 
         $periods = ['daily', 'weekly', 'monthly'];
-        if (!in_array($period, $periods)) {
+        if (! in_array($period, $periods)) {
             $period = 'daily';
         }
 
@@ -355,21 +358,21 @@ class HomeController extends Controller
         $maxNominal = $request->input('max_nominal');
 
         $query = Order::select(
-                'orders.user_id',
-                'orders.email',
-                'users.name as account_name',
-                DB::raw('MAX(COALESCE(users.name, orders.customer_name, orders.email, "Guest")) as customer'),
-                'orders.brand as game',
-                DB::raw('SUM(orders.price) as total_purchase'),
-                DB::raw('COUNT(orders.id) as total_transactions'),
-                DB::raw('MAX(orders.created_at) as last_transaction')
-            )
+            'orders.user_id',
+            'orders.email',
+            'users.name as account_name',
+            DB::raw('MAX(COALESCE(users.name, orders.customer_name, orders.email, "Guest")) as customer'),
+            'orders.brand as game',
+            DB::raw('SUM(orders.price) as total_purchase'),
+            DB::raw('COUNT(orders.id) as total_transactions'),
+            DB::raw('MAX(orders.created_at) as last_transaction')
+        )
             ->leftJoin('users', 'orders.user_id', '=', 'users.id')
             ->where('orders.status', 'success')
             ->where(function ($q2) {
                 $q2->whereNotNull('orders.user_id')
-                   ->orWhereNotNull('orders.email')
-                   ->orWhereNotNull('orders.customer_name');
+                    ->orWhereNotNull('orders.email')
+                    ->orWhereNotNull('orders.customer_name');
             });
 
         if ($gameFilter !== 'all') {
@@ -389,19 +392,19 @@ class HomeController extends Controller
             $query->whereBetween('orders.created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
         } elseif ($period === 'monthly') {
             $query->whereYear('orders.created_at', Carbon::now()->year)
-                  ->whereMonth('orders.created_at', Carbon::now()->month);
+                ->whereMonth('orders.created_at', Carbon::now()->month);
         }
 
         $allData = $query->groupBy('orders.user_id', 'orders.email', 'users.name', 'orders.brand')
             ->orderByDesc('total_purchase')
             ->get()
-            ->map(fn($item, $i) => [
+            ->map(fn ($item, $i) => [
                 'rank' => $i + 1,
                 'customer' => $item->customer,
                 'game' => $item->game,
                 'total_purchase' => (int) $item->total_purchase,
                 'total_transactions' => (int) $item->total_transactions,
-                'last_transaction' => Carbon::parse($item->last_transaction)->format('d M Y H:i') . ' WIB',
+                'last_transaction' => Carbon::parse($item->last_transaction)->format('d M Y H:i').' WIB',
             ])
             ->toArray();
 
@@ -433,7 +436,7 @@ class HomeController extends Controller
     {
         $map = static::JBA_GAME_SLUGS;
 
-        if (!isset($map[$game])) {
+        if (! isset($map[$game])) {
             abort(404);
         }
 
@@ -464,13 +467,13 @@ class HomeController extends Controller
 
     public function jualBeliAkunDetail(AccountListing $listing)
     {
-        if (!$listing->is_active && !$listing->is_sold) {
+        if (! $listing->is_active && ! $listing->is_sold) {
             abort(404);
         }
 
-        $related = AccountListing::where(function($q) {
-                $q->where('is_active', true)->orWhere('is_sold', true);
-            })
+        $related = AccountListing::where(function ($q) {
+            $q->where('is_active', true)->orWhere('is_sold', true);
+        })
             ->where('game', $listing->game)
             ->where('id', '!=', $listing->id)
             ->orderBy('is_sold', 'asc')
@@ -484,14 +487,12 @@ class HomeController extends Controller
 
     public function jualBeliAkunCheckout(AccountListing $listing)
     {
-        if ($listing->is_sold || !$listing->is_active) {
+        if ($listing->is_sold || ! $listing->is_active) {
             return redirect()->route('jual-beli-akun.detail', $listing)
                 ->with('error', 'Produk ini sudah tidak tersedia.');
         }
 
-        $paymentMethods = PaymentMethod::where('is_active', true)
-            ->where('code', 'qris')
-            ->get();
+        $paymentMethods = PaymentMethod::where('is_active', true)->get();
 
         $paymentMethods = app(PaymentGatewayService::class)->filterAvailableMethods($paymentMethods);
 
@@ -500,64 +501,67 @@ class HomeController extends Controller
 
     public function jualBeliAkunCheckoutStore(Request $request, AccountListing $listing)
     {
-        if ($listing->is_sold || !$listing->is_active) {
+        if ($listing->is_sold || ! $listing->is_active) {
             return redirect()->route('jual-beli-akun.detail', $listing)
                 ->with('error', 'Produk ini sudah tidak tersedia.');
         }
+
+        $availableCodes = PaymentMethod::where('is_active', true)->pluck('code')->all();
 
         $validated = $request->validate([
             'customer_name' => 'required|string|max:255',
             'customer_email' => 'required|email|max:255',
             'customer_phone' => 'required|string|max:20',
-            'payment_method' => 'required|string|in:QRIS,qris',
+            'payment_method' => 'required|string|in:'.implode(',', array_unique(array_merge($availableCodes, ['qris']))),
             'notes' => 'nullable|string|max:1000',
         ]);
 
         $totalPrice = (float) $listing->price;
         $isSimulation = (bool) config('services.payment.simulation');
-        // Dynamic QRIS hanya dibuat saat Xendit LIVE (nominal otomatis terisi saat scan).
-        $isXenditLive = (bool) config('xendit.is_production');
+        $method = strtolower(trim((string) $validated['payment_method']));
 
         $order = AccountOrder::create([
             'account_listing_id' => $listing->id,
             'user_id' => auth()->id(),
-            'order_ref' => 'JBA-' . strtoupper(Str::random(10)),
+            'order_ref' => 'JBA-'.strtoupper(Str::random(10)),
             'customer_name' => $validated['customer_name'],
             'customer_email' => $validated['customer_email'],
             'customer_phone' => $validated['customer_phone'],
-            'payment_method' => 'QRIS',
+            'payment_method' => $method,
             'status' => 'pending',
             // Nominal dihitung otomatis dari harga listing; user tidak input manual.
             'total_price' => $totalPrice,
             'notes' => $validated['notes'] ?? null,
         ]);
 
-        // Dynamic QRIS via Xendit → nominal otomatis terisi saat scan.
-        // Hanya aktif saat Xendit LIVE; jika test/gagal, otomatis fallback ke QRIS statis (gambar QR milik toko).
-        if (!$isSimulation && $isXenditLive && app(XenditService::class)->isConfigured()) {
-            $result = app(XenditService::class)->createQr([
-                'reference_id' => $order->order_ref,
-                'type' => 'DYNAMIC',
-                'currency' => 'IDR',
-                'amount' => (int) round($totalPrice),
-                'expires_at' => now()->addHours(24)->toIso8601String(),
-                'description' => 'Pembelian Akun - ' . $listing->product_name,
-                'metadata' => [
-                    'order_id' => $order->order_ref,
-                    'product' => $listing->product_name,
-                    'account_listing_id' => $listing->id,
-                    'customer_name' => $validated['customer_name'],
-                ],
+        // Buat charge gateway (Xendit) untuk metode yang dipilih.
+        // Referensi webhook = order_ref; nominal = total_price.
+        if (! $isSimulation && app(XenditService::class)->isConfigured()) {
+            $gateway = app(PaymentGatewayService::class);
+            $charged = $gateway->chargeAccount($order, $method, [
+                'item_name' => $listing->product_name,
             ]);
 
-            if ($result['success']) {
-                $order->update([
-                    'gateway_type' => 'qris',
-                    'gateway_invoice_id' => $result['qr_id'],
-                    'qr_string' => $result['qr_string'],
-                ]);
-            } else {
-                Log::warning('QRIS dynamic account order gagal, fallback statis', ['order_ref' => $order->order_ref, 'error' => $result]);
+            if (! $charged) {
+                // QRIS: fallback ke QR statis (gambar QR milik toko).
+                if ($method === 'qris') {
+                    Log::warning('QRIS dynamic account order gagal, fallback statis', [
+                        'order_ref' => $order->order_ref,
+                    ]);
+                } else {
+                    $label = PaymentMethod::where('code', $method)->value('name') ?: $method;
+                    $minAmount = in_array($gateway->resolve($method)['gateway_type'], ['va', 'retail'], true)
+                        ? 'Rp 10.000'
+                        : 'Rp 1.000';
+                    $message = "Metode $label gagal dibuat untuk nominal ini (minimal $minAmount)."
+                        .' Silakan pilih QRIS atau metode lain.';
+
+                    $order->delete();
+
+                    return redirect()->route('jual-beli-akun.checkout', $listing)
+                        ->with('error', $message)
+                        ->withInput();
+                }
             }
         }
 
@@ -569,61 +573,120 @@ class HomeController extends Controller
     {
         $listing = $accountOrder->listing;
 
-        if (!$listing) {
+        if (! $listing) {
             abort(404);
         }
 
         $isSimulation = (bool) config('services.payment.simulation');
-        // QRIS dinamis (Xendit) hanya dianggap aktif bila Xendit LIVE & qr_string terisi
+        $gatewayType = $accountOrder->gateway_type ?: 'qris';
+        // QRIS dinamis (Xendit) dianggap aktif bila qr_string terisi
         // → nominal otomatis saat scan. Selain itu pakai QRIS statis (gambar QR milik toko).
-        $isDynamic = !empty($accountOrder->qr_string) && (bool) config('xendit.is_production');
+        $isDynamic = ! empty($accountOrder->qr_string);
         $qrString = $accountOrder->qr_string;
         // QRIS statis (gambar QR milik toko) sebagai fallback.
-        $qrisImage = (string) \App\Models\SiteSetting::get('qris_image', '');
+        $qrisImage = (string) SiteSetting::get('qris_image', '');
+
+        $vaNumber = $accountOrder->va_number;
+        $paymentCode = $accountOrder->payment_code;
+        $checkoutUrl = $accountOrder->checkout_url;
+        $invoiceUrl = $accountOrder->gateway_invoice_url;
+        $gatewayExtra = $accountOrder->gateway_extra ?: [];
+
+        // Label & logo metode dari tabel payment_methods (map code → nama).
+        $paymentMethod = PaymentMethod::where('code', strtolower((string) $accountOrder->payment_method))->first();
 
         return view('pages.jual-beli-akun-payment', compact(
-            'accountOrder', 'listing', 'isSimulation', 'isDynamic', 'qrString', 'qrisImage'
+            'accountOrder', 'listing', 'isSimulation', 'isDynamic', 'qrString', 'qrisImage',
+            'gatewayType', 'vaNumber', 'paymentCode', 'checkoutUrl', 'invoiceUrl', 'gatewayExtra', 'paymentMethod'
         ));
     }
 
     /**
-     * Polling status untuk halaman pembayaran.
-     * Untuk QRIS dinamis: status dicek ke gateway; jika lunas → sukses otomatis.
-     * Untuk fallback statis: status hanya berubah saat admin konfirmasi manual.
+     * Polling status untuk halaman pembayaran JBA.
+     * Dicocokkan per tipe gateway (QRIS/VA/retail/e-wallet/invoice).
+     * Saat lunas → sukses otomatis + listing ditandai terjual.
      */
     public function jualBeliAkunPaymentStatus(AccountOrder $accountOrder)
     {
-        // Polling gateway hanya saat Xendit LIVE (QRIS dinamis).
         if ($accountOrder->status === 'pending'
-            && (bool) config('xendit.is_production')
-            && !empty($accountOrder->gateway_invoice_id)) {
+            && ! empty($accountOrder->gateway_invoice_id)
+            && app(XenditService::class)->isConfigured()) {
             $xendit = app(XenditService::class);
+            $type = $accountOrder->gateway_type ?: 'qris';
+            $paid = false;
+            $failed = null;
 
-            if ($xendit->isConfigured()) {
+            if ($type === 'qris' || ! empty($accountOrder->qr_string)) {
                 $qr = $xendit->getQr($accountOrder->gateway_invoice_id);
 
-                if ($qr && !empty($qr['status'])) {
+                if ($qr && ! empty($qr['status'])) {
                     $status = strtoupper($qr['status']);
-
-                    // QRIS dynamic lunas → status berubah ke INACTIVE/COMPLETED.
-                    if (in_array($status, ['INACTIVE', 'COMPLETED'])) {
-                        $accountOrder->update(['status' => 'success']);
-                        $accountOrder->listing?->update(['is_sold' => true]);
-                        Log::info('Account order lunas via polling Xendit', ['order_ref' => $accountOrder->order_ref]);
-                    } elseif (in_array($status, ['FAILED', 'EXPIRED'])) {
-                        $accountOrder->update(['status' => 'failed']);
-                    }
+                    $paid = in_array($status, ['INACTIVE', 'COMPLETED'], true);
+                    $failed = in_array($status, ['FAILED', 'EXPIRED'], true) ? 'failed' : null;
                 }
+            } elseif ($type === 'va') {
+                $va = $xendit->getVirtualAccount($accountOrder->gateway_invoice_id);
+
+                if ($va && ! empty($va['status'])) {
+                    $status = strtoupper($va['status']);
+                    $paid = $status === 'INACTIVE';
+                    $failed = in_array($status, ['FAILED', 'EXPIRED'], true) ? 'failed' : null;
+                }
+            } elseif ($type === 'retail') {
+                $retail = $xendit->getRetailOutlet($accountOrder->gateway_invoice_id);
+
+                if ($retail && ! empty($retail['status'])) {
+                    $status = strtoupper($retail['status']);
+                    $paid = $status === 'INACTIVE';
+                    $failed = in_array($status, ['FAILED', 'EXPIRED'], true) ? 'failed' : null;
+                }
+            } elseif ($type === 'ewallet') {
+                $charge = $xendit->getEwalletCharge($accountOrder->gateway_invoice_id);
+
+                if ($charge && ! empty($charge['status'])) {
+                    $status = strtoupper($charge['status']);
+                    $paid = in_array($status, ['SUCCEEDED', 'COMPLETED', 'CAPTURED'], true);
+                    $failed = in_array($status, ['FAILED', 'EXPIRED', 'CANCELLED'], true) ? 'failed' : null;
+                }
+            } else {
+                $invoice = $xendit->getInvoice($accountOrder->gateway_invoice_id);
+
+                if ($invoice && ! empty($invoice['status'])) {
+                    $status = strtoupper($invoice['status']);
+                    $paid = in_array($status, ['PAID', 'SETTLED'], true);
+                    $failed = $status === 'EXPIRED' ? 'failed' : null;
+                }
+            }
+
+            if ($paid) {
+                static::settleAccountOrder($accountOrder);
+            } elseif ($failed) {
+                $accountOrder->update(['status' => $failed]);
             }
         }
 
         return response()->json(['status' => $accountOrder->status]);
     }
 
+    /**
+     * Tandai account order lunas (idempotent): success + listing terjual.
+     */
+    public static function settleAccountOrder(AccountOrder $accountOrder): void
+    {
+        if ($accountOrder->status !== 'pending') {
+            return;
+        }
+
+        $accountOrder->update(['status' => 'success']);
+        $accountOrder->listing?->update(['is_sold' => true]);
+        Log::info('Account order lunas', ['order_ref' => $accountOrder->order_ref]);
+    }
+
     public static function getTestimonials(): array
     {
         $now = now()->setTimezone('Asia/Jakarta');
-        $fmt = fn($d) => $d->format('d-m-Y H:i:s');
+        $fmt = fn ($d) => $d->format('d-m-Y H:i:s');
+
         return [
             ['name' => 'User Free Fire', 'game' => 'Top Up - Free Fire', 'avatar' => '🙂', 'rating' => 5, 'layanan' => 'topup', 'quote' => 'Top up Diamond Free Fire di sini cepat banget. Setelah pembayaran berhasil, diamond langsung masuk ke akun tanpa perlu menunggu lama.', 'date' => $fmt((clone $now)->subMinutes(3))],
             ['name' => 'User Mobile Legends', 'game' => 'Top Up - Mobile Legends', 'avatar' => '😄', 'rating' => 5, 'layanan' => 'topup', 'quote' => 'Top up Diamond MLBB cuma beberapa menit langsung masuk. Harganya juga lebih murah dibanding tempat lain. Sudah langganan dari lama dan selalu aman.', 'date' => $fmt((clone $now)->subMinutes(17))],
@@ -645,17 +708,18 @@ class HomeController extends Controller
     {
         $all = static::getTestimonials();
 
-        $reviews = \App\Models\Review::where('status', 'approved')
+        $reviews = Review::where('status', 'approved')
             ->whereNotNull('comment')
             ->latest()
             ->limit(12)
             ->get()
-            ->map(function (\App\Models\Review $r) {
+            ->map(function (Review $r) {
                 $name = $r->user?->name
-                    ?: ($r->email ? str($r->email)->before('@')->toString() : 'User ' . ($r->game ?: 'Johen'));
+                    ?: ($r->email ? str($r->email)->before('@')->toString() : 'User '.($r->game ?: 'Johen'));
+
                 return [
                     'name' => $name,
-                    'game' => ($r->game ? 'Top Up - ' . $r->game : 'Top Up'),
+                    'game' => ($r->game ? 'Top Up - '.$r->game : 'Top Up'),
                     'avatar' => '🙂',
                     'rating' => (int) $r->rating,
                     'layanan' => 'topup',
@@ -668,8 +732,9 @@ class HomeController extends Controller
         $all = array_merge($reviews, $all);
 
         $layanan = request('layanan');
-        $testimonials = $layanan ? array_filter($all, fn($t) => ($t['layanan'] ?? '') === $layanan) : $all;
+        $testimonials = $layanan ? array_filter($all, fn ($t) => ($t['layanan'] ?? '') === $layanan) : $all;
         $activeLayanan = $layanan;
+
         return view('pages.testimoni', compact('testimonials', 'activeLayanan'));
     }
 
@@ -696,10 +761,10 @@ class HomeController extends Controller
     public function kontakStore(Request $request)
     {
         $validated = $request->validate([
-            'name'    => 'required|string|max:255',
-            'email'   => 'required|email|max:255',
-            'phone'   => 'required|string|max:20',
-            'category'=> 'required|string|in:topup,jual-beli-akun,pembayaran,keluhan,saran,lainnya',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
+            'phone' => 'required|string|max:20',
+            'category' => 'required|string|in:topup,jual-beli-akun,pembayaran,keluhan,saran,lainnya',
             'message' => 'required|string|max:5000',
         ]);
 

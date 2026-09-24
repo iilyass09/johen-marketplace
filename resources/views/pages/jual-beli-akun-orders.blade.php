@@ -2,6 +2,15 @@
 
 @section('title', 'Pesanan Saya Akun - ' . config('app.name'))
 
+@php
+$paymentLabels = [
+    'qris' => 'QRIS', 'gopay' => 'GoPay', 'dana' => 'DANA', 'ovo' => 'OVO', 'shopeepay' => 'ShopeePay', 'linkaja' => 'LinkAja',
+    'bca_va' => 'BCA Virtual Account', 'bni_va' => 'BNI Virtual Account', 'bri_va' => 'BRI Virtual Account',
+    'mandiri_va' => 'Mandiri Virtual Account', 'permata_va' => 'Permata Virtual Account',
+    'alfamart' => 'Alfamart', 'indomaret' => 'Indomaret',
+];
+@endphp
+
 @push('styles')
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
@@ -178,7 +187,7 @@
               </div>
               <div>
                 <div class="aco-right-label">Metode Bayar</div>
-                <div class="aco-right-value">{{ $order->payment_method ?: 'QRIS' }}</div>
+                <div class="aco-right-value">{{ $paymentLabels[strtolower((string) $order->payment_method)] ?? $order->payment_method ?: 'QRIS' }}</div>
               </div>
             </div>
 

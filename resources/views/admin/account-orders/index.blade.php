@@ -126,6 +126,16 @@
 
 @push('scripts')
 <script>
+const METHOD_LABELS = {
+    qris: 'QRIS', gopay: 'GoPay', dana: 'DANA', ovo: 'OVO', shopeepay: 'ShopeePay', linkaja: 'LinkAja',
+    bca_va: 'BCA Virtual Account', bni_va: 'BNI Virtual Account', bri_va: 'BRI Virtual Account',
+    mandiri_va: 'Mandiri Virtual Account', permata_va: 'Permata Virtual Account',
+    alfamart: 'Alfamart', indomaret: 'Indomaret',
+};
+function methodLabel(code) {
+    return METHOD_LABELS[code] || code || 'QRIS';
+}
+
 function openOrderModal(btn) {
     const d = JSON.parse(btn.dataset.order);
     const body = document.getElementById('orderModalBody');
@@ -168,7 +178,7 @@ function openOrderModal(btn) {
                 </div>
                 <div>
                     <div class="ord-label">Pembayaran</div>
-                    <div class="ord-value">${d.payment_method || 'QRIS'}</div>
+                    <div class="ord-value">${methodLabel(d.payment_method)}</div>
                     <div style="font-size:.82rem;color:var(--text-dim)">${d.user ? 'via ' + (d.user.name || '') : ''}</div>
                 </div>
             </div>

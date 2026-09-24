@@ -57,28 +57,46 @@
             </div>
           </div>
 
-          <div class="jco-payment-grid">
-            @forelse($paymentMethods as $pm)
-            <label class="jco-pay-opt">
-              <input type="radio" name="payment_method" value="{{ $pm->name }}" {{ old('payment_method') === $pm->name ? 'checked' : ($loop->first ? 'checked' : '') }} required>
-              <div class="jco-pay-card">
-                @if($pm->photo_url)
-                  <img data-src-dark="{{ $pm->photo_url }}" data-src-light="{{ $pm->photo_light_url ?? $pm->photo_url }}" alt="{{ $pm->name }}" class="jco-pay-img jco-pay-themeable">
-                @elseif($pm->icon)
-                  <span class="jco-pay-icon">{{ $pm->icon }}</span>
-                @else
-                  <span class="jco-pay-initial">{{ strtoupper(substr($pm->name, 0, 2)) }}</span>
-                @endif
-                <span class="jco-pay-name">{{ $pm->name }}</span>
-                <div class="jco-pay-check">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                </div>
+          @php
+              $categories = [
+                  'qris' => 'QRIS',
+                  'ewallet' => 'E-Wallet',
+                  'va' => 'Virtual Account',
+                  'convenience_store' => 'Convenience Store',
+              ];
+              $groupedPay = collect($paymentMethods)->groupBy('category');
+          @endphp
+          @foreach($categories as $catKey => $catLabel)
+            @php $catMethods = $groupedPay->get($catKey, collect()); @endphp
+            @if($catMethods->isNotEmpty())
+            <div class="jco-pay-group">
+              <div class="jco-pay-group-label">{{ $catLabel }}</div>
+              <div class="jco-payment-grid">
+                @foreach($catMethods as $pm)
+                <label class="jco-pay-opt">
+                  <input type="radio" name="payment_method" value="{{ $pm->code }}" {{ old('payment_method') === $pm->code ? 'checked' : ($loop->first && $loop->parent->first ? 'checked' : '') }} required>
+                  <div class="jco-pay-card">
+                    @if($pm->photo_url)
+                      <img data-src-dark="{{ $pm->photo_url }}" data-src-light="{{ $pm->photo_light_url ?? $pm->photo_url }}" alt="{{ $pm->name }}" class="jco-pay-img jco-pay-themeable">
+                    @elseif($pm->icon)
+                      <span class="jco-pay-icon">{{ $pm->icon }}</span>
+                    @else
+                      <span class="jco-pay-initial">{{ strtoupper(substr($pm->name, 0, 2)) }}</span>
+                    @endif
+                    <span class="jco-pay-name">{{ $pm->name }}</span>
+                    <div class="jco-pay-check">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                  </div>
+                </label>
+                @endforeach
               </div>
-            </label>
-            @empty
+            </div>
+            @endif
+          @endforeach
+          @if(empty($paymentMethods))
             <div class="jco-pay-empty">Metode pembayaran tidak tersedia</div>
-            @endforelse
-          </div>
+          @endif
           @error('payment_method')<span class="jco-error">{{ $message }}</span>@enderror
         </div>
 
@@ -301,6 +319,20 @@
 }
 
 /* Payment */
+.jco-pay-group {
+  margin-bottom: 1rem;
+}
+.jco-pay-group:last-child {
+  margin-bottom: 0;
+}
+.jco-pay-group-label {
+  font-size: .68rem;
+  font-weight: 700;
+  color: var(--text-dim, #999);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom: .5rem;
+}
 .jco-payment-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

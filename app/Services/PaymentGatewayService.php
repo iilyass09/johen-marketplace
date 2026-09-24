@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AccountOrder;
 use App\Models\Order;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -106,7 +107,7 @@ class PaymentGatewayService
     }
 
     /**
-     * Buat charge gateway untuk order & isi kolom gateway di order.
+     * Buat charge gateway untuk order top-up & isi kolom gateway di order.
      * Return true bila berhasil, false bila gagal.
      */
     public function charge(Order $order, string $method, array $gatewayMeta): bool
@@ -114,61 +115,116 @@ class PaymentGatewayService
         $resolved = $this->resolve($method);
         $type = $resolved['gateway_type'];
 
-        $subtotal = (int) $order->price;
-        $currentTime = now();
-        $device = request()->input('device_type');
-        $customerEmail = Auth::check() ? Auth::user()->email : ($order->email ?: 'guest@johengaming.id');
-        $customerName = Auth::check() ? Auth::user()->name : ($order->customer_name ?: $order->customer_number);
-
-        // Kunci referensi yang dipakai untuk mencocokkan webhook = order.order_id.
-        $referenceId = $order->order_id;
+        $ctx = [
+            'amount' => (int) $order->price,
+            'reference_id' => $order->order_id,
+            'item_name' => $gatewayMeta['item_name'] ?? $order->product_name,
+            'unit_price' => (int) ($gatewayMeta['unit_price'] ?? $order->price),
+            'customer_number' => (string) $order->customer_number,
+            'customer_name' => Auth::check() ? (string) Auth::user()->name : (string) ($order->customer_name ?: $order->customer_number),
+            'customer_phone' => (string) ($order->customer_phone ?: $order->customer_number),
+            'email' => Auth::check() ? (string) Auth::user()->email : (string) ($order->email ?: 'guest@johengaming.id'),
+            'quantity' => (int) ($order->quantity ?? 1),
+            'category' => $order->category,
+            'redirect_url' => route('payment.detail', $order),
+        ];
 
         $order->update([
             'payment_method' => $this->normalizeMethodCode($method),
             'gateway_type' => $type,
         ]);
 
+        return $this->runCharge($order, $type, $resolved, $ctx);
+    }
+
+    /**
+     * Buat charge gateway untuk order jual-beli-akun & isi kolom gateway di order.
+     * Referensi webhook memakai order_ref (JBA-...), nominal dari total_price.
+     * Return true bila berhasil, false bila gagal.
+     */
+    public function chargeAccount(AccountOrder $order, string $method, array $gatewayMeta = []): bool
+    {
+        $resolved = $this->resolve($method);
+        $type = $resolved['gateway_type'];
+        $listing = $order->listing;
+
+        $itemName = $listing?->product_name ?: ($gatewayMeta['item_name'] ?? 'Akun Game');
+
+        $ctx = [
+            'amount' => (int) round((float) $order->total_price),
+            'reference_id' => (string) $order->order_ref,
+            'item_name' => $itemName,
+            'unit_price' => (int) round((float) $order->total_price),
+            'customer_number' => (string) ($order->customer_phone ?: $order->customer_email),
+            'customer_name' => (string) ($order->customer_name ?: 'JOHEM'),
+            'customer_phone' => (string) ($order->customer_phone ?: ''),
+            'email' => (string) ($order->customer_email ?: 'guest@johengaming.id'),
+            'quantity' => 1,
+            'category' => $listing?->game,
+            'redirect_url' => route('jual-beli-akun.payment', $order),
+        ];
+
+        $order->update([
+            'payment_method' => $this->normalizeMethodCode($method),
+            'gateway_type' => $type,
+        ]);
+
+        $charged = $this->runCharge($order, $type, $resolved, $ctx);
+
+        if (! $charged) {
+            $order->update(['gateway_type' => null]);
+        }
+
+        return $charged;
+    }
+
+    /**
+     * Jalankan charge sesuai tipe gateway dengan konteks payload yang seragam.
+     * Konteks memisahkan data order (Order vs AccountOrder) dari logika charge.
+     */
+    protected function runCharge(object $order, string $type, array $resolved, array $ctx): bool
+    {
         switch ($type) {
             case 'qris':
-                return $this->chargeQris($order, $subtotal, $referenceId, $gatewayMeta);
+                return $this->chargeQris($order, $ctx);
 
             case 'va':
-                return $this->chargeVa($order, $subtotal, $referenceId, $resolved, $customerName, $customerEmail);
+                return $this->chargeVa($order, $ctx, $resolved);
 
             case 'ewallet':
-                return $this->chargeEwallet($order, $subtotal, $referenceId, $resolved, $device, $customerEmail);
+                return $this->chargeEwallet($order, $ctx, $resolved);
 
             case 'retail':
-                return $this->chargeRetail($order, $subtotal, $referenceId, $resolved);
+                return $this->chargeRetail($order, $ctx, $resolved);
 
             default:
-                return $this->chargeInvoice($order, $subtotal, $referenceId, $gatewayMeta, $customerName, $customerEmail);
+                return $this->chargeInvoice($order, $ctx);
         }
     }
 
-    protected function chargeQris(Order $order, int $amount, string $referenceId, array $gatewayMeta): bool
+    protected function chargeQris(object $order, array $ctx): bool
     {
-        $itemName = $gatewayMeta['item_name'] ?? $order->product_name;
-        if (($order->quantity ?? 1) > 1) {
-            $itemName .= ' x'.$order->quantity;
+        $itemName = $ctx['item_name'];
+        if (($ctx['quantity'] ?? 1) > 1) {
+            $itemName .= ' x'.$ctx['quantity'];
         }
 
         $result = $this->xendit->createQr([
-            'reference_id' => $referenceId,
+            'reference_id' => $ctx['reference_id'],
             'type' => 'DYNAMIC',
             'currency' => 'IDR',
-            'amount' => $amount,
+            'amount' => $ctx['amount'],
             'expires_at' => now()->addHours(24)->toIso8601String(),
-            'description' => $itemName.' - '.$order->customer_number,
+            'description' => $itemName.' - '.$ctx['customer_number'],
             'metadata' => [
-                'order_id' => $referenceId,
+                'order_id' => $ctx['reference_id'],
                 'product' => $itemName,
-                'customer_number' => $order->customer_number,
+                'customer_number' => $ctx['customer_number'],
             ],
         ]);
 
         if (! $result['success']) {
-            Log::warning('QRIS charge gagal', ['order_id' => $referenceId, 'error' => $result]);
+            Log::warning('QRIS charge gagal', ['order_id' => $ctx['reference_id'], 'error' => $result]);
 
             return false;
         }
@@ -181,26 +237,26 @@ class PaymentGatewayService
         return true;
     }
 
-    protected function chargeVa(Order $order, int $amount, string $referenceId, array $resolved, string $name, string $email): bool
+    protected function chargeVa(object $order, array $ctx, array $resolved): bool
     {
         $result = $this->xendit->createVirtualAccount([
-            'external_id' => $referenceId,
+            'external_id' => $ctx['reference_id'],
             'bank_code' => $resolved['bank_code'],
-            'name' => strtoupper(substr(preg_replace('/[^A-Za-z0-9 ]/', '', $name), 0, 45)) ?: 'JOHEM',
+            'name' => strtoupper(substr(preg_replace('/[^A-Za-z0-9 ]/', '', $ctx['customer_name']), 0, 45)) ?: 'JOHEM',
             'is_single_use' => true,
             'is_closed' => true,
-            'expected_amount' => $amount,
+            'expected_amount' => $ctx['amount'],
             'expiration_date' => now()->addHours(24)->toIso8601String(),
             'customer' => [
-                'given_names' => $name,
-                'email' => $email,
+                'given_names' => $ctx['customer_name'],
+                'email' => $ctx['email'],
             ],
             'currency' => 'IDR',
             'country' => 'ID',
         ]);
 
         if (! $result['success']) {
-            Log::warning('VA charge gagal', ['order_id' => $referenceId, 'error' => $result]);
+            Log::warning('VA charge gagal', ['order_id' => $ctx['reference_id'], 'error' => $result]);
 
             return false;
         }
@@ -218,10 +274,10 @@ class PaymentGatewayService
         return true;
     }
 
-    protected function chargeEwallet(Order $order, int $amount, string $referenceId, array $resolved, ?string $device, string $email): bool
+    protected function chargeEwallet(object $order, array $ctx, array $resolved): bool
     {
         $channelCode = $resolved['channel_code'];
-        $callbackUrl = route('payment.detail', $order);
+        $callbackUrl = $ctx['redirect_url'];
 
         $channelProperties = [
             'success_redirect_url' => $callbackUrl,
@@ -231,7 +287,7 @@ class PaymentGatewayService
 
         // OVO memerlukan app_id (Client ID Xendit) + mobile_number di channel_properties.
         if ($channelCode === 'ID_OVO') {
-            $channelProperties['mobile_number'] = $this->normalizePhone($order->customer_phone ?: $order->customer_number);
+            $channelProperties['mobile_number'] = $this->normalizePhone($ctx['customer_phone'] ?: $ctx['customer_number']);
             $appId = (string) config('xendit.ovo_app_id', '');
             if ($appId !== '') {
                 $channelProperties['app_id'] = $appId;
@@ -239,20 +295,20 @@ class PaymentGatewayService
         }
 
         $result = $this->xendit->createEwalletCharge([
-            'reference_id' => $referenceId,
+            'reference_id' => $ctx['reference_id'],
             'currency' => 'IDR',
-            'amount' => $amount,
+            'amount' => $ctx['amount'],
             'checkout_method' => 'ONE_TIME_PAYMENT',
             'channel_code' => $channelCode,
             'channel_properties' => $channelProperties,
             'callback_url' => route('payment.notification'),
             'metadata' => [
-                'order_id' => $referenceId,
+                'order_id' => $ctx['reference_id'],
             ],
         ]);
 
         if (! $result['success']) {
-            Log::warning('Ewallet charge gagal', ['order_id' => $referenceId, 'error' => $result]);
+            Log::warning('Ewallet charge gagal', ['order_id' => $ctx['reference_id'], 'error' => $result]);
 
             return false;
         }
@@ -270,19 +326,19 @@ class PaymentGatewayService
         return true;
     }
 
-    protected function chargeRetail(Order $order, int $amount, string $referenceId, array $resolved): bool
+    protected function chargeRetail(object $order, array $ctx, array $resolved): bool
     {
         $result = $this->xendit->createRetailOutlet([
-            'external_id' => $referenceId,
+            'external_id' => $ctx['reference_id'],
             'retail_outlet_name' => $resolved['retail_outlet_name'],
-            'name' => substr(preg_replace('/[^A-Za-z0-9 ]/', '', (string) ($order->customer_name ?: $order->customer_number)), 0, 40) ?: 'JOHEM',
-            'expected_amount' => $amount,
+            'name' => substr(preg_replace('/[^A-Za-z0-9 ]/', '', (string) ($ctx['customer_name'] ?: $ctx['customer_number'])), 0, 40) ?: 'JOHEM',
+            'expected_amount' => $ctx['amount'],
             'expiration_date' => now()->addHours(24)->toIso8601String(),
             'is_single_use' => true,
         ]);
 
         if (! $result['success']) {
-            Log::warning('Retail charge gagal', ['order_id' => $referenceId, 'error' => $result]);
+            Log::warning('Retail charge gagal', ['order_id' => $ctx['reference_id'], 'error' => $result]);
 
             return false;
         }
@@ -300,38 +356,38 @@ class PaymentGatewayService
         return true;
     }
 
-    protected function chargeInvoice(Order $order, int $amount, string $referenceId, array $gatewayMeta, string $name, string $email): bool
+    protected function chargeInvoice(object $order, array $ctx): bool
     {
-        $itemName = $gatewayMeta['item_name'] ?? $order->product_name;
-        if (($order->quantity ?? 1) > 1) {
-            $itemName .= ' x'.$order->quantity;
+        $itemName = $ctx['item_name'];
+        if (($ctx['quantity'] ?? 1) > 1) {
+            $itemName .= ' x'.$ctx['quantity'];
         }
 
         $result = $this->xendit->createInvoice([
-            'external_id' => $referenceId,
-            'amount' => $amount,
-            'description' => $itemName.' - '.$order->customer_number,
-            'payer_email' => $email,
+            'external_id' => $ctx['reference_id'],
+            'amount' => $ctx['amount'],
+            'description' => $itemName.' - '.$ctx['customer_number'],
+            'payer_email' => $ctx['email'],
             'customer' => [
-                'given_names' => $name,
-                'email' => $email,
+                'given_names' => $ctx['customer_name'],
+                'email' => $ctx['email'],
             ],
             'invoice_duration' => 86400,
             'currency' => 'IDR',
             'items' => [
                 [
                     'name' => $itemName,
-                    'quantity' => (int) ($order->quantity ?: 1),
-                    'price' => (int) ($gatewayMeta['unit_price'] ?? $amount),
-                    'category' => $order->category,
+                    'quantity' => (int) ($ctx['quantity'] ?: 1),
+                    'price' => (int) ($ctx['unit_price'] ?? $ctx['amount']),
+                    'category' => $ctx['category'],
                 ],
             ],
-            'success_redirect_url' => route('payment.detail', $order),
-            'failure_redirect_url' => route('payment.detail', $order),
+            'success_redirect_url' => $ctx['redirect_url'],
+            'failure_redirect_url' => $ctx['redirect_url'],
         ]);
 
         if (! $result['success']) {
-            Log::warning('Invoice charge gagal', ['order_id' => $referenceId, 'error' => $result]);
+            Log::warning('Invoice charge gagal', ['order_id' => $ctx['reference_id'], 'error' => $result]);
 
             return false;
         }

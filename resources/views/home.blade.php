@@ -271,6 +271,12 @@
 
 <style>
 @keyframes cardIn{to{opacity:1;transform:translateY(0);}}
+@media (max-width: 768px) {
+  #joki { height: 250px; border-radius: 16px; }
+}
+@media (max-width: 480px) {
+  #joki { height: 200px; }
+}
 </style>
 
 @push('scripts')

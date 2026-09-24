@@ -647,20 +647,28 @@
 }
 @media (max-width: 640px) {
   .jba-game-hero {
-    min-height: 210px;
+    min-height: 250px;
   }
   .jba-game-hero-content {
     padding: .8rem .9rem 1rem;
+    justify-content: flex-start;
+    gap: 1rem;
   }
   .jba-game-title {
     font-size: 1.45rem;
+    margin-top: .2rem;
   }
   .jba-game-desc {
-    font-size: .8rem;
+    font-size: .74rem;
+    line-height: 1.5;
+  }
+  .jba-game-stats {
+    margin-top: .9rem;
   }
   .jba-game-hero-body {
     align-items: flex-start;
     flex-direction: column;
+    gap: .5rem;
   }
 }
 .jba-grid {
@@ -1254,6 +1262,17 @@
     left: 0;
     right: auto;
   }
+}
+@media (max-width: 768px) {
+  #jba-hero { height: 250px; border-radius: 16px; }
+}
+@media (max-width: 480px) {
+  #jba-hero { height: 200px; }
+}
+@media (max-width: 640px) {
+  .jba-transfer-info { padding: .6rem .8rem; margin: 1.1rem 0 1.4rem; border-radius: 10px; }
+  .jba-transfer-icon { width: 30px; height: 30px; }
+  .jba-transfer-text { font-size: .7rem; line-height: 1.4; }
 }
 </style>
 
