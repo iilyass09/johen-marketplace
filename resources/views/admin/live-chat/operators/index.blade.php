@@ -1,14 +1,14 @@
 ﻿@extends('admin.layouts.app')
-@section('title', 'Live Chat Operators')
+@section('title', 'Live Chat Admins')
 
 @section('content')
 <div class="page-header">
     <div>
-        <h1 class="page-title">Operators</h1>
-        <p class="page-subtitle">Kelola operator live chat</p>
+        <h1 class="page-title">Admins</h1>
+        <p class="page-subtitle">Kelola admin live chat</p>
     </div>
     <button class="btn btn-primary" onclick="document.getElementById('add-operator-modal').style.display='flex'">
-        + Tambah Operator
+        + Tambah Admin
     </button>
 </div>
 
@@ -17,7 +17,7 @@
         <table class="w-full">
             <thead>
                 <tr>
-                    <th>Operator</th>
+                    <th>Admin</th>
                     <th>Channel</th>
                     <th>Status</th>
                     <th>Jadwal</th>
@@ -72,7 +72,7 @@
                     <td colspan="5">
                         <div class="empty-state">
                             <div class="empty-state-icon">ðŸ‘¤</div>
-                            <div>Belum ada operator</div>
+                            <div>Belum ada admin</div>
                         </div>
                     </td>
                 </tr>
@@ -85,7 +85,7 @@
 <div class="fixed inset-0 z-50 flex items-center justify-center" id="add-operator-modal" style="display:none">
     <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" onclick="document.getElementById('add-operator-modal').style.display='none'"></div>
     <div class="relative" style="background:var(--bg-card);border-radius:20px;max-width:480px;width:90%;max-height:90vh;overflow-y:auto;padding:24px">
-        <h3 style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--text);margin-bottom:16px">Tambah Operator</h3>
+        <h3 style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--text);margin-bottom:16px">Tambah Admin</h3>
         <form id="add-operator-form" onsubmit="submitAddOperator(event)">
             <div style="margin-bottom:12px">
                 <label style="display:block;font-size:12px;color:var(--text-dim);margin-bottom:4px">User</label>
@@ -147,7 +147,7 @@ async function submitAddOperator(e) {
         if (res.ok) {
             location.reload();
         } else {
-            alert(result.error || 'Gagal menambahkan operator');
+            alert(result.error || 'Gagal menambahkan admin');
         }
     } catch (e) { alert('Terjadi kesalahan'); }
 }
@@ -163,7 +163,7 @@ async function toggleOperator(id) {
 }
 
 async function deleteOperator(id) {
-    if (!confirm('Hapus operator ini?')) return;
+    if (!confirm('Hapus admin ini?')) return;
     try {
         const res = await fetch(`/admin/live-chat/operators/${id}`, {
             method: 'DELETE',
@@ -173,7 +173,7 @@ async function deleteOperator(id) {
             location.reload();
         } else {
             const data = await res.json();
-            alert(data.error || 'Gagal menghapus operator');
+            alert(data.error || 'Gagal menghapus admin');
         }
     } catch (e) {}
 }

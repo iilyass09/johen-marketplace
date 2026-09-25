@@ -72,7 +72,7 @@
         <div style="margin-bottom:28px;padding:20px;background:var(--bg-card);border-radius:12px;border:1px solid var(--border)">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
                 <div style="font-size:0.85rem;font-weight:600;color:var(--text)">
-                    <i class="fas fa-clock" style="margin-right:6px;color:var(--accent)"></i> Jadwal Operator
+                    <i class="fas fa-clock" style="margin-right:6px;color:var(--accent)"></i> Jadwal Admin
                 </div>
                 <button type="button" id="addOperatorBtn" onclick="addOperator()" style="display:inline-flex;align-items:center;gap:4px;padding:6px 14px;border-radius:8px;border:1px solid var(--accent);background:transparent;color:var(--accent);font-size:0.8rem;font-weight:500;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='var(--accent)';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='var(--accent)'">
                     <i class="fas fa-plus" style="font-size:0.7rem"></i> Tambah
@@ -84,15 +84,15 @@
                 @forelse($namedOperators as $index => $operator)
                     <div class="operator-row" style="margin-bottom:16px;padding:14px;background:var(--bg-input);border-radius:10px;border:1px solid var(--border)" data-index="{{ $index }}">
                         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-                            <span style="font-size:0.75rem;color:var(--text-dim);font-weight:500">Operator {{ $index + 1 }}</span>
+                            <span style="font-size:0.75rem;color:var(--text-dim);font-weight:500">Admin {{ $index + 1 }}</span>
                             <button type="button" onclick="removeOperator(this)" style="background:none;border:none;color:var(--error);cursor:pointer;font-size:0.85rem;padding:4px" title="Hapus">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
                         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
                             <div>
-                                <label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">Nama Operator</label>
-                                <input type="text" name="operators[{{ $index }}][name]" value="{{ $operator->name ?? '' }}" placeholder="Nama operator" style="width:100%;padding:8px 10px;border-radius:8px;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-size:0.82rem;outline:none">
+                                <label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">Nama Admin</label>
+                                <input type="text" name="operators[{{ $index }}][name]" value="{{ $operator->name ?? '' }}" placeholder="Nama admin" style="width:100%;padding:8px 10px;border-radius:8px;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-size:0.82rem;outline:none">
                             </div>
                             <div>
                                 <label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">Jam Mulai</label>
@@ -106,13 +106,13 @@
                     </div>
                 @empty
                     <div id="emptyOperators" style="text-align:center;padding:20px;color:var(--text-dim);font-size:0.82rem">
-                        Belum ada jadwal operator.
+Belum ada jadwal admin.
                     </div>
                 @endforelse
             </div>
 
-            <div style="font-size:0.75rem;color:var(--text-dim);margin-top:8px">Atur jam operasional per operator. Format: 24 jam (00:00 - 23:59). Kosongkan jika tidak ada jadwal.</div>
-            <div style="font-size:0.75rem;color:var(--text-muted);margin-top:6px">Operator akun (sesuai akun login admin) tidak ikut di sini dan tidak terhapus saat menyimpan.</div>
+            <div style="font-size:0.75rem;color:var(--text-dim);margin-top:8px">Atur jam operasional per admin. Format: 24 jam (00:00 - 23:59). Kosongkan jika tidak ada jadwal.</div>
+            <div style="font-size:0.75rem;color:var(--text-muted);margin-top:6px">Admin akun (sesuai akun login admin) tidak ikut di sini dan tidak terhapus saat menyimpan.</div>
         </div>
 
         {{-- Action Buttons --}}
@@ -195,12 +195,12 @@
 
         const html = '<div class="operator-row" style="margin-bottom:16px;padding:14px;background:var(--bg-input);border-radius:10px;border:1px solid var(--border)" data-index="' + operatorIndex + '">' +
             '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">' +
-                '<span style="font-size:0.75rem;color:var(--text-dim);font-weight:500">Operator ' + (rows.length + 1) + '</span>' +
+                '<span style="font-size:0.75rem;color:var(--text-dim);font-weight:500">Admin ' + (rows.length + 1) + '</span>' +
                 '<button type="button" onclick="removeOperator(this)" style="background:none;border:none;color:var(--error);cursor:pointer;font-size:0.85rem;padding:4px" title="Hapus"><i class="fas fa-trash"></i></button>' +
             '</div>' +
             '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">' +
-                '<div><label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">Nama Operator</label>' +
-                    '<input type="text" name="operators[' + operatorIndex + '][name]" placeholder="Nama operator" style="width:100%;padding:8px 10px;border-radius:8px;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-size:0.82rem;outline:none"></div>' +
+                '<div><label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">Nama Admin</label>' +
+                    '<input type="text" name="operators[' + operatorIndex + '][name]" placeholder="Nama admin" style="width:100%;padding:8px 10px;border-radius:8px;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-size:0.82rem;outline:none"></div>' +
                 '<div><label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">Jam Mulai</label>' +
                     '<input type="text" name="operators[' + operatorIndex + '][start_time]" placeholder="07:00" pattern="[0-9]{2}:[0-9]{2}" maxlength="5" style="width:100%;padding:8px 10px;border-radius:8px;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-size:0.82rem;outline:none;font-family:Poppins,monospace"></div>' +
                 '<div><label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">Jam Selesai</label>' +
@@ -223,7 +223,7 @@
         const rows = container.querySelectorAll('.operator-row');
         rows.forEach(function(row, i) {
             row.setAttribute('data-index', i);
-            row.querySelector('span').textContent = 'Operator ' + (i + 1);
+            row.querySelector('span').textContent = 'Admin ' + (i + 1);
             row.querySelectorAll('input').forEach(function(el) {
                 const name = el.getAttribute('name');
                 if (name) {
@@ -232,7 +232,7 @@
             });
         });
         if (rows.length === 0) {
-            container.innerHTML = '<div id="emptyOperators" style="text-align:center;padding:20px;color:var(--text-dim);font-size:0.82rem">Belum ada jadwal operator.</div>';
+            container.innerHTML = '<div id="emptyOperators" style="text-align:center;padding:20px;color:var(--text-dim);font-size:0.82rem">Belum ada jadwal admin.</div>';
         }
     }
 

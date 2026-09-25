@@ -1,4 +1,45 @@
 const APP_NAME = 'Johen Gaming';
+const STATIC_CACHE = 'johen-gaming-static-v1';
+const PRECACHE_URLS = [
+  '/css/topup.css',
+  '/js/topup.js',
+  '/css/livechat.css',
+  '/js/livechat.js',
+  '/js/pwa-register.js',
+  '/site.webmanifest',
+  '/logo-96.png',
+  '/logo.png',
+  '/logo-180.png',
+  '/logo-192.png',
+  '/logo-512.png',
+  '/logo-maskable-192.png',
+  '/logo-maskable-512.png',
+  '/favicon.ico'
+];
+
+function isCacheableAsset(url) {
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/storage/') || url.pathname.startsWith('/media/')) {
+    return false;
+  }
+
+  return /^\/(?:css|js|build|assets|img)\//.test(url.pathname)
+    || /\.(?:css|js|mjs|png|jpg|jpeg|gif|webp|svg|ico|woff2?)$/i.test(url.pathname);
+}
+
+async function networkFirst(request) {
+  const cache = await caches.open(STATIC_CACHE);
+  try {
+    const response = await fetch(request);
+    if (response && response.ok && response.type === 'basic') {
+      await cache.put(request, response.clone());
+    }
+    return response;
+  } catch (error) {
+    const cached = await cache.match(request);
+    if (cached) return cached;
+    throw error;
+  }
+}
 
 function normalizePayload(raw) {
   const nested = raw && raw.data && typeof raw.data === 'object' ? raw.data : {};
@@ -80,23 +121,48 @@ async function maybeShow(data) {
   await self.registration.showNotification(title, buildNotification({ ...normalized, body, url }));
 }
 
-self.addEventListener('install', () => {
-  // Tanpa skipWaiting(). Service worker baru hanya aktif saat navigasi berikutnya,
-  // sehingga Chrome tidak menampilkan notifikasi update bawaan.
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(STATIC_CACHE).then((cache) => Promise.all(
+      PRECACHE_URLS.map((url) => cache.add(url).catch(() => null))
+    ))
+  );
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys().then((keys) => Promise.all(
+      keys
+        .filter((key) => key.startsWith('johen-gaming-') && key !== STATIC_CACHE)
+        .map((key) => caches.delete(key))
+    )).then(() => self.clients.claim())
+  );
 });
 
 self.addEventListener('message', (event) => {
   const msg = event.data || {};
+  if (msg.type === 'SKIP_WAITING') {
+    event.waitUntil(self.skipWaiting());
+    return;
+  }
   if (msg.type !== 'chat-notify') return;
   const data = normalizePayload(msg.data || {});
   if (!data.title || !data.body || !data.url) return;
   event.waitUntil(maybeShow(data).catch((error) => {
     console.error('Johen Gaming notifikasi chat gagal:', error);
   }));
+});
+
+self.addEventListener('fetch', (event) => {
+  const request = event.request;
+  if (request.method !== 'GET') return;
+
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin || request.mode === 'navigate' || !isCacheableAsset(url)) {
+    return;
+  }
+
+  event.respondWith(networkFirst(request));
 });
 
 self.addEventListener('push', (event) => {

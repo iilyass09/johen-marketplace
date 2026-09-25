@@ -1193,8 +1193,9 @@ async function loadMessages(id) {
         const data = await res.json();
         const conv = data.conversation;
         const msgs = data.messages;
-        document.getElementById('rAvatar').textContent = (conv.user?.name || 'U').charAt(0);
-        document.getElementById('rName').textContent = conv.user?.name || 'User';
+        const dispName = conv.user?.name || conv.guest_name || conv.guest_email || 'User';
+        document.getElementById('rAvatar').textContent = dispName.charAt(0);
+        document.getElementById('rName').textContent = dispName;
         const channelName = conv.channel?.name || '';
         const onlineHtml = conv.status === 'open' ? '<span class="online-dot"></span> Online' : '<span style="color:#6F89A7">Offline</span>';
         document.getElementById('rMeta').innerHTML = channelName + ' &bull; ' + onlineHtml;

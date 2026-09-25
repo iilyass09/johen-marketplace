@@ -2,24 +2,29 @@
 @section('title', 'Chat - ' . ($conversation->channel?->name ?? 'Live Chat'))
 
 @section('content')
-<div style="display:flex;gap:24px;height:100%">
-    <div class="card-glass" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
-        <div class="card-header" style="flex-shrink:0;border-bottom:1px solid var(--border);padding:12px 16px">
-            <div style="display:flex;align-items:center;gap:12px">
-                <a href="{{ route('lcadmin.conversations') }}" style="color:var(--accent);text-decoration:none;font-size:18px">←</a>
-                <div>
-                    <h3 style="margin:0;font-weight:700;font-size:1rem">{{ $conversation->channel?->name ?? 'Live Chat' }}</h3>
-                    <div style="font-size:12px;color:var(--text-dim)">
-                        User: {{ $conversation->user->name ?? 'User' }} ({{ $conversation->user->email ?? '' }})
+<div class="lc-chat-wrap">
+    <div class="card-glass lc-chat-card" style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0">
+        <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;flex-shrink:0;border-bottom:1px solid var(--border);padding:12px 16px">
+            <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0">
+                <a href="{{ route('lcadmin.conversations') }}" style="color:var(--accent);text-decoration:none;font-size:18px;flex-shrink:0">←</a>
+                <div style="min-width:0;flex:1">
+                    <h3 style="margin:0;font-weight:700;font-size:1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ $conversation->channel?->name ?? 'Live Chat' }}</h3>
+                    <div style="font-size:12px;color:var(--text-dim);overflow-wrap:anywhere">
+                        @php($lcShowName = $conversation->user->name ?? ($conversation->guest_name ?: ($conversation->guest_email ?: 'User')))
+                        @if($conversation->user)
+                        User: {{ $conversation->user->name }} ({{ $conversation->user->email ?? '' }})
+                        @else
+                        User: {{ $lcShowName }}@if($conversation->guest_email) ({{ $conversation->guest_email }})@endif
+                        @endif
                         @if($activeOperator)
-                        • Operator: {{ $activeOperator->display_name }} <span style="color:var(--success)">● Online</span>
+                        • Admin: {{ $activeOperator->display_name }} <span style="color:var(--success)">● Online</span>
                         @else
                         • <span style="color:var(--error)">● Offline</span>
                         @endif
                     </div>
                 </div>
             </div>
-            <div style="display:flex;gap:8px">
+            <div style="display:flex;gap:8px;flex-shrink:0">
                 @if($conversation->status === 'open')
                 <button class="btn btn-sm btn-ghost" onclick="closeConversation({{ $conversation->id }})">Tutup</button>
                 @else
@@ -28,7 +33,7 @@
             </div>
         </div>
 
-        <div id="chat-messages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px">
+        <div id="chat-messages" class="chat-messages" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px">
             @forelse($messages as $msg)
             <div class="chat-msg {{ $msg->sender_type === 'user' ? 'chat-msg-user' : ($msg->sender_type === 'admin' ? 'chat-msg-admin' : 'chat-msg-system') }}" data-msg-id="{{ $msg->id }}" data-sender-type="{{ $msg->sender_type }}" data-sender-id="{{ $msg->sender_id ?? '' }}">
                 @if($msg->sender_type === 'system')
@@ -78,7 +83,7 @@
         </div>
 
         @if($conversation->status !== 'closed')
-        <div class="chat-composer" style="flex-shrink:0;border-top:1px solid var(--border);padding:12px">
+        <div class="chat-composer" style="flex-shrink:0;border-top:1px solid var(--border)">
             <input type="file" id="admin-file-input" accept="image/*,video/*" style="display:none" onchange="adminFileSelect(event)">
             <input type="file" id="admin-audio-input" accept="audio/*" style="display:none" onchange="adminAudioFileSelect(event)">
             <div id="admin-rec-bar" style="display:none;align-items:center;gap:8px;margin-bottom:8px">
@@ -88,7 +93,7 @@
                 <button type="button" onclick="cancelAdminVoiceRec()" title="Batal" style="width:28px;height:28px;border-radius:50%;border:none;background:rgba(239,68,68,.85);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg viewBox="0 0 24 24" width="14" height="14" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
                 <button type="button" onclick="finishAdminVoiceRec()" title="Kirim" style="width:28px;height:28px;border-radius:50%;border:none;background:var(--accent);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg viewBox="0 0 24 24" width="14" height="14" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
             </div>
-            <div id="admin-controls" style="display:flex;align-items:flex-end;gap:8px">
+            <div id="admin-controls" style="display:flex;align-items:flex-end">
                 <button class="btn-icon" onclick="document.getElementById('admin-file-input').click()" title="Kirim gambar/video" style="width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:transparent;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
                 </button>
@@ -172,6 +177,25 @@
 .chat-del-menu button { background: transparent; border: 0; text-align: left; padding: 7px 10px; border-radius: 8px; font-size: 12px; color: var(--text, #f5f3fb); cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
 .chat-del-menu button:hover { background: var(--surface-2, rgba(255,255,255,.06)); }
 .chat-del-menu button.danger { color: #f87171; }
+
+/* RESPONSIVE */
+.lc-chat-wrap { display: flex; gap: 24px; height: 100%; }
+.lc-chat-wrap .card-glass { min-width: 0; }
+.chat-messages { padding: 16px; }
+.chat-composer { padding: 12px; }
+#admin-controls { gap: 8px; }
+#admin-chat-input { min-width: 0; }
+.chat-msg { min-width: 0; }
+.chat-time { flex-wrap: wrap; min-width: 0; }
+
+@media (max-width: 479px) {
+    .lc-chat-wrap { gap: 12px; }
+    .lc-chat-wrap .card-header { padding: 10px 12px; gap: 8px; }
+    .chat-messages { padding: 12px 10px; }
+    .chat-msg { max-width: 85%; }
+    .chat-composer { padding: 10px; }
+    #admin-controls { gap: 6px; }
+}
 </style>
 
 <script>

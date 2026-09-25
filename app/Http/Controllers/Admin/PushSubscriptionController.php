@@ -235,8 +235,7 @@ class PushSubscriptionController extends Controller
         }
 
         $channel = $conversation->channel;
-        $operator = $channel?->getActiveOperator();
-        $shown = $operator?->display_name ?? $conversation->lastMessage->sender?->name ?? 'Admin';
+        $shown = 'Admin';
 
         return response()->json([
             'title' => $shown,

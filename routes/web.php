@@ -300,6 +300,7 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::get('/live-chat/guest/messages/{conversation}', [LiveChatController::class, 'guestMessages'])->name('live-chat.guest.messages');
     Route::post('/live-chat/guest/messages', [LiveChatController::class, 'guestSendMessage'])->name('live-chat.guest.messages.store');
     Route::patch('/live-chat/guest/conversation/{conversation}/read', [LiveChatController::class, 'guestMarkRead'])->name('live-chat.guest.mark-read');
+    Route::post('/live-chat/guest/conversation/{conversation}/route-back', [LiveChatController::class, 'guestRouteBack'])->name('live-chat.guest.route-back');
     Route::get('/live-chat/guest/unread', [LiveChatController::class, 'guestUnreadCount'])->name('live-chat.guest.unread');
 });
 

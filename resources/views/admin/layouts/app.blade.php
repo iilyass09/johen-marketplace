@@ -309,6 +309,7 @@
         /* MAIN CONTENT */
         .main-content {
             flex: 1; padding: 1.5rem;
+            min-width: 0;
             animation: fadeUp 0.4s ease-out;
         }
         @keyframes fadeUp {
@@ -327,12 +328,24 @@
         }
         .sidebar-overlay.show { opacity: 1; pointer-events: auto; }
 
-        @media (max-width: 768px) {
-            .hamburger { display: block; }
+        @media (max-width: 1023px) {
+            .hamburger { display: flex; align-items: center; justify-content: center; }
             .sidebar { transform: translateX(-100%); }
             .sidebar.open { transform: translateX(0); }
             .main-area { margin-left: 0 !important; }
             .sidebar-overlay { display: block; }
+        }
+
+        @media (max-width: 479px) {
+            .header { padding: 0.6rem 0.8rem; }
+            .main-content { padding: 1rem 0.85rem 1.4rem; }
+            .header-left { min-width: 0; gap: 0.5rem; }
+            .header-left .page-title {
+                font-size: 0.9rem; min-width: 0;
+                white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            }
+            .user-name { display: none; }
+            .user-menu { padding: 0.3rem 0.5rem 0.3rem 0.3rem; }
         }
 
         /* SUCCESS/ERROR MODAL */
@@ -417,6 +430,33 @@
         .card-glass:hover {
             box-shadow: 0 8px 32px -12px rgba(9,135,245,0.15);
             transform: translateY(-2px);
+        }
+
+        /* PAGE HEADER */
+        .page-header {
+            display: flex; align-items: flex-end; justify-content: space-between;
+            gap: 12px; flex-wrap: wrap; margin-bottom: 1.25rem;
+        }
+        .page-header .page-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.4rem; font-weight: 700; color: var(--text); margin: 0;
+        }
+        .page-header .page-subtitle {
+            font-size: 0.85rem; color: var(--text-muted); margin: 4px 0 0;
+        }
+
+        /* CARD HEADER */
+        .card-header {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 12px; flex-wrap: wrap;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        @media (max-width: 479px) {
+            .page-header { margin-bottom: 1rem; }
+            .page-header .page-title { font-size: 1.1rem; }
+            .card-header { padding: 0.85rem 0.9rem; }
         }
 
         /* INPUT STYLING */
@@ -603,12 +643,26 @@
                     <i class="fas fa-file-invoice-dollar"></i> Pesanan Akun
                 </a>
 
+                <div class="nav-section">Live Chat</div>
+                <a href="{{ route('admin.live-chat.dashboard') }}" class="{{ request()->routeIs('admin.live-chat.dashboard') ? 'active' : '' }}">
+                    <i class="fas fa-comments"></i> Live Chat
+                </a>
+                <a href="{{ route('admin.live-chat.conversations') }}" class="{{ request()->routeIs('admin.live-chat.conversations*') ? 'active' : '' }}">
+                    <i class="fas fa-envelope-open-text"></i> Percakapan
+                </a>
+                <a href="{{ route('admin.live-chat.channels') }}" class="{{ request()->routeIs('admin.live-chat.channels*') ? 'active' : '' }}">
+                    <i class="fas fa-satellite-dish"></i> Channel
+                </a>
+                <a href="{{ route('admin.live-chat.operators') }}" class="{{ request()->routeIs('admin.live-chat.operators*') ? 'active' : '' }}">
+                    <i class="fas fa-user-clock"></i> Admin
+                </a>
+                <a href="{{ route('admin.live-chat.admins') }}" class="{{ request()->routeIs('admin.live-chat.admins*') ? 'active' : '' }}">
+                    <i class="fas fa-user-shield"></i> Admin Chat
+                </a>
+
                 <div class="nav-section">Pengguna</div>
                 <a href="{{ route('admin.users') }}" class="{{ request()->routeIs('admin.users*') ? 'active' : '' }}">
                     <i class="fas fa-users"></i> Kelola Akun
-                </a>
-                <a href="{{ route('admin.live-chat.admins') }}" class="{{ request()->routeIs('admin.live-chat.admins*') ? 'active' : '' }}">
-                    <i class="fas fa-user-shield"></i> Kelola Admin
                 </a>
                 <a href="{{ route('admin.contact-inquiries') }}" class="{{ request()->routeIs('admin.contact-inquiries*') ? 'active' : '' }}">
                     <i class="fas fa-inbox"></i> Pesan Masuk
@@ -636,16 +690,16 @@
         <div class="main-area">
             <header class="header">
                 <div class="header-left">
-                    <button class="hamburger" id="hamburgerBtn">
+                    <button class="hamburger" id="hamburgerBtn" aria-label="Buka menu sidebar" aria-expanded="false" aria-controls="sidebar">
                         <i class="fas fa-bars"></i>
                     </button>
                     <h1 class="page-title">@yield('title', 'Dashboard')</h1>
                 </div>
                 <div class="header-right">
-                    <button class="theme-toggle" id="themeToggle" title="Ganti tema">
+                    <button class="theme-toggle" id="themeToggle" title="Ganti tema" aria-label="Ganti tema gelap/terang">
                         <i class="fas fa-moon" id="themeIcon"></i>
                     </button>
-                    <div class="user-menu" id="userMenu">
+                    <div class="user-menu" id="userMenu" role="button" aria-haspopup="true" aria-expanded="false" tabindex="0">
                         <div class="user-avatar">{{ substr(Auth::user()->name, 0, 1) }}</div>
                         <span class="user-name">{{ Auth::user()->name }}</span>
                         <div class="user-dropdown" id="userDropdown">
@@ -708,22 +762,62 @@
 
         // ===== SIDEBAR =====
         document.getElementById('hamburgerBtn')?.addEventListener('click', function () {
-            document.getElementById('sidebar').classList.toggle('open');
-            document.getElementById('sidebarOverlay').classList.toggle('show');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const isOpen = sidebar.classList.toggle('open');
+            overlay.classList.toggle('show', isOpen);
+            this.setAttribute('aria-expanded', String(isOpen));
+            this.setAttribute('aria-label', isOpen ? 'Tutup menu sidebar' : 'Buka menu sidebar');
+        });
+
+        function isDrawerMode() {
+            return window.matchMedia('(max-width: 1023px)').matches;
+        }
+
+        function closeSidebar() {
+            document.getElementById('sidebar')?.classList.remove('open');
+            document.getElementById('sidebarOverlay')?.classList.remove('show');
+            document.getElementById('hamburgerBtn')?.setAttribute('aria-expanded', 'false');
+            document.getElementById('hamburgerBtn')?.setAttribute('aria-label', 'Buka menu sidebar');
+        }
+
+        document.querySelectorAll('#sidebar a, #sidebar form button').forEach(function (el) {
+            el.addEventListener('click', function () {
+                if (isDrawerMode()) closeSidebar();
+            });
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && !document.getElementById('modalOverlay')?.classList.contains('show')) {
+                closeSidebar();
+            }
         });
 
         document.getElementById('sidebarOverlay')?.addEventListener('click', function () {
             document.getElementById('sidebar').classList.remove('open');
             this.classList.remove('show');
+            document.getElementById('hamburgerBtn')?.setAttribute('aria-expanded', 'false');
         });
 
         // ===== USER DROPDOWN =====
         document.getElementById('userMenu')?.addEventListener('click', function (e) {
             e.stopPropagation();
-            document.getElementById('userDropdown').classList.toggle('show');
+            const dd = document.getElementById('userDropdown');
+            const open = dd.classList.toggle('show');
+            this.setAttribute('aria-expanded', String(open));
+        });
+        document.getElementById('userMenu')?.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                this.click();
+            }
         });
         document.addEventListener('click', function () {
-            document.getElementById('userDropdown')?.classList.remove('show');
+            const dd = document.getElementById('userDropdown');
+            if (dd?.classList.contains('show')) {
+                dd.classList.remove('show');
+                document.getElementById('userMenu')?.setAttribute('aria-expanded', 'false');
+            }
         });
 
         // ===== FLASH MODAL =====

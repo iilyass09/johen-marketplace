@@ -110,6 +110,41 @@ img{max-width:100%;display:block;}
 }
 .logo-text{font-family:var(--font-display);font-weight:700;font-size:1.05rem;letter-spacing:.02em;}
 .logo-text span{color:var(--purple-light);}
+.pwa-install-btn{
+  display:none;
+  align-items:center;
+  justify-content:center;
+  gap:.45rem;
+  border:1px solid color-mix(in srgb,var(--purple-light) 28%,var(--border));
+  border-radius:11px;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--purple-light) 18%,var(--surface)),color-mix(in srgb,var(--purple) 10%,var(--surface)));
+  color:var(--text);
+  font-size:.78rem;
+  font-weight:700;
+  line-height:1;
+  white-space:nowrap;
+  transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease,background .18s ease;
+}
+.pwa-install-btn:hover{transform:translateY(-1px);border-color:var(--purple-light);box-shadow:0 8px 20px -12px var(--purple-glow);}
+.pwa-install-btn:active{transform:translateY(0);}
+.pwa-install-btn svg{width:16px;height:16px;flex-shrink:0;}
+.pwa-install-header-btn{padding:.62rem .85rem;flex-shrink:0;}
+.pwa-install-header-btn.is-visible{display:inline-flex;}
+.pwa-install-mobile-btn{
+  width:100%;
+  justify-content:flex-start;
+  padding:.72rem 0;
+  border:0;
+  border-bottom:1px solid var(--border);
+  border-radius:0;
+  background:transparent;
+  color:var(--text-dim);
+  font-size:.92rem;
+  font-weight:500;
+}
+.pwa-install-mobile-btn:hover{background:transparent;color:var(--text);border-color:var(--border);}
+.pwa-install-mobile-btn svg{color:var(--purple-light);}
+.pwa-install-mobile-btn.is-visible{display:none;}
 
 .search-wrap{
   position:relative;flex:1;
@@ -965,6 +1000,8 @@ img{max-width:100%;display:block;}
   .hamburger{display:flex;}
   .search-wrap{max-width:none;}
   .mobile-menu{display:flex;}
+  .pwa-install-header-btn.is-visible{display:none;}
+  .pwa-install-mobile-btn.is-visible{display:flex;}
   .games-grid{grid-template-columns:repeat(3,1fr);}
   .footer-inner{grid-template-columns:1fr 1fr;}
   .hero-art{display:none;}
@@ -1730,6 +1767,19 @@ img{max-width:100%;display:block;}
   transition:all .2s ease;
 }
 .popup-dot.active{background:var(--purple-light);width:22px;border-radius:6px;}
+.popup-install-area{display:flex;justify-content:center;padding:.85rem 1.5rem 0;}
+.popup-install-area[hidden]{display:none !important;}
+.popup-install-btn{
+  width:100%;
+  max-width:310px;
+  padding:.75rem 1rem;
+  border:0;
+  color:#fff;
+  background:linear-gradient(135deg,var(--purple-light),var(--purple));
+  box-shadow:0 10px 24px -12px var(--purple-glow);
+}
+.popup-install-btn.is-visible{display:flex;}
+.popup-install-btn:hover{color:#fff;box-shadow:0 14px 30px -10px var(--purple-glow);}
 .popup-dont-show{
   display:flex;align-items:center;justify-content:center;gap:.5rem;
   padding:.7rem 1.5rem 1.25rem;
@@ -1741,6 +1791,68 @@ img{max-width:100%;display:block;}
   .popup-overlay{padding:.75rem;}
   .popup-modal{width:92vw;}
   .popup-image{max-height:48vh;}
+}
+.pwa-install-guide{
+  position:fixed;inset:0;z-index:11000;
+  display:flex;align-items:center;justify-content:center;
+  padding:1rem;
+  opacity:0;pointer-events:none;
+  transition:opacity .2s ease;
+}
+.pwa-install-guide[hidden]{display:none !important;}
+.pwa-install-guide.show{opacity:1;pointer-events:auto;}
+.pwa-install-guide-backdrop{position:absolute;inset:0;background:rgba(10,6,20,.76);backdrop-filter:blur(8px);}
+.pwa-install-guide-dialog{
+  position:relative;
+  width:min(100%,400px);
+  max-height:90vh;
+  overflow-y:auto;
+  padding:1.8rem 1.45rem 1.35rem;
+  background:var(--surface,#1e1136);
+  border:1px solid var(--border-strong,rgba(255,255,255,.16));
+  border-radius:20px;
+  box-shadow:0 28px 80px -24px rgba(0,0,0,.72);
+  transform:translateY(12px) scale(.97);
+  transition:transform .22s cubic-bezier(.22,1,.36,1);
+  text-align:center;
+}
+.pwa-install-guide.show .pwa-install-guide-dialog{transform:translateY(0) scale(1);}
+.pwa-install-guide-close{
+  position:absolute;top:10px;right:10px;
+  width:32px;height:32px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--surface-2,rgba(255,255,255,.08));
+  color:var(--text-dim,#b3a6d6);
+  font-size:1.35rem;line-height:1;
+  transition:background .18s,color .18s;
+}
+.pwa-install-guide-close:hover{background:var(--purple-light);color:#fff;}
+.pwa-install-guide-mark{
+  width:52px;height:52px;margin:0 auto .85rem;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:16px;
+  color:#fff;
+  background:linear-gradient(135deg,var(--purple-light),var(--purple));
+  box-shadow:0 12px 28px -12px var(--purple-glow);
+}
+.pwa-install-guide-mark svg{width:25px;height:25px;}
+.pwa-install-guide-dialog h2{font-family:var(--font-display);font-size:1.12rem;line-height:1.25;margin:0 0 .7rem;color:var(--text,#f5f3fb);}
+.pwa-install-guide-dialog p{font-size:.84rem;line-height:1.55;color:var(--text-dim,#b3a6d6);margin:0 0 .8rem;}
+.pwa-install-guide-dialog ol{text-align:left;margin:0 0 1.2rem;padding-left:1.35rem;color:var(--text-dim,#b3a6d6);font-size:.82rem;line-height:1.65;}
+.pwa-install-guide-dialog li+li{margin-top:.28rem;}
+.pwa-install-guide-done{
+  width:100%;justify-content:center;
+  padding:.75rem 1rem;
+  border:0;border-radius:10px;
+  color:#fff;
+  background:linear-gradient(135deg,var(--purple-light),var(--purple));
+  font-size:.84rem;font-weight:700;
+  transition:transform .18s,box-shadow .18s;
+}
+.pwa-install-guide-done:hover{transform:translateY(-1px);box-shadow:0 10px 24px -12px var(--purple-glow);}
+@media (max-width:480px){
+  .pwa-install-guide{padding:.75rem;}
+  .pwa-install-guide-dialog{padding:1.55rem 1.1rem 1.15rem;border-radius:17px;}
 }
 @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
 

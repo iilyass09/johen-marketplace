@@ -17,7 +17,7 @@
                     <th>Channel</th>
                     <th>Slug</th>
                     <th>Active Conversations</th>
-                    <th>Operators</th>
+                    <th>Admins</th>
                     <th>Status</th>
                     <th>Aksi</th>
                 </tr>
@@ -44,7 +44,7 @@
                             {{ $op->user->name ?? 'N/A' }}
                         </span>
                         @empty
-                        <span style="color:var(--text-mute);font-size:12px">Belum ada operator</span>
+                        <span style="color:var(--text-mute);font-size:12px">Belum ada admin</span>
                         @endforelse
                     </td>
                     <td>

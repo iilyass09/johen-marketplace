@@ -10,6 +10,7 @@ use App\Models\LiveChatMessageStar;
 use App\Models\LiveChatMessageHiddenUser;
 use App\Models\User;
 use App\Services\LiveChatMedia;
+use App\Services\LiveChatRouter;
 use App\Services\MediaStore;
 use App\Services\PushService;
 use Illuminate\Http\JsonResponse;
@@ -49,7 +50,7 @@ class LiveChatController extends Controller
             $channel->has_conversation = $hasMessages;
             $channel->conversation_id = $conversation ? $conversation->id : null;
             $channel->is_online = $activeOperator !== null;
-            $channel->operator_name = $activeOperator ? $activeOperator->display_name : null;
+            $channel->operator_name = $activeOperator ? 'Admin' : null;
             $channel->admin_photo = $admin && $admin->photo_path ? asset('storage/' . $admin->photo_path) : null;
         });
 
@@ -84,7 +85,7 @@ class LiveChatController extends Controller
             $channel->has_conversation = $hasMessages;
             $channel->conversation_id = $conversation ? $conversation->id : null;
             $channel->is_online = $activeOperator !== null;
-            $channel->operator_name = $activeOperator ? $activeOperator->display_name : null;
+            $channel->operator_name = $activeOperator ? 'Admin' : null;
             $channel->admin_photo = $admin && $admin->photo_path ? asset('storage/' . $admin->photo_path) : null;
         });
 
@@ -114,7 +115,7 @@ class LiveChatController extends Controller
         return response()->json([
             'conversation' => $conversation,
             'active_operator' => $activeOperator ? [
-                'name' => $activeOperator->display_name,
+                'name' => 'Admin',
                 'photo' => $admin && $admin->photo_path ? asset('storage/' . $admin->photo_path) : null,
                 'schedule' => $activeOperator->getCurrentSchedule()?->schedule_label,
                 'is_on_duty' => true,
@@ -127,6 +128,7 @@ class LiveChatController extends Controller
         $data = $request->validate([
             'channel_slug' => ['nullable', 'string'],
             'guest_id' => ['required', 'string', 'max:64'],
+            'guest_name' => ['nullable', 'string', 'max:255'],
         ]);
 
         if (
@@ -139,29 +141,50 @@ class LiveChatController extends Controller
         $channel = LiveChatChannel::csChannel();
 
         $conversation = LiveChatConversation::firstOrCreate(
+            ['guest_id' => $data['guest_id']],
             [
                 'channel_id' => $channel->id,
-                'guest_id' => $data['guest_id'],
-            ],
-            [
                 'user_id' => null,
                 'guest_name' => 'Guest',
                 'status' => 'open',
             ]
         );
 
+        $guestName = filled($data['guest_name'] ?? null) ? trim($data['guest_name']) : 'Guest';
+
+        if (filled($data['guest_name'] ?? null)) {
+            $conversation->update(['guest_name' => $guestName]);
+        }
+
         $conversation->applySessionTimeout();
+
+        if (
+            $conversation->status === 'open'
+            && ! $conversation->isSessionExpired()
+            && ! $conversation->messages()->exists()
+        ) {
+            LiveChatMessage::create([
+                'conversation_id' => $conversation->id,
+                'sender_id' => null,
+                'sender_type' => 'admin',
+                'message_type' => 'text',
+                'message' => "Halo {$guestName}! Kamu sekarang terhubung dengan Admin CS Johen. Ada yang bisa kami bantu?",
+            ]);
+
+            $conversation->update(['last_message_at' => now()]);
+            $conversation->incrementUserUnread();
+        }
 
         $conversation->load(['channel', 'lastMessage.sender']);
 
-        $activeOperator = $channel->getActiveOperator();
-        $admin = $channel->admins()->where('is_active', true)->first();
+        $activeOperator = $conversation->channel->getActiveOperator();
+        $admin = $conversation->channel->admins()->where('is_active', true)->first();
 
         return response()->json([
             'conversation' => $conversation,
             'session_expired' => $conversation->isSessionExpired(),
             'active_operator' => $activeOperator ? [
-                'name' => $activeOperator->display_name,
+                'name' => 'Admin',
                 'photo' => $admin && $admin->photo_path ? asset('storage/' . $admin->photo_path) : null,
                 'schedule' => $activeOperator->getCurrentSchedule()?->schedule_label,
                 'is_on_duty' => true,
@@ -187,7 +210,10 @@ class LiveChatController extends Controller
 
         $messages = $query->ordered()->get();
 
-        return response()->json($messages);
+        return response()->json([
+            'messages' => $messages,
+            'channel' => $conversation->channel,
+        ]);
     }
 
     public function messages(Request $request, LiveChatConversation $conversation): JsonResponse
@@ -278,7 +304,6 @@ class LiveChatController extends Controller
 
         if ($operator && $shouldAutoReply) {
             $userName = Auth::user()->name ?? 'Pangeran';
-            $operatorName = $operator->display_name ?? 'Admin';
             $channelName = str_replace('Johen ', '', $channel->name);
 
             LiveChatMessage::create([
@@ -286,7 +311,7 @@ class LiveChatController extends Controller
                 'sender_id' => null,
                 'sender_type' => 'admin',
                 'message_type' => 'text',
-                'message' => "Halo pangeran {$userName}! Kamu sekarang terhubung dengan admin {$operatorName} johen {$channelName}. Ada yang bisa kami bantu pangeran?",
+                'message' => "Halo pangeran {$userName}! Kamu sekarang terhubung dengan admin johen {$channelName}. Ada yang bisa kami bantu pangeran?",
             ]);
 
             $conversation->update([
@@ -298,6 +323,10 @@ class LiveChatController extends Controller
         $message->load('sender', 'replyTo', 'reactions', 'stars', 'attachments');
 
         $this->notifyAdmins($message, $conversation, $request->message_type);
+
+        if ($message->message_type === 'text' && filled($request->message)) {
+            app(LiveChatRouter::class)->onVisitorMessage($conversation, $request->message);
+        }
 
         return response()->json($message);
     }
@@ -448,12 +477,13 @@ $channel = $conversation->channel;
         $shouldAutoReply = ! $lastInteraction || $lastInteraction->diffInMinutes(now()) >= 60;
 
         if (($channel->isCsChannel() || $operator) && $shouldAutoReply) {
+            $guestName = $conversation->guest_name ?: 'Guest';
+
             if ($channel->isCsChannel()) {
-                $greeting = 'Halo! Kamu sekarang terhubung dengan Admin CS Johen. Ada yang bisa kami bantu?';
+                $greeting = "Halo {$guestName}! Kamu sekarang terhubung dengan Admin CS Johen. Ada yang bisa kami bantu?";
             } else {
-                $operatorName = $operator->display_name ?? 'Admin';
                 $channelName = str_replace('Johen ', '', $channel->name);
-                $greeting = "Halo! Kamu sekarang terhubung dengan admin {$operatorName} johen {$channelName}. Ada yang bisa kami bantu?";
+                $greeting = "Halo {$guestName}! Kamu sekarang terhubung dengan admin johen {$channelName}. Ada yang bisa kami bantu?";
             }
 
             LiveChatMessage::create([
@@ -474,6 +504,10 @@ $channel = $conversation->channel;
 
         $this->notifyAdmins($message, $conversation, $request->message_type);
 
+        if ($message->message_type === 'text' && filled($request->message)) {
+            app(LiveChatRouter::class)->onVisitorMessage($conversation, $request->message);
+        }
+
         return response()->json($message);
     }
 
@@ -493,6 +527,55 @@ $channel = $conversation->channel;
         return response()->json(['success' => true]);
     }
 
+    public function guestRouteBack(Request $request, LiveChatConversation $conversation): JsonResponse
+    {
+        $request->validate([
+            'guest_id' => ['required', 'string', 'max:64'],
+        ]);
+
+        $this->ensureGuestConversation($conversation, $request->input('guest_id'));
+
+        $conversation->applySessionTimeout();
+
+        $cs = LiveChatChannel::csChannel();
+
+        $conversation->load(['channel', 'lastMessage.sender']);
+
+        if ($conversation->channel_id === $cs->id || $conversation->status !== 'open') {
+            return response()->json([
+                'conversation' => $conversation,
+                'session_expired' => $conversation->isSessionExpired(),
+            ]);
+        }
+
+        $conversation->update([
+            'channel_id' => $cs->id,
+            'pending_channel_id' => null,
+            'pending_email_attempts' => 0,
+            'last_message_at' => now(),
+            'admin_unread_count' => $conversation->admin_unread_count + 1,
+            'user_unread_count' => $conversation->user_unread_count + 1,
+        ]);
+
+        LiveChatMessage::create([
+            'conversation_id' => $conversation->id,
+            'sender_id' => null,
+            'sender_type' => 'system',
+            'message_type' => 'text',
+            'message' => '↩️ Kamu kembali ke resepsionis admin Johen CS. Ada yang bisa kami bantu?',
+        ]);
+
+        $conversation->refresh();
+        $conversation->load(['channel', 'lastMessage.sender']);
+
+        $this->notifyReceptionAdmins($conversation);
+
+        return response()->json([
+            'conversation' => $conversation,
+            'session_expired' => $conversation->isSessionExpired(),
+        ]);
+    }
+
     public function guestUnreadCount(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -508,6 +591,28 @@ $channel = $conversation->channel;
     protected function ensureGuestConversation(LiveChatConversation $conversation, ?string $guestId): void
     {
         abort_unless($conversation->user_id === null && $guestId !== null && $conversation->guest_id === $guestId, 403);
+    }
+
+    private function notifyReceptionAdmins(LiveChatConversation $conversation): void
+    {
+        if (empty(config('services.vapid.public_key')) || empty(config('services.vapid.private_key'))) {
+            return;
+        }
+
+        try {
+            app(PushService::class)->sendToTargets([
+                [
+                    'guard' => 'lcadmin',
+                    'url' => '/lcadmin/conversations?open='.$conversation->id,
+                ],
+                [
+                    'guard' => 'admin',
+                    'url' => '/admin/live-chat/conversations/'.$conversation->id,
+                ],
+            ], 'Kembali ke resepsionis', 'Guest '.($conversation->guest_name ?? 'Guest').' kembali ke admin Johen CS');
+        } catch (\Throwable $e) {
+            logger()->warning('LiveChatController: notifikasi route-back gagal', ['error' => $e->getMessage()]);
+        }
     }
 
     public function unreadCount(): JsonResponse

@@ -15,11 +15,14 @@ class LiveChatConversation extends Model
 
     protected $fillable = [
         'channel_id',
+        'pending_channel_id',
         'user_id',
         'guest_id',
         'guest_name',
+        'guest_email',
         'status',
         'last_message_at',
+        'pending_email_attempts',
         'user_unread_count',
         'admin_unread_count',
         'is_favorited',
@@ -31,6 +34,7 @@ class LiveChatConversation extends Model
         'last_message_at' => 'datetime',
         'user_unread_count' => 'integer',
         'admin_unread_count' => 'integer',
+        'pending_email_attempts' => 'integer',
         'is_favorited' => 'boolean',
         'archived_at' => 'datetime',
         'is_pinned' => 'boolean',
@@ -39,6 +43,11 @@ class LiveChatConversation extends Model
     public function channel(): BelongsTo
     {
         return $this->belongsTo(LiveChatChannel::class, 'channel_id');
+    }
+
+    public function pendingChannel(): BelongsTo
+    {
+        return $this->belongsTo(LiveChatChannel::class, 'pending_channel_id');
     }
 
     public function user(): BelongsTo

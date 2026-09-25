@@ -9,6 +9,7 @@
   const POLL_INTERVAL = 3000;
   const SESSION_TIMEOUT_MS = 5 * 60 * 1000;
   const GUEST_STORAGE_KEY = 'johen_lc_guest';
+  const GUEST_NAME_STORAGE_KEY = 'johen_lc_guest_name';
 
   function getGuestId() {
     let id = null;
@@ -22,9 +23,20 @@
     return id;
   }
 
+  function getGuestName() {
+    let name = '';
+    try { name = localStorage.getItem(GUEST_NAME_STORAGE_KEY) || ''; } catch (e) {}
+    return name.trim();
+  }
+
+  function saveGuestName(name) {
+    try { localStorage.setItem(GUEST_NAME_STORAGE_KEY, String(name).trim()); } catch (e) {}
+  }
+
   function resetGuestSession() {
     try { sessionStorage.removeItem(GUEST_STORAGE_KEY); } catch (e) {}
     try { localStorage.removeItem(GUEST_STORAGE_KEY); } catch (e) {}
+    try { localStorage.removeItem(GUEST_NAME_STORAGE_KEY); } catch (e) {}
   }
 
   function guestParam() {
@@ -79,8 +91,8 @@
     state.messages = [];
     state.sessionEnded = false;
     state.lastActivity = null;
-    state.view = 'chat';
-    openChannel(CS_SLUG);
+    state.view = 'panel';
+    renderGuestNameForm();
   }
 
   let state = {
@@ -251,7 +263,7 @@
 
     let quoteHtml = '';
     if (msg.reply_to) {
-      const rSender = msg.reply_to.sender?.name || (msg.reply_to.sender_type === 'user' ? (AUTH_USER?.name || 'Anda') : 'Admin');
+      const rSender = msg.reply_to.sender_type === 'admin' ? 'Admin' : (msg.reply_to.sender?.name || (msg.reply_to.sender_type === 'user' ? (AUTH_USER?.name || 'Anda') : 'Admin'));
       let rContent = '';
       if (msg.reply_to.message_type === 'image' && msg.reply_to.media_path) {
         const n = attachmentsOf(msg.reply_to).length;
@@ -384,7 +396,7 @@
 
   function getSenderName(msg) {
     if (msg.sender_type === 'user') return AUTH_USER?.name || 'Anda';
-    if (msg.sender_type === 'admin') return msg.sender?.name || 'Admin';
+    if (msg.sender_type === 'admin') return 'Admin';
     return 'System';
   }
 
@@ -411,12 +423,11 @@
     const gameCards = state.channels.map(ch => {
       const isOnline = ch.is_online;
       const initial = getInitials(ch.name);
-      const adminName = ch.operator_name || null;
       const avatarHtml = ch.admin_photo
         ? `<div class="lc-game-avatar has-photo"><img src="${ch.admin_photo}" alt="" style="width:100%;height:100%;object-fit:cover"></div>`
         : `<div class="lc-game-avatar">${initial}</div>`;
       const statusHtml = isOnline
-        ? `<div class="lc-game-admin active">Nama Admin: ${escapeHtml(adminName)}</div>`
+        ? `<div class="lc-game-admin active">Admin online</div>`
         : `<div class="lc-game-admin inactive">Admin belum tersedia</div>`;
       const clickAttr = isOnline
         ? `onclick="window.LiveChat.openChannel('${ch.slug}')" style="cursor:pointer"`
@@ -556,6 +567,47 @@
     }
   }
 
+  function renderGuestNameForm() {
+    const container = document.getElementById('lc-body');
+    if (!container) return;
+    container.innerHTML = `
+      <div class="lc-name-form">
+        <div class="lc-name-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <div class="lc-name-title">Halo! Siapa nama kamu?</div>
+        <div class="lc-name-sub">Masukkan nama untuk memulai chat dengan admin.</div>
+        <input type="text" id="lc-name-input" class="lc-name-input" maxlength="255" placeholder="Nama kamu" autocomplete="off" autocapitalize="words">
+        <div class="lc-name-error" id="lc-name-error" style="display:none">Nama tidak boleh kosong</div>
+        <button type="button" class="lc-name-btn" onclick="window.LiveChat.submitGuestName()">Mulai Chat</button>
+      </div>`;
+    const input = document.getElementById('lc-name-input');
+    if (input) {
+      input.focus();
+      input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          window.LiveChat.submitGuestName();
+        }
+      });
+    }
+  }
+
+  function submitGuestName() {
+    const input = document.getElementById('lc-name-input');
+    if (!input) return;
+    const name = input.value.trim();
+    const errEl = document.getElementById('lc-name-error');
+    if (!name) {
+      if (errEl) errEl.style.display = 'block';
+      input.focus();
+      return;
+    }
+    if (errEl) errEl.style.display = 'none';
+    saveGuestName(name);
+    openChannel(CS_SLUG).catch(function () {});
+  }
+
   async function openChannel(slug) {
     closeAllMenus();
     try {
@@ -563,7 +615,7 @@
         ? await fetch('/api/live-chat/guest/conversation', {
             method: 'POST',
             headers: { ...headers(), 'Content-Type': 'application/json' },
-            body: JSON.stringify({ channel_slug: slug, guest_id: getGuestId() })
+            body: JSON.stringify({ channel_slug: slug, guest_id: getGuestId(), guest_name: getGuestName() || null })
           })
         : await fetch(`/api/live-chat/conversation/${slug}`, { headers: headers() });
       if (!res.ok) throw new Error('Failed');
@@ -581,6 +633,7 @@
         state.lastActivity = anchor ? new Date(anchor).getTime() : Date.now();
       }
       state.conversation = data.conversation;
+      if (data.conversation?.channel) state.activeChannel = data.conversation.channel;
       state.view = 'chat';
       state.replyToMsg = null;
       renderChat(data.active_operator);
@@ -615,7 +668,14 @@
         : `/api/live-chat/messages/${state.conversation.id}${after ? '?' + after : ''}`;
       const res = await fetch(url, { headers: headers() });
       if (!res.ok) throw new Error('Failed');
-      const newMessages = await res.json();
+      const payload = await res.json();
+      const newMessages = IS_GUEST && payload && !Array.isArray(payload) ? payload.messages || [] : payload;
+      if (IS_GUEST && payload && !Array.isArray(payload) && payload.channel) {
+        applyGuestChannelHeader(payload.channel);
+        if (state.activeChannel?.id && payload.channel.id && state.activeChannel.id !== payload.channel.id) {
+          state.activeChannel = payload.channel;
+        }
+      }
       if (newMessages.length > 0) {
         touchActivity();
         state.messages.push(...newMessages);
@@ -652,7 +712,7 @@
 
       let quoteHtml = '';
       if (msg.reply_to) {
-        const rSender = msg.reply_to.sender?.name || (msg.reply_to.sender_type === 'user' ? (AUTH_USER?.name || 'Anda') : 'Admin');
+        const rSender = msg.reply_to.sender_type === 'admin' ? 'Admin' : (msg.reply_to.sender?.name || (msg.reply_to.sender_type === 'user' ? (AUTH_USER?.name || 'Anda') : 'Admin'));
         let rContent = '';
         if (msg.reply_to.message_type === 'image' && msg.reply_to.media_path) {
           const n = attachmentsOf(msg.reply_to).length;
@@ -714,6 +774,20 @@
     }
   }
 
+  function applyGuestChannelHeader(channel) {
+    const titleEl = document.querySelector('.lc-chat-title');
+    if (titleEl && channel?.name) titleEl.textContent = channel.name;
+    if (channel?.name) {
+      const fallback = document.querySelector('.lc-chat-avatar .lc-chat-avatar-fallback');
+      if (fallback) fallback.textContent = getInitials(channel.name);
+    }
+    const servedEl = document.querySelector('.lc-chat-served');
+    if (servedEl && channel?.name) {
+      const shortName = String(channel.name).replace(/^Johen\s+/i, '');
+      servedEl.innerHTML = 'Terhubung dengan <strong>Admin ' + escapeHtml(shortName) + '</strong>';
+    }
+  }
+
   function renderChat(operator) {
     const container = document.getElementById('lc-body');
     if (!container) return;
@@ -733,7 +807,7 @@
           : `<span class="lc-status-pill is-offline"><span class="lc-pulse-dot"></span>Offline</span>`);
 
     const servedHtml = IS_GUEST
-      ? `<div class="lc-chat-served">Terhubung dengan <strong>Admin CS Johen</strong></div><div class="lc-chat-presence">Admin akan membalas pesanmu di sini</div>`
+      ? `<div class="lc-chat-served">Terhubung dengan <strong>Admin CS Johen</strong></div><div class="lc-chat-presence">Anda chat sebagai <strong>${escapeHtml(getGuestName() || 'Tamu')}</strong> — admin akan membalas pesanmu di sini</div>`
       : (operator
           ? `<div class="lc-chat-served">Sedang dilayani oleh <strong>${escapeHtml(operator.name)}</strong></div><div class="lc-chat-presence">${operator.schedule ? `Shift ${escapeHtml(operator.schedule)}` : 'Berespons cepat pada jam operasional'}</div>`
           : `<div class="lc-chat-served">Admin sedang offline</div><div class="lc-chat-presence">Pesan akan dibalas pada jam operasional</div>`);
@@ -847,7 +921,7 @@
     stopPolling();
     closeAllMenus();
     if (IS_GUEST) {
-      close();
+      routeBackToReception();
       return;
     }
     state.view = 'panel';
@@ -856,6 +930,35 @@
     state.messages = [];
     state.replyToMsg = null;
     fetchChannels();
+  }
+
+  async function routeBackToReception() {
+    if (!state.conversation) {
+      close();
+      return;
+    }
+    const inReception = (state.activeChannel?.slug || state.conversation.channel?.slug) === CS_SLUG;
+    if (inReception) {
+      close();
+      return;
+    }
+    try {
+      const res = await fetch(`/api/live-chat/guest/conversation/${state.conversation.id}/route-back`, {
+        method: 'POST',
+        headers: { ...headers(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guest_id: getGuestId() })
+      });
+      if (!res.ok) throw new Error('Failed');
+      const data = await res.json();
+      if (data.session_expired || data.conversation?.status === 'ended') {
+        endSession('Sesi chat Anda telah berakhir. Mulai chat baru untuk terhubung kembali.');
+        return;
+      }
+      await openChannel(CS_SLUG);
+    } catch (e) {
+      console.error('LiveChat: route-back error', e);
+      close();
+    }
   }
 
   function onKeydown(e) {
@@ -1434,7 +1537,11 @@
       overlay?.classList.add('active');
       document.body.style.overflow = 'hidden';
       if (IS_GUEST) {
-        openChannel(CS_SLUG).catch(function () {});
+        if (getGuestName()) {
+          openChannel(CS_SLUG).catch(function () {});
+        } else {
+          renderGuestNameForm();
+        }
       } else if (state.view === 'panel') {
         fetchChannels();
       }
@@ -1606,7 +1713,7 @@
     replyTo, cancelReply, deleteMsg, scrollToMsg, showMenu, updateBadge, openImage, openGallery, showReactions, toggleStar, showDeleteOptions, hideForMe, closeMenus: closeAllMenus, playVideoMessage,
     toggleAttachMenu, attachAction, closeAttachMenu,
     startVoiceRec, cancelVoiceRec, finishVoiceRec, toggleVoicePlay,
-    toggleNotif, startNewSession,
+    toggleNotif, startNewSession, submitGuestName,
   };
 
   document.addEventListener('DOMContentLoaded', function() {
@@ -1631,7 +1738,11 @@
       overlayEl?.classList.add('active');
       document.body.style.overflow = 'hidden';
       if (IS_GUEST) {
-        openChannel(CS_SLUG).catch(function () {});
+        if (getGuestName()) {
+          openChannel(CS_SLUG).catch(function () {});
+        } else {
+          renderGuestNameForm();
+        }
       } else {
         const channel = params.get('channel');
         if (channel) {

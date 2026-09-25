@@ -18,7 +18,8 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="icon" type="image/png" href="{{ $themeFavicon }}">
 <link rel="shortcut icon" href="{{ $themeFavicon }}">
-<link rel="stylesheet" href="{{ asset('css/topup.css') }}?v=29">
+@include('partials.pwa')
+<link rel="stylesheet" href="{{ asset('css/topup.css') }}?v=30">
 @if(!empty($activeThemeCss))
 <style>:root{{{ $activeThemeCss }}}</style>
 @endif
@@ -93,6 +94,11 @@
       </div>
     @endauth
 
+    <button type="button" class="pwa-install-btn pwa-install-header-btn" data-pwa-install-trigger aria-label="Install App" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+      <span>Install App</span>
+    </button>
+
     <button class="nav-theme-btn" id="themeToggle" aria-label="Ganti tema">
       <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
       <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
@@ -108,6 +114,10 @@
     <a href="{{ route('jual-beli-akun') }}" class="{{ request()->routeIs('jual-beli-akun*') ? 'active' : '' }}">Jual Beli Akun</a>
     <a href="{{ route('check.transaction') }}" class="{{ request()->routeIs('check.transaction') ? 'active' : '' }}">Cek Transaksi</a>
     <a href="{{ route('leaderboard') }}" class="{{ request()->routeIs('leaderboard') ? 'active' : '' }}">Leaderboard</a>
+    <button type="button" class="pwa-install-btn pwa-install-mobile-btn" data-pwa-install-trigger aria-label="Install App" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+      <span>Install App</span>
+    </button>
     @auth
       <a href="{{ route('orders.my') }}">Pesanan Saya</a>
       <a href="{{ route('testimoni') }}">Ulasan</a>
@@ -243,6 +253,12 @@
         @endforeach
       </div>
     @endif
+    <div class="popup-install-area" hidden>
+      <button type="button" class="pwa-install-btn popup-install-btn" data-pwa-install-trigger aria-label="Install App" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+        <span>Install App</span>
+      </button>
+    </div>
     <label class="popup-dont-show">
       <input type="checkbox" id="popupDontShow">
       <span>Jangan tampilkan lagi</span>
@@ -250,6 +266,35 @@
   </div>
 </div>
 @endif
+
+<div class="pwa-install-guide" id="pwaInstallGuide" hidden>
+  <div class="pwa-install-guide-backdrop" data-pwa-install-close></div>
+  <div class="pwa-install-guide-dialog" role="dialog" aria-modal="true" aria-labelledby="pwaInstallGuideTitle">
+    <button type="button" class="pwa-install-guide-close" data-pwa-install-close aria-label="Tutup">&times;</button>
+    <div class="pwa-install-guide-mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+    </div>
+    <h2 id="pwaInstallGuideTitle">Install App</h2>
+    <div data-pwa-install-ios>
+      <p>Tambahkan Johen ke layar utama iPhone melalui Safari:</p>
+      <ol>
+        <li>Buka halaman ini di Safari.</li>
+        <li>Ketuk tombol Bagikan di bilah Safari.</li>
+        <li>Pilih Tambahkan ke Layar Utama.</li>
+        <li>Ketuk Tambahkan.</li>
+      </ol>
+    </div>
+    <div data-pwa-install-fallback hidden>
+      <p>Jika prompt install browser tidak muncul, gunakan menu browser:</p>
+      <ol>
+        <li>Buka menu browser.</li>
+        <li>Pilih Instal aplikasi atau Tambahkan ke layar utama.</li>
+        <li>Konfirmasi untuk memasang Johen.</li>
+      </ol>
+    </div>
+    <button type="button" class="pwa-install-guide-done" data-pwa-install-close>Siap</button>
+  </div>
+</div>
 
 @include('partials.livechat')
 

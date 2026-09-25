@@ -12,7 +12,7 @@
 
 <div style="margin-bottom:28px">
     <h1 style="font-family:'Poppins',sans-serif;font-weight:800;font-size:1.6rem;color:#fff;margin:0 0 4px">Kelola Admin Live Chat</h1>
-    <p style="font-size:0.88rem;color:#9CB5D2;margin:0">Atur foto, status, dan jadwal operator admin</p>
+    <p style="font-size:0.88rem;color:#9CB5D2;margin:0">Atur foto, status, dan jadwal admin</p>
 </div>
 
 <div class="lc-grid" id="channels-grid">
@@ -55,7 +55,7 @@
         <div class="lc-divider"></div>
 
         {{-- Jadwal Operator --}}
-        <div class="lc-section-title">Jadwal Operator</div>
+        <div class="lc-section-title">Jadwal Admin</div>
 
         <div class="lc-schedule-body">
             @if($ops->count() > 0)

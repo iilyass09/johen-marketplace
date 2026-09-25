@@ -1659,3 +1659,84 @@
   font-size: 11px; color: rgba(255,255,255,0.5);
   font-family: 'Poppins', sans-serif;
 }
+
+/* Guest Name Form */
+.lc-name-form {
+  padding: 40px 28px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+.lc-name-icon {
+  width: 64px; height: 64px;
+  border-radius: 18px;
+  background: var(--purple, #7c3aed);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 18px;
+  box-shadow: 0 8px 24px rgba(124,58,237,.35);
+}
+.lc-name-title {
+  font-family: var(--font-display, 'Sora', sans-serif);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text, #f5f3fb);
+  margin-bottom: 6px;
+}
+.lc-name-sub {
+  font-size: 13px;
+  color: var(--text-dim, rgba(255,255,255,.5));
+  margin-bottom: 20px;
+}
+.lc-name-input {
+  width: 100%;
+  max-width: 320px;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-family: 'Poppins', sans-serif;
+  color: var(--text, #f5f3fb);
+  background: rgba(255,255,255,.06);
+  border: 1px solid var(--border, rgba(255,255,255,.12));
+  border-radius: 12px;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+  margin-bottom: 12px;
+}
+.lc-name-input::placeholder { color: var(--text-mute, rgba(255,255,255,.4)); }
+.lc-name-input:focus {
+  border-color: var(--purple, #8b5cf6);
+  box-shadow: 0 0 0 3px rgba(139,92,246,.2);
+}
+.lc-name-error {
+  width: 100%;
+  max-width: 320px;
+  font-size: 12px;
+  color: #f87171;
+  text-align: left;
+  margin-bottom: 10px;
+}
+.lc-name-btn {
+  min-width: 160px;
+  padding: 12px 28px;
+  background: var(--purple, #8b5cf6);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+  cursor: pointer;
+  transition: filter .15s, transform .1s;
+}
+.lc-name-btn:hover { filter: brightness(1.12); }
+.lc-name-btn:active { transform: scale(.98); }
+[data-theme="light"] .lc-name-input {
+  background: rgba(0,0,0,.04);
+  color: #1f2430;
+}
+[data-theme="light"] .lc-name-sub {
+  color: rgba(0,0,0,.55);
+}

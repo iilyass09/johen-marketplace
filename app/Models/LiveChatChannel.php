@@ -15,13 +15,33 @@ class LiveChatChannel extends Model
         'description',
         'icon',
         'image',
+        'keywords',
         'is_active',
+        'is_reception',
         'sort_order',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_reception' => 'boolean',
     ];
+
+    public function detectionKeywords(): array
+    {
+        $list = collect(explode(',', (string) $this->keywords))
+            ->map(fn ($kw) => mb_strtolower(trim($kw)))
+            ->filter()
+            ->values();
+
+        if ($list->isEmpty()) {
+            $fallback = preg_replace('/^johen\s+/i', '', (string) $this->name);
+            $list = collect(preg_split('/[^a-z0-9]+/i', mb_strtolower($fallback)))
+                ->filter(fn ($word) => mb_strlen((string) $word) >= 3)
+                ->values();
+        }
+
+        return $list->all();
+    }
 
     public function conversations(): HasMany
     {
