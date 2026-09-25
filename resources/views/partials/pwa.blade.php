@@ -14,4 +14,4 @@ html.pwa-standalone .pwa-splash-screen{display:flex;}
 .pwa-splash-screen img{width:min(34vw,180px);height:auto;max-width:min(42vw,220px);max-height:42vh;object-fit:contain;}
 @media (max-width:480px){.pwa-splash-screen img{width:min(42vw,160px);max-width:160px;}}
 </style>
-<script src="{{ asset('js/pwa-register.js') }}?v=3" defer></script>
+<script src="{{ asset('js/pwa-register.js') }}?v=4" defer></script>

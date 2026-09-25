@@ -276,7 +276,7 @@
     </div>
     <h2 id="pwaInstallGuideTitle">Install App</h2>
     <div data-pwa-install-ios>
-      <p>Tambahkan Johen ke layar utama iPhone melalui Safari:</p>
+      <p>Tambahkan APP Johen gaming ke layar utama iPhone melalui Safari:</p>
       <ol>
         <li>Buka halaman ini di Safari.</li>
         <li>Ketuk tombol Bagikan di bilah Safari.</li>
@@ -289,7 +289,7 @@
       <ol>
         <li>Buka menu browser.</li>
         <li>Pilih Instal aplikasi atau Tambahkan ke layar utama.</li>
-        <li>Konfirmasi untuk memasang Johen.</li>
+        <li>Konfirmasi untuk memasang APP Johen gaming.</li>
       </ol>
     </div>
     <button type="button" class="pwa-install-guide-done" data-pwa-install-close>Siap</button>
