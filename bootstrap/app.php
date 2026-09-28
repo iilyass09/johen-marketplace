@@ -31,7 +31,10 @@ return Application::configure(basePath: dirname(__DIR__))
         });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Callback ini menggantikan perilaku default, jadi expectsJson()
+        // ikut ditambahkan agar request AJAX dari panel admin tetap
+        // menerima respons JSON (422) dan bukan redirect HTML.
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*'),
+            fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
     })->create();

@@ -239,7 +239,11 @@
           </div>
           <div class="dt-purchase-row">
             <span>Voucher / Diskon</span>
-            <span>-</span>
+            @if($order->voucher)
+              <span class="dt-green">{{ $order->voucher->code }} ({{ $order->voucher->value_label }})</span>
+            @else
+              <span>-</span>
+            @endif
           </div>
           <div class="dt-divider"></div>
           <div class="dt-purchase-total">

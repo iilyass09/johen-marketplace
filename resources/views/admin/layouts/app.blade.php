@@ -634,6 +634,12 @@
                 <a href="{{ route('admin.event-themes') }}" class="{{ request()->routeIs('admin.event-themes*') ? 'active' : '' }}">
                     <i class="fas fa-palette"></i> Tema Event
                 </a>
+                <a href="{{ route('admin.gacha-prizes') }}" class="{{ request()->routeIs('admin.gacha-prizes*') ? 'active' : '' }}">
+                    <i class="fas fa-dice"></i> Gacha Voucher
+                </a>
+                <a href="{{ route('admin.vouchers.index') }}" class="{{ request()->routeIs('admin.vouchers*') ? 'active' : '' }}">
+                    <i class="fas fa-ticket"></i> Voucher
+                </a>
 
                 <div class="nav-section">Pesanan</div>
                 <a href="{{ route('admin.orders') }}" class="{{ request()->routeIs('admin.orders*') ? 'active' : '' }}">

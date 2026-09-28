@@ -9,6 +9,9 @@ use App\Http\Controllers\Admin\LiveChatDashboardController;
 use App\Http\Controllers\Admin\LiveChatOperatorController;
 use App\Http\Controllers\Admin\PushSubscriptionController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminGachaPrizeController;
+use App\Http\Controllers\AdminVoucherController;
+use App\Http\Controllers\GachaController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LiveChatController;
 use App\Http\Controllers\LCAdmin\LCAdminDashboardController;
@@ -19,6 +22,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\VoucherController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -69,6 +73,9 @@ Route::middleware('auth:web,admin')->group(function () {
 
     Route::get('/orders', [OrderController::class, 'myOrders'])->name('orders.my');
     Route::get('/pesan-saya', [HomeController::class, 'myInquiries'])->name('my-inquiries');
+
+    Route::get('/vouchers', [VoucherController::class, 'index'])->name('vouchers.index');
+    Route::post('/vouchers/claim', [VoucherController::class, 'claim'])->name('vouchers.claim');
 });
 
 Route::get('/orders/create/{product}', [OrderController::class, 'create'])->name('orders.create');
@@ -151,6 +158,20 @@ Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->gro
     Route::put('/flash-sale-banners/{flashSaleBanner}', [App\Http\Controllers\AdminFlashSaleBannerController::class, 'update'])->name('flash-sale-banners.update');
     Route::patch('/flash-sale-banners/{flashSaleBanner}/toggle', [App\Http\Controllers\AdminFlashSaleBannerController::class, 'toggle'])->name('flash-sale-banners.toggle');
     Route::delete('/flash-sale-banners/{flashSaleBanner}', [App\Http\Controllers\AdminFlashSaleBannerController::class, 'destroy'])->name('flash-sale-banners.destroy');
+
+    Route::get('/gacha-prizes', [AdminGachaPrizeController::class, 'index'])->name('gacha-prizes');
+    Route::post('/gacha-prizes', [AdminGachaPrizeController::class, 'store'])->name('gacha-prizes.store');
+    Route::put('/gacha-prizes/{gachaPrize}', [AdminGachaPrizeController::class, 'update'])->name('gacha-prizes.update');
+    Route::patch('/gacha-prizes/{gachaPrize}/toggle', [AdminGachaPrizeController::class, 'toggle'])->name('gacha-prizes.toggle');
+    Route::delete('/gacha-prizes/{gachaPrize}', [AdminGachaPrizeController::class, 'destroy'])->name('gacha-prizes.destroy');
+    Route::post('/gacha-prizes/reorder', [AdminGachaPrizeController::class, 'reorder'])->name('gacha-prizes.reorder');
+    Route::post('/gacha-prizes/settings', [AdminGachaPrizeController::class, 'settings'])->name('gacha-prizes.settings');
+
+    Route::get('/vouchers', [AdminVoucherController::class, 'index'])->name('vouchers.index');
+    Route::post('/vouchers', [AdminVoucherController::class, 'store'])->name('vouchers.store');
+    Route::patch('/vouchers/{voucher}/renew', [AdminVoucherController::class, 'renew'])->name('vouchers.renew');
+    Route::put('/vouchers/{voucher}', [AdminVoucherController::class, 'update'])->name('vouchers.update');
+    Route::delete('/vouchers/{voucher}', [AdminVoucherController::class, 'destroy'])->name('vouchers.destroy');
 
     Route::get('/event-themes', [App\Http\Controllers\Admin\EventThemeController::class, 'index'])->name('event-themes');
     Route::get('/event-themes/create', [App\Http\Controllers\Admin\EventThemeController::class, 'create'])->name('event-themes.create');
@@ -292,9 +313,18 @@ Route::middleware(['auth:web'])->prefix('api')->name('api.')->group(function () 
     Route::post('/push/unsubscribe', [PushSubscriptionController::class, 'unsubscribeWeb'])->name('push.unsubscribe');
     Route::post('/push/test', [PushSubscriptionController::class, 'testWeb'])->name('push.test');
     Route::get('/push/status', [PushSubscriptionController::class, 'statusWeb'])->name('push.status');
+
+    Route::post('/vouchers/validate', [VoucherController::class, 'validateCode'])
+        ->middleware('throttle:30,1')
+        ->name('vouchers.validate');
 });
 
 Route::prefix('api')->name('api.')->group(function () {
+    Route::get('/gacha', [GachaController::class, 'index'])->name('gacha.index');
+    Route::post('/gacha/spin', [GachaController::class, 'spin'])
+        ->middleware('throttle:20,1')
+        ->name('gacha.spin');
+
     Route::get('/live-chat/guest/channels', [LiveChatController::class, 'guestChannels'])->name('live-chat.guest.channels');
     Route::post('/live-chat/guest/conversation', [LiveChatController::class, 'guestConversation'])->name('live-chat.guest.conversation');
     Route::get('/live-chat/guest/messages/{conversation}', [LiveChatController::class, 'guestMessages'])->name('live-chat.guest.messages');

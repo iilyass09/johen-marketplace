@@ -308,8 +308,12 @@
     <div class="gd-step-head"><div class="gd-step-num">5</div><div class="gd-step-title">Kode Promo</div></div>
     <div class="gd-card">
       <div class="gd-field">
-        <label for="promoInput">Masukan Kode Promo</label>
-        <input type="text" id="promoInput" placeholder="JOHENI10">
+        <label for="promoInput">Masukan Kode Promo / Voucher</label>
+        <input type="text" id="promoInput" placeholder="JHN-XXXX-XXXX">
+        <p style="font-size:.72rem;color:var(--text-mute);margin-top:.35rem">
+          Punya kode dari Gacha Voucher? Tempel di sini.
+          <a href="{{ route('vouchers.index') }}" style="color:var(--purple-light)">Cek voucher saya</a>
+        </p>
       </div>
       <button class="btn btn-solid btn-full" id="promoBtn" style="margin-top:.7rem">Terapkan</button>
       <p class="gd-promo-msg" id="promoMsg"></p>
@@ -445,6 +449,9 @@ let selectedPkg = null;
 let selectedRegion = @json($selectedRegion);
 let qty = 1;
 let promoDiscount = 0;
+// Kode + subtotal yang terakhir berhasil diverifikasi, dipakai untuk melepas
+// diskon otomatis ketika pesanan atau kode yang diketik berubah.
+let appliedPromo = null;
 /* ---------- auto-select from URL ---------- */
 (function(){
     const params = new URLSearchParams(window.location.search);
@@ -731,6 +738,7 @@ function ensureValidPayMethod() {
 
 function updateSummary() {
     ensureValidPayMethod();
+    syncPromoState();
 
     const empty = !selectedPkg;
     // mobile accordion
@@ -833,7 +841,24 @@ $('#orderNowBtnMobile').addEventListener('click', function() { handleOrder(this)
 
 /* ---------- promo ---------- */
 const promoInput = $('#promoInput'), promoMsg = $('#promoMsg');
-$('#promoBtn').addEventListener('click', () => {
+let promoChecking = false;
+
+// Diskon hanya sah untuk kode + subtotal yang sama ketika diverifikasi.
+// Kalau produk/jumlah berubah atau kodenya diedit, diskon dilepas supaya
+// tampilan tidak lagi menampilkan nominal yang sudah tidak berlaku.
+function syncPromoState() {
+    if (!appliedPromo) return;
+
+    const subtotal = selectedPkg ? selectedPkg.price * qty : 0;
+    if (appliedPromo.code === promoInput.value.trim().toUpperCase() && appliedPromo.subtotal === subtotal) return;
+
+    appliedPromo = null;
+    promoDiscount = 0;
+    promoMsg.textContent = 'Kode promo dilepas karena pesanan berubah. Terapkan lagi.';
+    promoMsg.className = 'gd-promo-msg show bad';
+}
+
+$('#promoBtn').addEventListener('click', async () => {
     if (!selectedPkg) { showToast('Pilih produk terlebih dahulu', false); return; }
     const code = promoInput.value.trim().toUpperCase();
     if (!code) {
@@ -841,17 +866,50 @@ $('#promoBtn').addEventListener('click', () => {
         promoMsg.className = 'gd-promo-msg show bad';
         return;
     }
-    if (code === 'JOHENI10' || code === 'JOHENGAMING10') {
-        promoDiscount = Math.round(selectedPkg.price * qty * 0.10);
-        promoMsg.textContent = 'Kode berhasil diterapkan! Diskon ' + rupiah(promoDiscount) + '.';
-        promoMsg.className = 'gd-promo-msg show ok';
-    } else {
+    if (promoChecking) return;
+    promoChecking = true;
+    const btn = $('#promoBtn');
+    const originalLabel = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Memeriksa...';
+    try {
+        const res = await fetch('{{ route('api.vouchers.validate') }}', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ code: code, subtotal: selectedPkg.price * qty })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (data.valid) {
+            promoDiscount = data.discount || 0;
+            appliedPromo = { code: code, subtotal: selectedPkg.price * qty };
+            promoMsg.textContent = data.message;
+            promoMsg.className = 'gd-promo-msg show ok';
+        } else {
+            promoDiscount = 0;
+            appliedPromo = null;
+            promoMsg.textContent = data.message || 'Kode promo tidak valid atau sudah kedaluwarsa.';
+            promoMsg.className = 'gd-promo-msg show bad';
+        }
+        updateSummary();
+    } catch (e) {
         promoDiscount = 0;
-        promoMsg.textContent = 'Kode promo tidak valid atau sudah kedaluwarsa.';
+        appliedPromo = null;
+        promoMsg.textContent = 'Gagal memeriksa kode promo. Coba lagi.';
         promoMsg.className = 'gd-promo-msg show bad';
+        updateSummary();
+    } finally {
+        btn.disabled = false;
+        btn.textContent = originalLabel;
+        promoChecking = false;
     }
-    updateSummary();
 });
+
+promoInput.addEventListener('input', syncPromoState);
 
 /* ---------- validation + modal ---------- */
 const emailInput = $('#emailInput'), waInput = $('#waInput');

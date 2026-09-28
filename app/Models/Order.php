@@ -30,6 +30,7 @@ class Order extends Model
         'price',
         'original_price',
         'flash_deal_id',
+        'voucher_id',
         'quantity',
         'status',
         'note',
@@ -93,6 +94,41 @@ class Order extends Model
 
         if ($deal = FlashDeal::find($dealId)) {
             $deal->restockQty($qty);
+        }
+    }
+
+    public function voucher()
+    {
+        return $this->belongsTo(Voucher::class);
+    }
+
+    /**
+     * Kembalikan kuota flash deal dan jatah pakai voucher saat pesanan
+     * dibatalkan/gagal.
+     */
+    public function releaseDiscounts(): void
+    {
+        $this->releaseFlashQuota();
+        $this->releaseVoucherUsage();
+    }
+
+    /**
+     * Kembalikan jatah pakai voucher saat pesanan dibatalkan/gagal.
+     * Idempotent: voucher_id di-null-kan setelah kuota dikembalikan sehingga
+     * webhook/permintaan berulang tidak menggandakan jatah pakai.
+     */
+    public function releaseVoucherUsage(): void
+    {
+        $voucherId = $this->voucher_id;
+
+        if (! $voucherId) {
+            return;
+        }
+
+        $this->update(['voucher_id' => null]);
+
+        if ($voucher = Voucher::find($voucherId)) {
+            $voucher->releaseUsage();
         }
     }
 }

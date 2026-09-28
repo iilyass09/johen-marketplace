@@ -63,6 +63,10 @@
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
               Pesanan Saya
             </a>
+            <a href="{{ route('vouchers.index') }}" class="auth-dropdown-item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h14a2 2 0 002-2v-6z"/><path d="M16 6a4 4 0 00-8 0"/><path d="M12 9v3"/></svg>
+              Voucher Saya
+            </a>
             <a href="{{ route('testimoni') }}" class="auth-dropdown-item">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="12" y1="7" x2="12" y2="13"/></svg>
               Ulasan
@@ -120,6 +124,7 @@
     </button>
     @auth
       <a href="{{ route('orders.my') }}">Pesanan Saya</a>
+      <a href="{{ route('vouchers.index') }}">Voucher Saya</a>
       <a href="{{ route('testimoni') }}">Ulasan</a>
       <a href="{{ route('my-inquiries') }}">Riwayat Pesan</a>
       @if(Auth::user()->isAdmin())
@@ -167,6 +172,7 @@
       <a href="{{ route('check.transaction') }}">Cek Transaksi</a>
       <a href="{{ route('kontak') }}">Hubungi Kami</a>
       <a href="{{ route('testimoni') }}">Ulasan</a>
+      <a href="{{ route('vouchers.index') }}">Voucher Saya</a>
     </div>
     <div class="footer-col">
       <h4>Dukungan</h4>
@@ -276,7 +282,7 @@
     </div>
     <h2 id="pwaInstallGuideTitle">Install App</h2>
     <div data-pwa-install-ios>
-      <p>Tambahkan APP Johen gaming ke layar utama iPhone melalui Safari:</p>
+      <p>Tambahkan Johen Gaming Marketplace ke layar utama iPhone melalui Safari:</p>
       <ol>
         <li>Buka halaman ini di Safari.</li>
         <li>Ketuk tombol Bagikan di bilah Safari.</li>
@@ -289,13 +295,14 @@
       <ol>
         <li>Buka menu browser.</li>
         <li>Pilih Instal aplikasi atau Tambahkan ke layar utama.</li>
-        <li>Konfirmasi untuk memasang APP Johen gaming.</li>
+        <li>Konfirmasi untuk memasang Johen Gaming Marketplace.</li>
       </ol>
     </div>
     <button type="button" class="pwa-install-guide-done" data-pwa-install-close>Siap</button>
   </div>
 </div>
 
+@include('partials.gacha')
 @include('partials.livechat')
 
 <style>

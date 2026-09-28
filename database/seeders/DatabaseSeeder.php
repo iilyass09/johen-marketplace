@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             BrandSeeder::class,
             SiteSettingSeeder::class,
             LiveChatChannelSeeder::class,
+            GachaPrizeSeeder::class,
         ]);
     }
 }

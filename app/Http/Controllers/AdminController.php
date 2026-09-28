@@ -528,7 +528,7 @@ class AdminController extends Controller
         $order->update(['status' => $request->status]);
 
         if (in_array($request->status, ['failed', 'cancelled']) && !in_array($previous, ['failed', 'cancelled'])) {
-            $order->releaseFlashQuota();
+            $order->releaseDiscounts();
         }
 
         if ($request->ajax() || $request->wantsJson()) {

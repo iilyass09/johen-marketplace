@@ -6,6 +6,8 @@
     var installPrompt = null;
     var appInstalled = false;
     var registration = null;
+    var pendingWorker = null;
+    var updateToastTimer = null;
     var reloading = false;
     var hadController = hasServiceWorker && Boolean(navigator.serviceWorker.controller);
     var isIos = /iPad|iPhone|iPod/.test(navigator.userAgent)
@@ -215,6 +217,63 @@
         reg.update().catch(function () {});
     }
 
+    function applyUpdate() {
+        if (updateToastTimer) {
+            window.clearTimeout(updateToastTimer);
+            updateToastTimer = null;
+        }
+        var toast = document.getElementById('pwaUpdateToast');
+        if (toast && toast.parentNode) toast.parentNode.removeChild(toast);
+        skipWaiting(pendingWorker);
+    }
+
+    function showUpdateToast() {
+        if (!document.body || document.getElementById('pwaUpdateToast')) return;
+
+        var toast = document.createElement('div');
+        toast.id = 'pwaUpdateToast';
+        toast.setAttribute('role', 'status');
+        toast.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(12px);'
+            + 'z-index:2147483646;display:flex;gap:12px;align-items:center;padding:12px 16px;'
+            + 'border-radius:12px;background:#111;color:#fff;max-width:calc(100vw - 32px);'
+            + 'box-shadow:0 8px 30px rgba(0,0,0,.35);opacity:0;'
+            + 'transition:opacity .25s ease,transform .25s ease;'
+            + 'font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif';
+
+        var label = document.createElement('span');
+        label.textContent = 'Pembaharuan tersedia';
+        toast.appendChild(label);
+
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = 'Muat ulang';
+        button.style.cssText = 'border:0;background:#fff;color:#111;white-space:nowrap;'
+            + 'padding:8px 14px;border-radius:8px;cursor:pointer;'
+            + 'font:600 14px/1 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif';
+        button.addEventListener('click', applyUpdate);
+        toast.appendChild(button);
+
+        document.body.appendChild(toast);
+        window.setTimeout(function () {
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateX(-50%) translateY(0)';
+        }, 10);
+
+        updateToastTimer = window.setTimeout(applyUpdate, 10000);
+    }
+
+    function queueUpdate(worker) {
+        if (!worker) return;
+        pendingWorker = worker;
+        showUpdateToast();
+    }
+
+    function startUpdateLoop() {
+        window.setInterval(function () { update(registration); }, 1800000);
+        window.addEventListener('online', function () { update(registration); });
+        window.addEventListener('pageshow', function () { update(registration); });
+    }
+
     function register() {
         if (!hasServiceWorker) return;
         navigator.serviceWorker.register(serviceWorkerUrl, {
@@ -227,11 +286,11 @@
                 if (!worker) return;
                 worker.addEventListener('statechange', function () {
                     if (worker.state === 'installed' && hadController) {
-                        skipWaiting(worker);
+                        queueUpdate(worker);
                     }
                 });
             });
-            if (reg.waiting && hadController) skipWaiting(reg.waiting);
+            if (reg.waiting && hadController) queueUpdate(reg.waiting);
             update(reg);
         }).catch(function () {});
     }
@@ -256,6 +315,8 @@
         document.addEventListener('visibilitychange', function () {
             if (document.visibilityState === 'visible') update(registration);
         });
+
+        startUpdateLoop();
     }
 
     if (document.readyState === 'loading') {

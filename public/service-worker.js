@@ -1,5 +1,5 @@
-const APP_NAME = 'Johen Gaming';
-const STATIC_CACHE = 'johen-gaming-static-v1';
+const APP_NAME = 'Johen Gaming Marketplace';
+const STATIC_CACHE = 'johen-gaming-static-v3';
 const PRECACHE_URLS = [
   '/css/topup.css',
   '/js/topup.js',

@@ -31,22 +31,22 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return $this->is_admin;
+        return (bool) $this->is_admin;
     }
 
     public function isLiveChatAdmin(): bool
     {
-        return $this->is_live_chat_admin && !$this->is_admin;
+        return (bool) ($this->is_live_chat_admin && ! $this->is_admin);
     }
 
     public function isLiveChatCs(): bool
     {
-        return $this->is_live_chat_cs && !$this->is_admin;
+        return (bool) ($this->is_live_chat_cs && ! $this->is_admin);
     }
 
     public function isSuperAdmin(): bool
     {
-        return $this->is_admin;
+        return (bool) $this->is_admin;
     }
 
     public function liveChatConversations(): HasMany

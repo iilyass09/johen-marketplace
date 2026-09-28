@@ -126,7 +126,9 @@
     'FC Mobile' => ['icon' => '⚽', 'publisher' => 'EA Sports', 'desc' => 'Top up FC Mobile Points cepat & murah.', 'rating' => '4.6', 'sales' => '280K+'],
   ];
   $featuredBrands = $popularBrands->keyBy('name');
-  function fgData($name, $brands, $fallback) {
+  // Closure (bukan function global) supaya aman ketika view ini dirender
+  // lebih dari sekali dalam satu proses PHP.
+  $fgData = function ($name, $brands, $fallback) {
     $b = $brands->get($name);
     $fb = $fallback[$name] ?? ['icon' => '🎮', 'publisher' => '-', 'desc' => 'Top up murah & instan.', 'rating' => '4.5', 'sales' => '100K+', 'time' => '<1 Menit', 'price' => 'Rp1.500'];
     return (object)[
@@ -142,8 +144,8 @@
       'time' => $fb['time'] ?? '<1 Menit',
       'price' => $fb['price'] ?? 'Rp1.500',
     ];
-  }
-  $featuredList = $popularBrands->map(fn($b) => fgData($b->name, $featuredBrands, $featuredFallback))->values();
+  };
+  $featuredList = $popularBrands->map(fn($b) => $fgData($b->name, $featuredBrands, $featuredFallback))->values();
   $pubgIdx = $featuredList->search(fn($c) => $c->name === 'PUBG Mobile');
   if ($pubgIdx !== false) {
     $first = $featuredList->pull($pubgIdx);
@@ -162,18 +164,18 @@
     ['primary' => '#06b6d4', 'secondary' => '#0a1a2e'],
     ['primary' => '#f97316', 'secondary' => '#1f120a'],
   ];
-  function fgBgStyle($game, $color) {
+  $fgBgStyle = function ($game, $color) {
     $img = $game->bg ?? ($game->imgs[0] ?? $game->thumb);
     if ($img) return "background-image:url('{$img}');background-size:cover;background-position:center";
     return "background:linear-gradient(160deg,{$color['primary']},{$color['secondary']})";
-  }
+  };
 @endphp
 @if($first)
 <section class="featured-grid-section" id="topup">
   <div class="featured-grid-inner">
     <a href="{{ route('games.show', $first->name) }}" class="bento-card bento-featured"
        data-featured-imgs='{{ json_encode($first->imgs) }}'>
-      <div class="bento-card-bg" style="{{ fgBgStyle($first, $colorPalette[0]) }}"></div>
+      <div class="bento-card-bg" style="{{ $fgBgStyle($first, $colorPalette[0]) }}"></div>
       <div class="bento-overlay"></div>
       <div class="bento-featured-content">
         <span class="bento-badge bento-badge-best">🔥 Best Seller</span>
@@ -196,7 +198,7 @@
       @foreach($featuredList as $i => $card)
       <a href="{{ route('games.show', $card->name) }}" class="bento-card bento-small-card"
          data-featured-imgs='{{ json_encode($card->imgs) }}'>
-        <div class="bento-card-bg" style="{{ fgBgStyle($card, $colorPalette[($i + 1) % count($colorPalette)]) }}"></div>
+        <div class="bento-card-bg" style="{{ $fgBgStyle($card, $colorPalette[($i + 1) % count($colorPalette)]) }}"></div>
         <div class="bento-overlay"></div>
         <div class="bento-small-content">
           <span class="bento-small-badge">{{ $badges[$i % count($badges)] }}</span>

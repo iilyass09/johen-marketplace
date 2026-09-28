@@ -7,6 +7,7 @@ use App\Models\FlashDeal;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Transaction;
+use App\Models\Voucher;
 use App\Services\DigiflazzService;
 use App\Services\PaymentGatewayService;
 use App\Services\XenditService;
@@ -47,6 +48,7 @@ class OrderController extends Controller
             'phone' => 'nullable|string|max:30',
             'email' => 'nullable|email',
             'quantity' => 'nullable|integer|min:1|max:99',
+            'promo_code' => 'nullable|string|max:32',
             'payment_method' => 'nullable|string|max:50',
         ], [
             'zone_id.regex' => 'Zone ID hanya boleh berisi huruf dan angka.',
@@ -179,10 +181,39 @@ class OrderController extends Controller
 
             $subtotal = $unitPrice * $quantity;
 
-            if (!empty($input['promo_code'])) {
+            $voucherId = null;
+            $voucher = null;
+
+            if (! empty($input['promo_code'])) {
                 $code = strtoupper(trim((string) $input['promo_code']));
+
                 if ($code === 'JOHENI10' || $code === 'JOHENGAMING10') {
                     $subtotal = (int) round($subtotal * 0.9);
+                } else {
+                    $voucher = Voucher::whereRaw('UPPER(code) = ?', [$code])->lockForUpdate()->first();
+
+                    if (! $voucher) {
+                        throw new \RuntimeException('Kode voucher tidak ditemukan. Periksa kembali kodenya.');
+                    }
+
+                    if ($voucher->is_expired) {
+                        throw new \RuntimeException('Masa berlaku voucher '.$code.' sudah habis.');
+                    }
+
+                    if ($voucher->is_exhausted) {
+                        throw new \RuntimeException('Voucher '.$code.' sudah habis dipakai.');
+                    }
+
+                    $discount = $voucher->discountFor($subtotal);
+
+                    if ($discount < 1) {
+                        throw new \RuntimeException($voucher->min_spend > 0
+                            ? 'Voucher ini berlaku untuk belanja minimal Rp'.number_format($voucher->min_spend, 0, ',', '.').'.'
+                            : 'Voucher '.$code.' tidak bisa dipakai untuk pesanan ini.');
+                    }
+
+                    $subtotal -= $discount;
+                    $voucherId = $voucher->id;
                 }
             }
 
@@ -203,9 +234,14 @@ class OrderController extends Controller
                 'price' => $subtotal,
                 'original_price' => $originalPrice,
                 'flash_deal_id' => $flashDealId,
+                'voucher_id' => $voucherId,
                 'quantity' => $quantity,
                 'status' => 'pending',
             ]);
+
+            if ($voucher) {
+                $voucher->markUsed($order);
+            }
 
             if (!config('services.payment.simulation') && $this->xendit->isConfigured()) {
                 $method = !empty($input['payment_method']) ? $input['payment_method'] : config('services.payment.channel', 'qris');
