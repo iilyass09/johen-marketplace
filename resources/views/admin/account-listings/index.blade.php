@@ -9,6 +9,13 @@
         <span class="badge badge-neutral">{{ $listings->total() }} total</span>
     </div>
     <div class="flex items-center gap-3">
+        <form action="{{ route('admin.account-listings.sync') }}" method="POST" onsubmit="return confirm('Sinkronkan semua listing dari johengaming.id? Import bisa memakan beberapa menit untuk pertama kali.')">
+            @csrf
+            <button type="submit" class="btn btn-ghost">
+                <i class="fas fa-sync"></i>
+                <span>Sinkron dari johengaming.id</span>
+            </button>
+        </form>
         <button onclick="openCreateModal()" class="btn btn-primary">
             <i class="fas fa-plus"></i>
             <span>Tambah Listing</span>

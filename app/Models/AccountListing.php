@@ -27,6 +27,9 @@ class AccountListing extends Model
         'collector_tier',
         'deal_type',
         'is_sold',
+        'source',
+        'source_id',
+        'source_url',
     ];
 
     protected $casts = [

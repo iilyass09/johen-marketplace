@@ -124,6 +124,7 @@ Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->gro
     Route::get('/products/stock', [AdminController::class, 'productsStockJson'])->name('products.stock');
 
     Route::get('/account-listings', [App\Http\Controllers\AdminAccountListingController::class, 'index'])->name('account-listings');
+    Route::post('/account-listings/sync', [App\Http\Controllers\AdminAccountListingController::class, 'sync'])->name('account-listings.sync');
     Route::get('/account-listings/create', [App\Http\Controllers\AdminAccountListingController::class, 'create'])->name('account-listings.create');
     Route::post('/account-listings', [App\Http\Controllers\AdminAccountListingController::class, 'store'])->name('account-listings.store');
     Route::get('/account-listings/{accountListing}/edit', [App\Http\Controllers\AdminAccountListingController::class, 'edit'])->name('account-listings.edit');

@@ -4,10 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\AccountListing;
 use App\Models\Brand;
-use App\Services\MediaStore;
 use App\Services\ImageOptimizer;
+use App\Services\JohenGamingSyncService;
+use App\Services\MediaStore;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class AdminAccountListingController extends Controller
 {
@@ -15,12 +15,14 @@ class AdminAccountListingController extends Controller
     {
         $listings = AccountListing::orderBy('game')->orderBy('product_name')->paginate(20);
         $brands = Brand::where('is_active', true)->orderBy('name')->get();
+
         return view('admin.account-listings.index', compact('listings', 'brands'));
     }
 
     public function create()
     {
         $brands = Brand::where('is_active', true)->orderBy('name')->get();
+
         return view('admin.account-listings.create', compact('brands'));
     }
 
@@ -51,6 +53,7 @@ class AdminAccountListingController extends Controller
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json(['errors' => $validator->errors()->all()], 422);
             }
+
             return redirect()->back()->withErrors($validator)->withInput();
         }
 
@@ -89,6 +92,7 @@ class AdminAccountListingController extends Controller
     public function edit(AccountListing $accountListing)
     {
         $brands = Brand::where('is_active', true)->orderBy('name')->get();
+
         return view('admin.account-listings.edit', compact('accountListing', 'brands'));
     }
 
@@ -151,9 +155,39 @@ class AdminAccountListingController extends Controller
         return redirect()->route('admin.account-listings')->with('success', 'Listing akun berhasil diperbarui');
     }
 
+    public function sync(Request $request)
+    {
+        set_time_limit(0);
+
+        try {
+            $result = app(JohenGamingSyncService::class)->sync($request->query('game') ?: null, [
+                'deactivate_missing' => $request->boolean('deactivate_missing'),
+            ]);
+
+            $message = sprintf(
+                'Sinkron johengaming.id selesai: %d dibuat, %d diperbarui, %d tidak berubah, %d ditandai terjual.',
+                $result['created'],
+                $result['updated'],
+                $result['unchanged'],
+                $result['sold']
+            );
+
+            if ($result['errors'] > 0) {
+                $message .= ' '.$result['errors'].' gagal. Cek log terminal via `php artisan jba:sync-johengaming`.';
+
+                return back()->with('error', $message);
+            }
+
+            return back()->with('success', $message);
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Sinkronisasi gagal: '.$e->getMessage());
+        }
+    }
+
     public function toggle(AccountListing $accountListing)
     {
-        $accountListing->update(['is_active' => !$accountListing->is_active]);
+        $accountListing->update(['is_active' => ! $accountListing->is_active]);
+
         return back()->with('success', 'Status listing akun berhasil diubah');
     }
 
@@ -165,6 +199,7 @@ class AdminAccountListingController extends Controller
             }
         }
         $accountListing->delete();
+
         return redirect()->route('admin.account-listings')->with('success', 'Listing akun berhasil dihapus');
     }
 }
