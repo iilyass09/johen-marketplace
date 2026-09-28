@@ -443,6 +443,8 @@
   cursor: pointer;
   transition: transform .25s ease, box-shadow .25s ease;
   display: block;
+  aspect-ratio: 3 / 4;
+  width: 100%;
   background: var(--surface-2);
   border: 1px solid var(--border);
   color: inherit;
@@ -456,12 +458,14 @@
 .jba-game-btn-icon {
   position: relative;
   width: 100%;
+  height: 100%;
   overflow: hidden;
 }
 .jba-game-btn-icon img {
   width: 100%;
-  height: auto;
-  object-fit: contain;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
   display: block;
   transition: transform .3s ease;
 }
