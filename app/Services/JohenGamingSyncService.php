@@ -50,6 +50,7 @@ class JohenGamingSyncService
         'Promo' => 'promo',
         'Rekomen' => 'best_seller',
         'Flash Sale' => 'flash_sale',
+        'Diskon' => 'diskon',
         'New' => 'new',
         'Limited' => 'limited',
         'Best Seller' => 'best_seller',
@@ -179,8 +180,11 @@ class JohenGamingSyncService
 
     /**
      * Parse kartu akun dari halaman kategori.
-     * Kartu aktif berbentuk <a href=".../ml/170">. Kartu terjual tidak
-     * berlinking, ditandai ikon "sold.png"/badge "Selesai".
+     *
+     * Kartu aktif: <a class="jbd-card" href="https://johengaming.id/produk/...
+     * /{slug}/{id}" data-record=... data-price=... data-status="tersedia">.
+     * Kartu terjual: <div class="jbd-card habis" data-status="habis" ...> (tanpa link).
+     * Data primer diambil dari atribut data-*.
      *
      * @return array<int, array<string, mixed>>
      */
@@ -190,48 +194,44 @@ class JohenGamingSyncService
         $xpath = new DOMXPath($doc);
         $cards = [];
 
-        $pattern = '#^/produk/jual-beli-akun/'.preg_quote($slug, '#').'/(\d+)$#i';
+        $pattern = '#^https://johengaming\.id/produk/jual-beli-akun/'.preg_quote($slug, '#').'/(\d+)$#i';
+        $patternRel = '#^/produk/jual-beli-akun/'.preg_quote($slug, '#').'/(\d+)$#i';
 
-        foreach ($xpath->query('//a[contains(@href, "/produk/jual-beli-akun/")]') as $anchor) {
-            $href = $anchor->getAttribute('href');
-            if (! preg_match($pattern, $href, $m)) {
+        // Hanya elemen yang benar-benar kartu (token class "jbd-card", bukan "jbd-card-body" dll).
+        $nodes = $xpath->query('//*[contains(concat(" ",normalize-space(@class)," ")," jbd-card ")]');
+        foreach ($nodes as $node) {
+            if (! $node instanceof \DOMElement) {
                 continue;
             }
 
-            if (($card = $this->parseCard($xpath, $anchor)) === null) {
+            $card = $this->parseCard($xpath, $node);
+            if ($card === null) {
                 continue;
             }
 
-            $card['id'] = (int) $m[1];
-            $card['href'] = $this->absoluteUrl($href);
-            $card['source_id'] = "{$slug}:{$m[1]}";
-            $card['sold'] = (bool) ($card['sold_hint'] ?? false);
-            unset($card['sold_hint']);
-            $cards[] = $card;
-        }
+            $href = $node->getAttribute('href');
+            $id = null;
 
-        // Kartu terjual (tanpa link): cari ikon sold.png lalu bungkus terdekat berisi judul.
-        foreach ($xpath->query('//img[contains(@src, "sold")]') as $img) {
-            $node = $img;
-            $container = null;
-            while ($node = $node->parentNode) {
-                if ($node instanceof \DOMElement && $xpath->query('.//h3', $node)->length > 0) {
-                    $container = $node;
-                    break;
-                }
-                if ($node->nodeType === XML_DOCUMENT_NODE) {
-                    break;
+            if (! $card['sold'] && $href !== '') {
+                foreach ([$pattern, $patternRel] as $p) {
+                    if (preg_match($p, $href, $m)) {
+                        $id = (int) $m[1];
+                        break;
+                    }
                 }
             }
 
-            if ($container === null) {
+            if ($id !== null) {
+                $card['id'] = $id;
+                $card['href'] = $this->absoluteUrl($href);
+                $card['source_id'] = "{$slug}:{$id}";
+                $card['sold'] = false;
+                $cards[] = $card;
+
                 continue;
             }
 
-            if (($card = $this->parseCard($xpath, $container)) === null) {
-                continue;
-            }
-
+            // Kartu "Habis"/terjual: tanpa link, ditandai berdasar nama produk.
             $card['id'] = null;
             $card['href'] = null;
             $card['source_id'] = null;
@@ -243,14 +243,19 @@ class JohenGamingSyncService
     }
 
     /**
-     * Ekstrak field umum dari satu kartu (judul, gambar, harga, badge, tanda terjual).
+     * Ekstrak field dari satu kartu. Nilai presisi dari atribut data-*;
+     * bila tidak ada (markup lama), fallback ke teks "Rp N".
      *
      * @return array<string, mixed>|null
      */
     private function parseCard(DOMXPath $xpath, \DOMElement $node): ?array
     {
-        $titleNode = $xpath->query('.//h3', $node)->item(0);
-        if ($titleNode === null || $titleNode->textContent === '') {
+        $title = trim((string) $node->getAttribute('data-record'));
+        if ($title === '') {
+            $titleNode = $xpath->query('.//h3', $node)->item(0);
+            $title = $titleNode !== null ? trim($titleNode->textContent) : '';
+        }
+        if ($title === '') {
             return null;
         }
 
@@ -263,17 +268,73 @@ class JohenGamingSyncService
             }
         }
 
-        $nodeHtml = $xpath->document->saveHTML($node);
-        $text = $node->textContent;
+        $nodeHtml = (string) $xpath->document->saveHTML($node);
+        $text = (string) $node->textContent;
+        $prices = $this->extractPrices($text);
+
+        $final = $this->intAttr($node->getAttribute('data-price'));
+        $original = $this->intAttr($this->jbaAttr($xpath, $node, 'jbd-price-old'));
+        $hemat = $this->intAttr($this->jbaAttr($xpath, $node, 'jbd-hemat'));
+        $final = $final ?? $this->intAttr($this->jbaAttr($xpath, $node, 'jbd-price-new'));
+
+        if ($final === null && $prices !== []) {
+            $final = (int) end($prices);
+        }
+        if ($original === null && count($prices) >= 2) {
+            $original = (int) $prices[0];
+        }
+
+        $badge = trim((string) $node->getAttribute('data-label'));
+        if ($badge === '') {
+            $badge = (string) ($this->extractBadge($nodeHtml) ?? '');
+        }
+
+        $classes = strtolower((string) $node->getAttribute('class'));
+        $status = strtolower((string) $node->getAttribute('data-status'));
 
         return [
-            'title' => trim($titleNode->textContent),
+            'title' => $title,
             'image' => $image ? $this->absoluteUrl($image) : null,
-            'prices' => $this->extractPrices($text),
-            'badge' => $this->extractBadge($nodeHtml),
-            'sold_hint' => str_contains($nodeHtml, 'sold.png')
+            'price_final' => $final,
+            'price_original' => $original,
+            'price_hemat' => $hemat,
+            'badge' => $badge !== '' ? $badge : null,
+            'store' => trim((string) $node->getAttribute('data-store')) ?: null,
+            'collector_raw' => trim((string) $node->getAttribute('data-kolektor')) ?: null,
+            'deal_type_raw' => trim((string) $node->getAttribute('data-deal-type')) ?: null,
+            'idgame' => (string) $node->getAttribute('data-idgame'),
+            'sold' => $status === 'habis'
+                || str_contains($classes, 'habis')
+                || str_contains($nodeHtml, 'sold.png')
                 || preg_match('/\b(Selesai|Habis)\b/i', $text) === 1,
         ];
+    }
+
+    /**
+     * Nilai data-jba-amt dari anak dengan class tertentu (span harga redesign).
+     */
+    private function jbaAttr(DOMXPath $xpath, \DOMElement $node, string $class): ?string
+    {
+        $target = $xpath->query(
+            './/*[contains(concat(" ",normalize-space(@class)," ")," '.$class.' ") and @data-jba-amt]',
+            $node
+        )->item(0);
+
+        return $target instanceof \DOMElement ? $target->getAttribute('data-jba-amt') : null;
+    }
+
+    /**
+     * Ubah string angka ("45.000.000") menjadi int; null bila tak valid.
+     */
+    private function intAttr(?string $value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $v = (int) str_replace([',', '.'], '', $value);
+
+        return $v > 0 ? $v : null;
     }
 
     /**
@@ -355,13 +416,14 @@ class JohenGamingSyncService
      */
     private function buildListingData(array $card, array $detail): array
     {
-        $prices = $detail['prices'] ?: $card['prices'];
-        $final = $prices ? (float) end($prices) : (float) ($card['prices'][count($card['prices']) - 1] ?? 0);
-        $original = count($prices) >= 2 ? (float) $prices[0] : null;
+        $prices = $detail['prices'] ?: [];
 
-        $hemat = $detail['hemat'] ?? null;
+        $final = $card['price_final'] ?? ($prices !== [] ? (int) end($prices) : 0);
+        $original = $card['price_original'] ?? (count($prices) >= 2 ? (int) $prices[0] : null);
+
+        $hemat = $card['price_hemat'] ?? null;
         if ($original === null && $hemat !== null) {
-            $original = $final + (float) $hemat;
+            $original = $final + $hemat;
         }
         if ($original !== null && $original <= $final) {
             $original = null;
@@ -372,7 +434,14 @@ class JohenGamingSyncService
             : null;
 
         $title = $card['title'];
-        $isBundle = stripos($title, 'bundle') !== false || stripos($title, 'JGM') === 0;
+        $dealType = strtolower((string) ($card['deal_type_raw'] ?? ''));
+        $isBundle = match ($dealType) {
+            'bundle', 'bundel' => true,
+            'normal' => false,
+            default => stripos($title, 'bundle') !== false || stripos($title, 'JGM') === 0,
+        };
+
+        $idPart = $card['idgame'] !== '' ? 'ID Akun: '.$card['idgame'].PHP_EOL : '';
 
         return [
             'source' => static::SOURCE,
@@ -380,14 +449,14 @@ class JohenGamingSyncService
             'source_url' => $card['href'],
             'game' => $this->localGame,
             'product_name' => $title,
-            'specifications' => $detail['specs'] ?: $title,
+            'specifications' => $idPart.($detail['specs'] ?: $title),
             'price' => $final,
             'original_price' => $original,
             'discount_percent' => $discount,
-            'owner_name' => static::OWNERS[$this->localSlug] ?? null,
+            'owner_name' => $card['store'] ?: (static::OWNERS[$this->localSlug] ?? null),
             'whatsapp' => null,
-            'promo_type' => $card['badge'] ? (static::BADGE_TO_PROMO[$card['badge']] ?? 'none') : 'none',
-            'collector_tier' => null,
+            'promo_type' => $this->normalizePromo($card['badge'] ?? null),
+            'collector_tier' => $this->mapCollector($card['collector_raw'] ?? null),
             'deal_type' => $isBundle ? 'bundle' : 'normal',
             'is_active' => true,
             'sold_from_source' => (bool) ($card['sold'] ?? false),
@@ -398,6 +467,45 @@ class JohenGamingSyncService
             'detail_photo_3' => null,
             'detail_photo_4' => null,
         ];
+    }
+
+    /**
+     * Label promo bebas ("HOT", "Best Seller", dll) => enum lokal.
+     */
+    private function normalizePromo(?string $label): string
+    {
+        $allowed = ['none', 'promo', 'flash_sale', 'diskon', 'best_seller', 'hot', 'new', 'limited'];
+
+        if ($label === null) {
+            return 'none';
+        }
+
+        if (isset(static::BADGE_TO_PROMO[$label])) {
+            return static::BADGE_TO_PROMO[$label];
+        }
+
+        $v = strtolower(str_replace([' ', '-'], '_', $label));
+
+        return in_array($v, $allowed, true) ? $v : 'none';
+    }
+
+    /**
+     * "Kolektor Sultan" => "sultan" (ternama, terhormat, juragan, sultan).
+     */
+    private function mapCollector(?string $raw): ?string
+    {
+        if ($raw === null || $raw === '') {
+            return null;
+        }
+
+        $v = strtolower($raw);
+        foreach (['sultan', 'juragan', 'ternama', 'terhormat'] as $tier) {
+            if (str_contains($v, $tier)) {
+                return $tier;
+            }
+        }
+
+        return null;
     }
 
     /**

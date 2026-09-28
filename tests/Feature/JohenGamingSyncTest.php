@@ -64,11 +64,13 @@ class JohenGamingSyncTest extends TestCase
         $this->assertSame(50000000.0, (float) $listing->original_price);
         $this->assertSame(10, $listing->discount_percent);
         $this->assertSame('hot', $listing->promo_type);
-        $this->assertSame('Johen MLBB', $listing->owner_name);
+        $this->assertSame('Johen', $listing->owner_name);
+        $this->assertSame('sultan', $listing->collector_tier);
         $this->assertSame('normal', $listing->deal_type);
         $this->assertTrue($listing->is_active);
         $this->assertFalse($listing->is_sold);
         $this->assertStringContainsString('COLLECTOR', $listing->specifications);
+        $this->assertStringContainsString('ID Akun: 129139383', $listing->specifications);
         $this->assertSame('https://johengaming.id/produk/jual-beli-akun/ml/170', $listing->source_url);
         $this->assertStringEndsWith('account-listings/johengaming-ml-170-0.jpg', $listing->photo);
         $this->assertNotNull($listing->detail_photo_1);
