@@ -774,12 +774,20 @@ img{max-width:100%;display:block;}
 .site-footer{border-top:1px solid var(--border);margin-top:2.4rem;padding-top:3rem;}
 .footer-inner{
   max-width:1400px;margin:0 auto;padding:0 2rem 2rem;
-  display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:2rem;
+  display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1.5fr;gap:2rem;
 }
 .footer-brand p{color:var(--text-mute);font-size:.82rem;margin-top:1rem;max-width:320px;line-height:1.6;}
 .footer-col h4{font-size:.85rem;margin-bottom:1rem;}
 .footer-col a{display:block;font-size:.82rem;color:var(--text-mute);margin-bottom:.7rem;transition:color .18s ease;}
 .footer-col a:hover{color:var(--purple-light);}
+.footer-col .footer-contact-item{
+  font-size:.82rem;color:var(--text-mute);margin-bottom:.7rem;line-height:1.5;
+  transition:color .18s ease;overflow-wrap:anywhere;
+}
+.footer-col a.footer-contact-item:hover{color:var(--purple-light);}
+.footer-col .footer-contact-label{
+  font-size:.82rem;font-weight:700;color:var(--text);margin:1.1rem 0 .7rem;
+}
 .footer-bottom{
   text-align:center;padding:1.4rem 2rem;border-top:1px solid var(--border);
   font-size:.78rem;color:var(--text-mute);

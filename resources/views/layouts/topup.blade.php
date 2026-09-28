@@ -4,6 +4,11 @@
         ?? (\App\Models\SiteSetting::get('site_logo') ? media_url(\App\Models\SiteSetting::get('site_logo')) : null)
         ?? asset('logo.png');
     $themeFavicon = $activeThemeLogoUrl ?? asset('logo.png');
+    $footerWaDigits = preg_replace('/\D+/', '', '0822-6070-7012');
+    if (str_starts_with($footerWaDigits, '0')) {
+        $footerWaDigits = '62' . substr($footerWaDigits, 1);
+    }
+    $footerWaHref = 'https://wa.me/' . $footerWaDigits;
 @endphp
 <!DOCTYPE html>
 <html lang="id" data-event-theme="{{ $themeEventSlug }}">
@@ -19,7 +24,7 @@
 <link rel="icon" type="image/png" href="{{ $themeFavicon }}">
 <link rel="shortcut icon" href="{{ $themeFavicon }}">
 @include('partials.pwa')
-<link rel="stylesheet" href="{{ asset('css/topup.css') }}?v=30">
+<link rel="stylesheet" href="{{ asset('css/topup.css') }}?v=31">
 @if(!empty($activeThemeCss))
 <style>:root{{{ $activeThemeCss }}}</style>
 @endif
@@ -184,8 +189,17 @@
       <a href="{{ route('privacy') }}">Kebijakan Privasi</a>
       <a href="{{ route('terms') }}">Syarat & Ketentuan</a>
     </div>
+    <div class="footer-col">
+      <h4>Kontak Kami</h4>
+      <p class="footer-contact-item">Ruko Topaz No 60, Summarecon Bandung, Bandung 40295</p>
+      <a class="footer-contact-item" href="mailto:corporate@johengaming.store">corporate@johengaming.store</a>
+      <a class="footer-contact-item" href="{{ $footerWaHref }}" target="_blank" rel="noopener">+62 822-607-070-12</a>
+      <p class="footer-contact-label">Customer Service</p>
+      <a class="footer-contact-item" href="mailto:cs@johengaming.store">cs@johengaming.store</a>
+      <a class="footer-contact-item" href="{{ $footerWaHref }}" target="_blank" rel="noopener">+62 822-607-070-12</a>
+    </div>
   </div>
-  <div class="footer-bottom">Â© {{ date('Y') }} Johen Gaming. All Rights Reserved.</div>
+  <div class="footer-bottom">&copy; {{ date('Y') }} Johen Gaming. All Rights Reserved.</div>
 </footer>
 
 <!-- ===== MODALS ===== -->
