@@ -239,10 +239,56 @@
   <div class="jba-results-title">
     <span>Daftar Akun</span>
   </div>
-  <span class="jba-results-count" id="jbaResultCount">0 akun</span>
+  <span class="jba-results-count" id="jbaResultCount">{{ $serverTotal }} akun</span>
 </div>
 
-<div class="jba-grid" id="jbaGrid"></div>
+{{-- Fallback server-rendered: tetap terlihat walau JavaScript tidak jalan,
+     dan memberi mesin pencari konten produk + harga. JS menimpanya saat aktif. --}}
+<div class="jba-grid" id="jbaGrid">
+  @forelse($serverListings as $l)
+    @php
+      $isSoldServer = (bool) $l->is_sold;
+      $priceServer = 'Rp ' . number_format((float) $l->price, 0, ',', '.');
+      $origServer = $l->original_price ? 'Rp ' . number_format((float) $l->original_price, 0, ',', '.') : null;
+    @endphp
+    <a href="{{ $isSoldServer ? '#' : route('jual-beli-akun.detail', $l) }}"
+       class="jba-card{{ $isSoldServer ? ' jba-card--sold' : '' }}"
+       @if($isSoldServer) tabindex="-1" aria-disabled="true" @endif>
+      <div class="jba-card-img">
+        @if($l->photo_url)
+          <img src="{{ $l->photo_url }}" alt="{{ $l->product_name }}" class="{{ $isSoldServer ? 'jba-img-sold' : '' }}" loading="lazy">
+        @else
+          <div class="jba-card-img-fallback">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+          </div>
+        @endif
+        @if($isSoldServer)
+          <div class="jba-sold-badge">SOLD</div>
+        @endif
+      </div>
+      <div class="jba-card-body">
+        <div class="jba-card-game">{{ $l->game }}</div>
+        <h3 class="jba-card-title">{{ $l->product_name }}</h3>
+        @if($l->owner_name)
+          <div class="jba-card-owner">{{ $l->owner_name }}</div>
+        @endif
+        <div class="jba-card-prices">
+          @if($origServer)
+            <span class="jba-card-original">{{ $origServer }}</span>
+          @endif
+          <div class="jba-card-price-row">
+            <span class="jba-card-price">{{ $priceServer }}</span>
+          </div>
+        </div>
+      </div>
+    </a>
+  @empty
+    <div class="jba-empty">
+      <h3>Belum Ada Akun</h3>
+      <p>Daftar akun untuk game ini sedang diperbarui. Silakan cek kembali beberapa saat lagi.</p>
+    </div>
+  @endforelse
+</div>
   </div>
 </div>
 

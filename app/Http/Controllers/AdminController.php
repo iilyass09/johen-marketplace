@@ -956,13 +956,19 @@ class AdminController extends Controller
             'contact_email' => 'nullable|email|max:255',
             'contact_whatsapp' => 'nullable|string|max:50',
             'contact_instagram' => 'nullable|string|max:255',
+            'contact_phone_display' => 'nullable|string|max:50',
+            'contact_cs_email' => 'nullable|email|max:255',
+            'contact_cs_hours' => 'nullable|string|max:120',
+            'company_name' => 'nullable|string|max:255',
+            'company_address' => 'nullable|string|max:500',
+            'company_npwp' => 'nullable|string|max:64',
             'footer_text' => 'nullable|string|max:500',
             'digiflazz_username' => 'nullable|string|max:255',
             'digiflazz_key' => 'nullable|string|max:255',
             'digiflazz_production' => 'nullable|in:0,1',
         ]);
 
-        $textKeys = ['site_name', 'site_tagline', 'site_description', 'contact_email', 'contact_whatsapp', 'contact_instagram', 'footer_text', 'min_balance_alert'];
+        $textKeys = ['site_name', 'site_tagline', 'site_description', 'contact_email', 'contact_whatsapp', 'contact_instagram', 'contact_phone_display', 'contact_cs_email', 'contact_cs_hours', 'company_name', 'company_address', 'company_npwp', 'footer_text', 'min_balance_alert'];
 
         foreach ($textKeys as $key) {
             if ($request->has($key)) {

@@ -4,11 +4,7 @@
         ?? (\App\Models\SiteSetting::get('site_logo') ? media_url(\App\Models\SiteSetting::get('site_logo')) : null)
         ?? asset('logo.png');
     $themeFavicon = $activeThemeLogoUrl ?? asset('logo.png');
-    $footerWaDigits = preg_replace('/\D+/', '', '0822-6070-7012');
-    if (str_starts_with($footerWaDigits, '0')) {
-        $footerWaDigits = '62' . substr($footerWaDigits, 1);
-    }
-    $footerWaHref = 'https://wa.me/' . $footerWaDigits;
+    $biz = business_info();
 @endphp
 <!DOCTYPE html>
 <html lang="id" data-event-theme="{{ $themeEventSlug }}">
@@ -24,7 +20,7 @@
 <link rel="icon" type="image/png" href="{{ $themeFavicon }}">
 <link rel="shortcut icon" href="{{ $themeFavicon }}">
 @include('partials.pwa')
-<link rel="stylesheet" href="{{ asset('css/topup.css') }}?v=31">
+<link rel="stylesheet" href="{{ asset('css/topup.css') }}?v=32">
 @if(!empty($activeThemeCss))
 <style>:root{{{ $activeThemeCss }}}</style>
 @endif
@@ -169,7 +165,8 @@
         <img src="{{ $themeLogo }}" alt="Johen Gaming" class="logo-img">
         <span class="logo-text">JOHEN<span>GAMING</span></span>
       </div>
-      <p>Top up game & voucher terlaris, murah, aman legal 100% buka 24 jam dengan payment terlengkap Indonesia.</p>
+      <p class="footer-about"><strong>{{ $biz['name'] }}</strong> &mdash; perusahaan digital gaming commerce terpercaya di Bandung. Spesialisasi jual beli akun game online, top up, jasa joki, live commerce, dan konten digital gaming.</p>
+      <p>Top up game &amp; voucher terlaris, murah, aman legal 100% buka 24 jam dengan payment terlengkap Indonesia.</p>
     </div>
     <div class="footer-col">
       <h4>Peta Situs</h4>
@@ -191,15 +188,21 @@
     </div>
     <div class="footer-col">
       <h4>Kontak Kami</h4>
-      <p class="footer-contact-item">Ruko Topaz No 60, Summarecon Bandung, Bandung 40295</p>
-      <a class="footer-contact-item" href="mailto:corporate@johengaming.store">corporate@johengaming.store</a>
-      <a class="footer-contact-item" href="{{ $footerWaHref }}" target="_blank" rel="noopener">+62 822-607-070-12</a>
-      <p class="footer-contact-label">Customer Service</p>
-      <a class="footer-contact-item" href="mailto:cs@johengaming.store">cs@johengaming.store</a>
-      <a class="footer-contact-item" href="{{ $footerWaHref }}" target="_blank" rel="noopener">+62 822-607-070-12</a>
+      <p class="footer-contact-item">{{ $biz['address'] }}</p>
+      @if($biz['npwp'])
+      <p class="footer-contact-item">NPWP: {{ $biz['npwp'] }}</p>
+      @endif
+      <a class="footer-contact-item" href="mailto:{{ $biz['email'] }}">{{ $biz['email'] }}</a>
+      @if($biz['cs_email'] && $biz['cs_email'] !== $biz['email'])
+      <a class="footer-contact-item" href="mailto:{{ $biz['cs_email'] }}">{{ $biz['cs_email'] }}</a>
+      @endif
+      @if($biz['wa_href'])
+      <a class="footer-contact-item" href="{{ $biz['wa_href'] }}" target="_blank" rel="noopener">{{ $biz['phone'] }}</a>
+      @endif
+      <p class="footer-contact-item">{{ $biz['cs_hours'] }}</p>
     </div>
   </div>
-  <div class="footer-bottom">&copy; {{ date('Y') }} Johen Gaming. All Rights Reserved.</div>
+  <div class="footer-bottom">&copy; {{ date('Y') }} {{ $biz['name'] }}. All Rights Reserved.</div>
 </footer>
 
 <!-- ===== MODALS ===== -->

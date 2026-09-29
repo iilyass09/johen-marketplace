@@ -2,6 +2,7 @@
 
 @section('content')
 @php
+  $biz = business_info();
   $banner  = \App\Models\SiteSetting::get('site_hero_banner');
   $banner2 = \App\Models\SiteSetting::get('site_hero_banner_2');
   $banner3 = \App\Models\SiteSetting::get('site_hero_banner_3');
@@ -117,20 +118,27 @@
 <!-- ===== FEATURED GAMES ===== -->
 @php
   $featuredFallback = [
-    'PUBG Mobile' => ['icon' => '🔫', 'publisher' => 'Tencent', 'desc' => 'Top Up UC PUBG Mobile cepat & instan.', 'rating' => '4.9', 'sales' => '1.2M+', 'time' => '<1 Menit', 'price' => 'Rp1.500'],
-    'Mobile Legends' => ['icon' => '🎮', 'publisher' => 'Moonton', 'desc' => 'Top Up diamond Mobile Legends cepat & instan.', 'rating' => '4.8', 'sales' => '950K+'],
-    'Free Fire' => ['icon' => '🔥', 'publisher' => 'Garena', 'desc' => 'Dapatkan diamond Free Fire harga spesial.', 'rating' => '4.7', 'sales' => '780K+'],
-    'Roblox' => ['icon' => '🧱', 'publisher' => 'Roblox Corp', 'desc' => 'Beli Robux dengan harga terbaik.', 'rating' => '4.8', 'sales' => '650K+'],
-    'Valorant' => ['icon' => '🔫', 'publisher' => 'Riot Games', 'desc' => 'Top Up VALORANT Points murah.', 'rating' => '4.6', 'sales' => '520K+'],
-    'E-Football' => ['icon' => '⚽', 'publisher' => 'Konami', 'desc' => 'Top up eFootball Points dengan harga terbaik.', 'rating' => '4.7', 'sales' => '340K+'],
-    'FC Mobile' => ['icon' => '⚽', 'publisher' => 'EA Sports', 'desc' => 'Top up FC Mobile Points cepat & murah.', 'rating' => '4.6', 'sales' => '280K+'],
+    'PUBG Mobile' => ['icon' => '🔫', 'publisher' => 'Tencent', 'desc' => 'Top Up UC PUBG Mobile cepat & instan.'],
+    'Mobile Legends' => ['icon' => '🎮', 'publisher' => 'Moonton', 'desc' => 'Top Up diamond Mobile Legends cepat & instan.'],
+    'Free Fire' => ['icon' => '🔥', 'publisher' => 'Garena', 'desc' => 'Dapatkan diamond Free Fire harga spesial.'],
+    'Roblox' => ['icon' => '🧱', 'publisher' => 'Roblox Corp', 'desc' => 'Beli Robux dengan harga terbaik.'],
+    'Valorant' => ['icon' => '🔫', 'publisher' => 'Riot Games', 'desc' => 'Top Up VALORANT Points murah.'],
+    'E-Football' => ['icon' => '⚽', 'publisher' => 'Konami', 'desc' => 'Top up eFootball Points dengan harga terbaik.'],
+    'FC Mobile' => ['icon' => '⚽', 'publisher' => 'EA Sports', 'desc' => 'Top up FC Mobile Points cepat & murah.'],
   ];
   $featuredBrands = $popularBrands->keyBy('name');
+  $minPrices = $minPrices ?? [];
+  // Cocokkan nama brand katalog (yang costumam kapital) ke nama brand tabel.
+  $minPriceLookup = [];
+  foreach ($minPrices as $brandName => $price) {
+    $minPriceLookup[strtoupper((string) $brandName)] = (int) $price;
+  }
   // Closure (bukan function global) supaya aman ketika view ini dirender
   // lebih dari sekali dalam satu proses PHP.
-  $fgData = function ($name, $brands, $fallback) {
+  $fgData = function ($name, $brands, $fallback) use ($minPriceLookup) {
     $b = $brands->get($name);
-    $fb = $fallback[$name] ?? ['icon' => '🎮', 'publisher' => '-', 'desc' => 'Top up murah & instan.', 'rating' => '4.5', 'sales' => '100K+', 'time' => '<1 Menit', 'price' => 'Rp1.500'];
+    $fb = $fallback[$name] ?? ['icon' => '🎮', 'publisher' => '-', 'desc' => 'Top up murah & instan.'];
+    $price = $minPriceLookup[strtoupper((string) $name)] ?? null;
     return (object)[
       'name' => $b->name ?? $name,
       'icon' => $b->icon ?? $fb['icon'],
@@ -139,10 +147,10 @@
       'thumb' => $b->featured_thumbnail_url ?? null,
       'bg' => $b ? $b->carousel_bg_url : null,
       'imgs' => $b ? $b->featured_img_urls : [],
-      'rating' => $fb['rating'],
-      'sales' => $fb['sales'],
-      'time' => $fb['time'] ?? '<1 Menit',
-      'price' => $fb['price'] ?? 'Rp1.500',
+      'hasProducts' => $price !== null,
+      'price' => $price !== null
+            ? 'Rp' . number_format($price, 0, ',', '.')
+            : 'Hubungi CS',
     ];
   };
   $featuredList = $popularBrands->map(fn($b) => $fgData($b->name, $featuredBrands, $featuredFallback))->values();
@@ -182,13 +190,21 @@
         <h3 class="bento-featured-title">{{ $first->name }}</h3>
         <p class="bento-featured-sub">{{ $first->desc }}</p>
         <div class="bento-stats">
-          <span class="bento-stat">⭐ {{ $first->rating }}</span>
-          <span class="bento-stat">👥 {{ $first->sales }}</span>
-          <span class="bento-stat">⚡ {{ $first->time }}</span>
+          @if($first->hasProducts)
+          <span class="bento-stat">⚡ Proses &lt; 1 Menit</span>
+          <span class="bento-stat">🕒 {{ $biz['cs_hours'] }}</span>
+          @else
+          <span class="bento-stat">Katalog sedang disiapkan</span>
+          @endif
         </div>
         <div class="bento-price">
+          @if($first->hasProducts)
           <span class="bento-price-label">Mulai dari</span>
           <span class="bento-price-value">{{ $first->price }}</span>
+          @else
+          <span class="bento-price-label">Katalog</span>
+          <span class="bento-price-value">Hubungi CS</span>
+          @endif
         </div>
         <span class="bento-cta">⚡ Top Up Sekarang</span>
       </div>
@@ -204,8 +220,11 @@
           <span class="bento-small-badge">{{ $badges[$i % count($badges)] }}</span>
           <h4 class="bento-small-title">{{ $card->name }}</h4>
           <div class="bento-small-meta">
-            <span>⭐ {{ $card->rating }}</span>
-            <span>👥 {{ $card->sales }}</span>
+            @if($card->hasProducts)
+            <span>Mulai {{ $card->price }}</span>
+            @else
+            <span>Katalog segera hadir</span>
+            @endif
           </div>
           <span class="bento-small-cta">Top Up →</span>
         </div>

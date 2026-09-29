@@ -105,6 +105,19 @@
 </div>
 
 <div class="gd-wrap">
+  @if($products->isEmpty())
+  <div class="gd-empty-catalog" style="max-width:640px;margin:3rem auto;padding:2.5rem 2rem;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md)">
+    <h2 style="font-size:1.25rem;font-weight:700;margin:0 0 .75rem">Nominal {{ $pageType }} {{ $brand->name }} Belum Tersedia</h2>
+    <p>
+      Katalog untuk {{ $brand->name }} sedang kami lengkapi. Silakan hubungi Customer Service
+      untuk ketersediaan produk, harga, dan estimasi proses top up.
+    </p>
+    <div class="gd-empty-actions" style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;margin-top:1.5rem">
+      <a class="btn btn-solid" href="{{ route('kontak') }}">Hubungi Customer Service</a>
+      <a class="btn btn-outline" href="{{ route('jual-beli-akun') }}">Lihat Jual Beli Akun</a>
+    </div>
+  </div>
+  @else
   <div class="gd-detail-grid">
     <div class="gd-detail-main">
   <!-- ===== STEP 1: Data Akun ===== -->
@@ -387,8 +400,10 @@
       </div>
     </div>
   </div>
+  @endif
 </div>
 
+@if(!$products->isEmpty())
 <!-- ===== Mobile sticky bottom bar (with accordion) ===== -->
 <div class="gd-mobile-bar" id="mobileOrderBar">
   <div class="gd-mobile-panel" id="mobilePanel">
@@ -426,6 +441,7 @@
     <button class="btn btn-solid gd-mobile-bar-btn" id="orderNowBtnMobile">Pesan Sekarang</button>
   </div>
 </div>
+@endif
 
 @endsection
 
@@ -433,6 +449,7 @@
 <style>
 @media(max-width:640px){.fab-cs{display:none;}}
 </style>
+@if(!$products->isEmpty())
 <script>
 (function(){
 'use strict';
@@ -957,4 +974,5 @@ document.addEventListener('themeChanged', swapPayImages);
 
 })();
 </script>
+@endif
 @endpush

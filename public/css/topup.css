@@ -785,9 +785,8 @@ img{max-width:100%;display:block;}
   transition:color .18s ease;overflow-wrap:anywhere;
 }
 .footer-col a.footer-contact-item:hover{color:var(--purple-light);}
-.footer-col .footer-contact-label{
-  font-size:.82rem;font-weight:700;color:var(--text);margin:1.1rem 0 .7rem;
-}
+.footer-brand .footer-about{color:var(--text-dim);margin-bottom:1rem;}
+.footer-brand .footer-about strong{color:var(--text);font-weight:700;}
 .footer-bottom{
   text-align:center;padding:1.4rem 2rem;border-top:1px solid var(--border);
   font-size:.78rem;color:var(--text-mute);

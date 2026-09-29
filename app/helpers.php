@@ -29,3 +29,45 @@ if (! function_exists('media_url')) {
         return url('media/'.$path);
     }
 }
+
+if (! function_exists('business_info')) {
+    /**
+     * Data identitas bisnis & kontak yang dipakai di footer, halaman kontak,
+     * halaman legal, dan beranda. Nilainya diambil dari SiteSetting dengan
+     * fallback supaya halaman tidak pernah kosong.
+     *
+     * @return array{name:string,address:string,npwp:string,phone:string,email:string,cs_email:string,cs_hours:string,wa_digits:string,wa_href:?string}
+     */
+    function business_info()
+    {
+        $get = static function ($key, $default = '') {
+            return \App\Models\SiteSetting::get($key, $default);
+        };
+
+        $name = $get('company_name', 'PT. Johen Sukses Abadi');
+        $address = $get('company_address', 'Ruko Topaz No 60, Summarecon, Bandung 40295, Jawa Barat, Indonesia');
+        $npwp = $get('company_npwp', '');
+        $wa = $get('contact_whatsapp', '6282260707012');
+        $phone = $get('contact_phone_display', '+62 822-6070-7012');
+        $email = $get('contact_email', 'corporate@johengaming.store');
+        $csEmail = $get('contact_cs_email', 'cs@johengaming.store');
+        $csHours = $get('contact_cs_hours', 'Setiap hari 24 jam (00.00 - 23.59 WIB)');
+
+        $waDigits = preg_replace('/\D+/', '', (string) $wa);
+        if (str_starts_with((string) $waDigits, '0')) {
+            $waDigits = '62'.substr((string) $waDigits, 1);
+        }
+
+        return [
+            'name' => $name,
+            'address' => $address,
+            'npwp' => $npwp,
+            'phone' => $phone,
+            'email' => $email,
+            'cs_email' => $csEmail,
+            'cs_hours' => $csHours,
+            'wa_digits' => $waDigits,
+            'wa_href' => $waDigits ? 'https://wa.me/'.$waDigits : null,
+        ];
+    }
+}

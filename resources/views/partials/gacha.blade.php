@@ -50,12 +50,7 @@
 </div>
 
 <button id="gc-fab" class="gc-fab" type="button" onclick="window.Gacha.open()" aria-label="Gacha Voucher">
-  <span class="gc-fab-glow" aria-hidden="true"></span>
-  <svg class="gc-fab-icon" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <circle cx="12" cy="12" r="9"/>
-    <path d="M12 3v18M3 12h18"/>
-    <circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none"/>
-  </svg>
+  <img class="gc-fab-logo" src="{{ asset('assets/Foto/logo.gacha.png') }}" width="52" height="52" alt="Gacha Voucher" decoding="async">
   <span class="gc-fab-label" aria-hidden="true">GACHA</span>
   <span class="gc-fab-dot" id="gcFabDot" hidden title="Voucher baru tersedia"></span>
 </button>
@@ -69,6 +64,6 @@
     login: @json(route('login'))
   };
 </script>
-<link rel="stylesheet" href="{{ asset('css/gacha.css') }}?v=3">
+<link rel="stylesheet" href="{{ asset('css/gacha.css') }}?v=5">
 <script src="{{ asset('js/gacha.js') }}?v=3" defer></script>
 @endif

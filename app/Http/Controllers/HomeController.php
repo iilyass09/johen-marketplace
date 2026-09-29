@@ -35,7 +35,7 @@ class HomeController extends Controller
         'valorant' => 'Valorant',
     ];
 
-    private static function jbaPageData(): array
+    private static function jbaPageData(?string $activeGame = null): array
     {
         $listings = AccountListing::where(function ($q) {
             $q->where('is_active', true)->orWhere('is_sold', true);
@@ -45,6 +45,15 @@ class HomeController extends Controller
             ->orderBy('product_name')
             ->get()
             ->groupBy('game');
+
+        // Daftar awal untuk render server (SEO + fallback tanpa JavaScript).
+        // Saat game aktif, tampilkan listing game tersebut; selain itu, ambil
+        // sampel per game agar beranda tetap punya konten produk.
+        $serverSource = $activeGame
+            ? ($listings->get($activeGame) ?? collect())
+            : $listings->flatMap(fn ($items) => $items->take(4));
+        $serverTotal = $serverSource->count();
+        $serverListings = $serverSource->take(24)->values();
 
         $popularGames = Brand::where('is_popular', true)
             ->where('is_active', true)
@@ -106,7 +115,7 @@ class HomeController extends Controller
         $jbaRating = collect($jbaTestis)->filter(fn ($t) => ($t['layanan'] ?? '') === 'jual-beli-akun')->avg('rating');
         $jbaRating = $jbaRating ? round((float) $jbaRating, 1) : 4.9;
 
-        return compact('popularGames', 'listings', 'testimonials', 'flashSaleBanners', 'budgetBanners', 'gameSlugs', 'gameBanners', 'jbaRating');
+        return compact('popularGames', 'listings', 'testimonials', 'flashSaleBanners', 'budgetBanners', 'gameSlugs', 'gameBanners', 'jbaRating', 'serverListings', 'serverTotal');
     }
 
     public function index()
@@ -114,6 +123,16 @@ class HomeController extends Controller
         if (Auth::guard('admin')->check() && ! Auth::guard('web')->check()) {
             return redirect()->route('admin.dashboard');
         }
+
+        // Harga terendah per game (dari katalog produk aktif) supaya kartu
+        // beranda menampilkan angka nyata, bukan placeholder.
+        $minPrices = Product::where('is_active', true)
+            ->where('selling_price', '>', 0)
+            ->groupBy('brand')
+            ->selectRaw('brand, MIN(selling_price) AS min_price')
+            ->pluck('min_price', 'brand')
+            ->map(fn ($v) => (int) $v)
+            ->all();
 
         $brands = Brand::where('is_active', true)
             ->orderBy('sort_order')
@@ -133,7 +152,7 @@ class HomeController extends Controller
             ->filter(fn (FlashDeal $deal) => $deal->product && $deal->flash_price > 0)
             ->values();
 
-        return view('home', compact('brands', 'popularBrands', 'flashDeals'));
+        return view('home', compact('brands', 'popularBrands', 'flashDeals', 'minPrices'));
     }
 
     public function getApiProducts(Request $request)
@@ -425,7 +444,7 @@ class HomeController extends Controller
 
     public function jualBeliAkun()
     {
-        $data = static::jbaPageData();
+        $data = static::jbaPageData(null);
         $data['activeGame'] = null;
         $data['activeSlug'] = null;
 
@@ -440,7 +459,7 @@ class HomeController extends Controller
             abort(404);
         }
 
-        $data = static::jbaPageData();
+        $data = static::jbaPageData($map[$game]);
         $data['activeGame'] = $map[$game];
         $data['activeSlug'] = $game;
 

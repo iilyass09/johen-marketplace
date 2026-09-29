@@ -27,6 +27,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+
+Route::get('/sitemap.xml', [\App\Http\Controllers\SitemapController::class, 'index'])->name('sitemap');
 Route::get('/products/by-brand', [HomeController::class, 'getProductsByBrand'])->name('products.by-brand');
 
 Route::get('/media/{path}', [MediaController::class, 'show'])

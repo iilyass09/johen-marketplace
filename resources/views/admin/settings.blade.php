@@ -111,12 +111,36 @@
                 </h3>
                 <div class="space-y-3">
                     <div>
+                        <label class="block text-xs font-medium mb-1">Nama Badan Usaha</label>
+                        <input type="text" name="company_name" value="{{ old('company_name', $settings['company_name'] ?? '') }}" placeholder="PT. Johen Sukses Abadi" class="input-field text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium mb-1">Alamat</label>
+                        <textarea name="company_address" rows="2" placeholder="Jalan, nomor, kota, kode pos, provinsi" class="input-field text-sm">{{ old('company_address', $settings['company_address'] ?? '') }}</textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium mb-1">NPWP</label>
+                        <input type="text" name="company_npwp" value="{{ old('company_npwp', $settings['company_npwp'] ?? '') }}" placeholder="00.000.000.0-000.000" class="input-field text-sm">
+                    </div>
+                    <div>
                         <label class="block text-xs font-medium mb-1">Email</label>
                         <input type="email" name="contact_email" value="{{ old('contact_email', $settings['contact_email'] ?? '') }}" placeholder="admin@johen.com" class="input-field text-sm">
                     </div>
                     <div>
                         <label class="block text-xs font-medium mb-1">WhatsApp</label>
                         <input type="text" name="contact_whatsapp" value="{{ old('contact_whatsapp', $settings['contact_whatsapp'] ?? '') }}" placeholder="62812xxxxxxx" class="input-field text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium mb-1">Tampilan Nomor Telepon</label>
+                        <input type="text" name="contact_phone_display" value="{{ old('contact_phone_display', $settings['contact_phone_display'] ?? '') }}" placeholder="+62 812-xxxx-xxxx" class="input-field text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium mb-1">Email Customer Service</label>
+                        <input type="email" name="contact_cs_email" value="{{ old('contact_cs_email', $settings['contact_cs_email'] ?? '') }}" placeholder="cs@johengaming.store" class="input-field text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium mb-1">Jam Layanan</label>
+                        <input type="text" name="contact_cs_hours" value="{{ old('contact_cs_hours', $settings['contact_cs_hours'] ?? '') }}" placeholder="Setiap hari 24 jam (00.00 - 23.59 WIB)" class="input-field text-sm">
                     </div>
                     <div>
                         <label class="block text-xs font-medium mb-1">Instagram</label>
