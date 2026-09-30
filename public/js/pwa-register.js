@@ -1,7 +1,8 @@
 (function () {
     'use strict';
 
-    var serviceWorkerUrl = '/service-worker.js?v=20260916-notifclick';
+    var serviceWorkerPath = '/service-worker.js';
+    var serviceWorkerUrl = serviceWorkerPath + '?v=' + buildStamp();
     var hasServiceWorker = 'serviceWorker' in navigator;
     var installPrompt = null;
     var appInstalled = false;
@@ -20,6 +21,15 @@
     function isStandalone() {
         return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
             || window.navigator.standalone === true;
+    }
+
+    /* Stamp build ditulis layout di meta pwa-build. Dipakai sebagai query
+       service worker supaya URL yang didaftarkan berubah setiap deploy:
+       browser lalu wajib ambil script worker terbaru, bukan mengandalkan
+       hasil perbandingan dengan worker lama. */
+    function buildStamp() {
+        var meta = document.querySelector('meta[name="pwa-build"]');
+        return (meta && meta.content) || '0';
     }
 
     function hideSplash() {
@@ -265,11 +275,23 @@
     function queueUpdate(worker) {
         if (!worker) return;
         pendingWorker = worker;
+
+        // Aplikasi yang sudah ter-install tidak menampilkan toast, jadi langsung
+        // dipakai: worker baru mengambil alih lalu controllerchange memuat
+        // ulang halaman. Di tab browser biasa, toast tetap dipakai supaya
+        // halaman yang sedang dibaca tidak meloncat di tengah scroll.
+        if (isStandalone()) {
+            applyUpdate();
+            return;
+        }
+
         showUpdateToast();
     }
 
     function startUpdateLoop() {
-        window.setInterval(function () { update(registration); }, 1800000);
+        // 15 menit, plus pengecekan tiap halaman dibuka / app dimunculkan lagi.
+        // Deploy jadi terlihat di PWA tanpa harus uninstall aplikasi.
+        window.setInterval(function () { update(registration); }, 900000);
         window.addEventListener('online', function () { update(registration); });
         window.addEventListener('pageshow', function () { update(registration); });
     }

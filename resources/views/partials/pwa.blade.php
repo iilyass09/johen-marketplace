@@ -4,7 +4,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Johen Marketplace">
-<link rel="manifest" href="{{ asset('site.webmanifest') }}">
+{{-- Stamp build PWA. Dipakai pwa-register.js sebagai query service worker
+     supaya setiap deploy menghasilkan URL worker yang baru. --}}
+<meta name="pwa-build" content="{{ pwa_build() }}">
+<link rel="manifest" href="{{ asset('site.webmanifest') }}?v={{ pwa_build() }}">
 <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('logo-180.png') }}">
 <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('logo-192.png') }}">
 <style>
@@ -14,4 +17,4 @@ html.pwa-standalone .pwa-splash-screen{display:flex;}
 .pwa-splash-screen img{width:min(34vw,180px);height:auto;max-width:min(42vw,220px);max-height:42vh;object-fit:contain;}
 @media (max-width:480px){.pwa-splash-screen img{width:min(42vw,160px);max-width:160px;}}
 </style>
-<script src="{{ asset('js/pwa-register.js') }}?v=5" defer></script>
+<script src="{{ asset('js/pwa-register.js') }}?v=6" defer></script>

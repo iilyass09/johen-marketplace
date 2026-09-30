@@ -1,9 +1,16 @@
 const APP_NAME = 'Johen Gaming Marketplace';
-const STATIC_CACHE = 'johen-gaming-static-v3';
-const PRECACHE_URLS = [
+
+// Disuntik PwaController dari mtime file publik. Begitu ada aset yang berubah
+// setelah deploy, nilai ini berubah -> script worker berubah -> browser
+// memasang worker baru dan cache lama dibuang.
+const BUILD = '__JOHEN_BUILD__';
+
+const STATIC_CACHE = 'johen-gaming-static-v' + BUILD;
+const RAW_PRECACHE_URLS = [
   '/css/topup.css',
-  '/js/topup.js',
+  '/css/gacha.css',
   '/css/livechat.css',
+  '/js/topup.js',
   '/js/livechat.js',
   '/js/pwa-register.js',
   '/site.webmanifest',
@@ -17,6 +24,12 @@ const PRECACHE_URLS = [
   '/favicon.ico'
 ];
 
+// Aset di-precache dengan query build, bukan query versi yang dipatok di Blade.
+// Jadi begitu worker baru aktif, semua entry-nya berisi file terbaru.
+const PRECACHE_URLS = RAW_PRECACHE_URLS.map(function (url) {
+  return url + '?v=' + BUILD;
+});
+
 function isCacheableAsset(url) {
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/storage/') || url.pathname.startsWith('/media/')) {
     return false;
@@ -26,16 +39,27 @@ function isCacheableAsset(url) {
     || /\.(?:css|js|mjs|png|jpg|jpeg|gif|webp|svg|ico|woff2?)$/i.test(url.pathname);
 }
 
+/* Preseed: aset hasil build ini, dicocokkan lewat pathname saja. Halaman
+   masih memakai query versi lamanya (?v=34), jadi tanpa ignoreSearch request
+   itu akan lolos ke jaringan dan bisa dilayani cache HTTP yang masih
+   menyimpan file lama. */
+async function precached(request) {
+  const cache = await caches.open(STATIC_CACHE);
+  return cache.match(request, { ignoreSearch: true, ignoreVary: true });
+}
+
 async function networkFirst(request) {
   const cache = await caches.open(STATIC_CACHE);
   try {
-    const response = await fetch(request);
+    // cache: 'reload' melewati cache HTTP, jadi aset lama tidak pernah
+    // terbawa meski URL-nya sama persis.
+    const response = await fetch(new Request(request.url, { cache: 'reload', credentials: 'same-origin' }));
     if (response && response.ok && response.type === 'basic') {
       await cache.put(request, response.clone());
     }
     return response;
   } catch (error) {
-    const cached = await cache.match(request);
+    const cached = await cache.match(request, { ignoreVary: true });
     if (cached) return cached;
     throw error;
   }
@@ -124,8 +148,8 @@ async function maybeShow(data) {
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(STATIC_CACHE).then((cache) => Promise.all(
-      PRECACHE_URLS.map((url) => cache.add(url).catch(() => null))
-    ))
+      PRECACHE_URLS.map((url) => cache.add(new Request(url, { cache: 'reload' })).catch(() => null))
+    )).then(() => self.skipWaiting())
   );
 });
 
@@ -162,7 +186,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  event.respondWith(networkFirst(request));
+  // Dokumen HTML sengaja tidak dicache: halaman harus selalu diambil dari
+  // jaringan supaya deploy baru langsung terlihat di PWA yang ter-install.
+  event.respondWith(
+    precached(request).then((hit) => hit || networkFirst(request))
+  );
 });
 
 self.addEventListener('push', (event) => {

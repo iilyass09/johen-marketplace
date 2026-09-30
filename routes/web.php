@@ -21,10 +21,28 @@ use App\Http\Controllers\MediaController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PwaController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\VoucherController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+
+// Service worker & versi PWA dilayani framework (bukan file statis) supaya
+// script-nya berubah setiap ada aset publik yang berubah. Tanpa itu, worker
+// yang terpasang dianggap identik dan PWA lama tidak pernah picking up update.
+// Service worker dilayani tanpa session & tanpa CSRF: script-nya tidak butuh
+// state, dan ini menghindari cookie sesi ikut menempel di respons worker.
+Route::get('/service-worker.js', [PwaController::class, 'serviceWorker'])
+    ->withoutMiddleware([
+        \Illuminate\Session\Middleware\StartSession::class,
+        \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+        \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+        \Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class,
+        \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+    ])
+    ->name('pwa.service-worker');
+
+Route::get('/pwa-version.json', [PwaController::class, 'version'])->name('pwa.version');
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
@@ -72,6 +90,10 @@ Route::middleware('auth:web,admin')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Dituju oleh resources/views/layouts/navigation.blade.php (default Breeze).
+    // Area pelanggan saat ini = daftar pesanan + saldo.
+    Route::get('/dashboard', fn () => redirect()->route('orders.my'))->name('dashboard');
 
     Route::get('/orders', [OrderController::class, 'myOrders'])->name('orders.my');
     Route::get('/pesan-saya', [HomeController::class, 'myInquiries'])->name('my-inquiries');

@@ -21,6 +21,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: [
             'payment/notification',
             'digiflazz/callback',
+            'service-worker.js',
+            'pwa-version.json',
         ]);
 
         $middleware->redirectGuestsTo(function (Request $request) {

@@ -71,3 +71,15 @@ if (! function_exists('business_info')) {
         ];
     }
 }
+
+if (! function_exists('pwa_build')) {
+    /**
+     * Stamp build PWA. Nilainya ikut berubah setiap ada file publik yang
+     * berubah, dipakai sebagai cache-buster service worker supaya aplikasi
+     * yang sudah ter-install langsung memakai aset hasil deploy terbaru.
+     */
+    function pwa_build(): string
+    {
+        return \App\Services\PwaBuildService::stamp();
+    }
+}

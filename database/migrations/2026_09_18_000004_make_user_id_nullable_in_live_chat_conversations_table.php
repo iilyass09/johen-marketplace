@@ -15,16 +15,38 @@ return new class extends Migration
             $table->index('guest_id');
         });
 
-        DB::statement('ALTER TABLE live_chat_conversations MODIFY user_id BIGINT UNSIGNED NULL');
+        if ($this->supportsModifySyntax()) {
+            DB::statement('ALTER TABLE live_chat_conversations MODIFY user_id BIGINT UNSIGNED NULL');
+
+            return;
+        }
+
+        // SQLite tidak mengenal "ALTER TABLE ... MODIFY"; Laravel membangun ulang
+        // tabelnya. Foreign key tetap terjaga karena yang didefinisikan ulang
+        // hanya kolomnya, bukan constraint-nya.
+        Schema::table('live_chat_conversations', function (Blueprint $table) {
+            $table->unsignedBigInteger('user_id')->nullable()->change();
+        });
     }
 
     public function down(): void
     {
-        DB::statement('ALTER TABLE live_chat_conversations MODIFY user_id BIGINT UNSIGNED NOT NULL');
+        if ($this->supportsModifySyntax()) {
+            DB::statement('ALTER TABLE live_chat_conversations MODIFY user_id BIGINT UNSIGNED NOT NULL');
+        } else {
+            Schema::table('live_chat_conversations', function (Blueprint $table) {
+                $table->unsignedBigInteger('user_id')->nullable(false)->change();
+            });
+        }
 
         Schema::table('live_chat_conversations', function (Blueprint $table) {
             $table->dropIndex(['guest_id']);
             $table->dropColumn(['guest_id', 'guest_name']);
         });
+    }
+
+    private function supportsModifySyntax(): bool
+    {
+        return in_array(DB::getDriverName(), ['mysql', 'mariadb'], true);
     }
 };
