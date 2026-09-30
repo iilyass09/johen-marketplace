@@ -50,7 +50,7 @@
 </div>
 
 <button id="gc-fab" class="gc-fab" type="button" onclick="window.Gacha.open()" aria-label="Gacha Voucher">
-  <img class="gc-fab-logo" src="{{ asset('assets/Foto/logo.gacha.png') }}" width="52" height="52" alt="Gacha Voucher" decoding="async">
+  <img class="gc-fab-logo" src="{{ pwa_asset('assets/Foto/logo.gacha.png') }}" width="52" height="52" alt="Gacha Voucher" decoding="async">
   <span class="gc-fab-label" aria-hidden="true">GACHA</span>
   <span class="gc-fab-dot" id="gcFabDot" hidden title="Voucher baru tersedia"></span>
 </button>
@@ -64,6 +64,6 @@
     login: @json(route('login'))
   };
 </script>
-<link rel="stylesheet" href="{{ asset('css/gacha.css') }}?v=5">
-<script src="{{ asset('js/gacha.js') }}?v=3" defer></script>
+  <link rel="stylesheet" href="{{ pwa_asset('css/gacha.css') }}">
+  <script src="{{ pwa_asset('js/gacha.js') }}" defer></script>
 @endif

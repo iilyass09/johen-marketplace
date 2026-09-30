@@ -18,6 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'live-chat-cs' => \App\Http\Middleware\LiveChatCsMiddleware::class,
         ]);
 
+        // Halaman dinamis tidak boleh disimpan cache browser, supaya deploy
+        // baru langsung terlihat di PWA yang sudah ter-install.
+        $middleware->appendToGroup('web', \App\Http\Middleware\NoCacheHtml::class);
+
         $middleware->validateCsrfTokens(except: [
             'payment/notification',
             'digiflazz/callback',

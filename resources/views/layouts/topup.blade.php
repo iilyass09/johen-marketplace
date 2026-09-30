@@ -2,8 +2,8 @@
     $themeEventSlug = !empty($activeTheme) && $activeTheme ? $activeTheme->slug : null;
     $themeLogo = $activeThemeLogoUrl
         ?? (\App\Models\SiteSetting::get('site_logo') ? media_url(\App\Models\SiteSetting::get('site_logo')) : null)
-        ?? asset('logo.png');
-    $themeFavicon = $activeThemeLogoUrl ?? asset('logo.png');
+        ?? pwa_asset('logo.png');
+    $themeFavicon = $activeThemeLogoUrl ?? pwa_asset('logo.png');
     $splashName = \App\Models\SiteSetting::get('site_name') ?: 'Johen Gaming';
     $splashTagline = \App\Models\SiteSetting::get('site_tagline') ?: 'Top Up & Joki Game Termurah';
     $biz = business_info();
@@ -22,7 +22,7 @@
 <link rel="icon" type="image/png" href="{{ $themeFavicon }}">
 <link rel="shortcut icon" href="{{ $themeFavicon }}">
 @include('partials.pwa')
-<link rel="stylesheet" href="{{ asset('css/topup.css') }}?v=34">
+  <link rel="stylesheet" href="{{ pwa_asset('css/topup.css') }}">
 @if(!empty($activeThemeCss))
 <style>:root{{{ $activeThemeCss }}}</style>
 @endif
@@ -454,7 +454,7 @@ html:not([data-theme="light"]) .mobile-theme-btn .icon-moon {
 <script>
   window.ZONE_BRANDS = @json(\App\Models\Brand::where('requires_zone_id', true)->where('is_active', true)->pluck('name'));
 </script>
-<script src="{{ asset('js/topup.js') }}?v=4"></script>
+  <script src="{{ pwa_asset('js/topup.js') }}"></script>
 
 @if($popupBanners->isNotEmpty())
 <script>

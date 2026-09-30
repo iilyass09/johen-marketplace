@@ -181,13 +181,15 @@ $paymentLogos = [
   'indomaret' => 'indomaret.svg',
   'alfamart' => 'alfamart.svg',
 ];
-function paymentLogo($type, $logos){
-  if(!$type) return null;
-  $key = strtolower(trim($type));
-  foreach($logos as $k => $v){
-    if(str_contains($key, $k)) return asset('assets/payment/' . $v);
+if(!function_exists('paymentLogo')){
+  function paymentLogo($type, $logos){
+    if(!$type) return null;
+    $key = strtolower(trim($type));
+    foreach($logos as $k => $v){
+      if(str_contains($key, $k)) return asset('assets/payment/' . $v) . '?v=' . pwa_build();
+    }
+    return null;
   }
-  return null;
 }
 @endphp
 

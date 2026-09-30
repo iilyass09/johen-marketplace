@@ -23,8 +23,8 @@
 window.LIVECHAT_USER = @json(auth('web')->check() ? ['id' => auth('web')->id(), 'name' => auth('web')->user()->name] : null);
 window.LIVECHAT_CS_SLUG = '{{ \App\Models\LiveChatChannel::CS_SLUG }}';
 </script>
-<link rel="stylesheet" href="{{ asset('css/livechat.css') }}?v=52">
-<script src="{{ asset('js/livechat.js') }}?v=52"></script>
+  <link rel="stylesheet" href="{{ pwa_asset('css/livechat.css') }}">
+  <script src="{{ pwa_asset('js/livechat.js') }}"></script>
 
 <script>
 (function() {

@@ -12,8 +12,10 @@ const RAW_PRECACHE_URLS = [
   '/css/livechat.css',
   '/js/topup.js',
   '/js/livechat.js',
+  '/js/gacha.js',
   '/js/pwa-register.js',
   '/site.webmanifest',
+  '/assets/Foto/logo.gacha.png',
   '/logo-96.png',
   '/logo.png',
   '/logo-180.png',
@@ -177,17 +179,37 @@ self.addEventListener('message', (event) => {
   }));
 });
 
+/* Dokumen HTML: selalu divalidasi ulang ke server (cache 'no-cache' = boleh
+   304, tapi tidak boleh dilayani dari cache tanpa bertanya). Inilah yang
+   membuat deploy baru langsung terlihat di PWA ter-install. Sengaja tidak
+   dicache: kalau disimpan, halaman berisi data user bisa tampil di perangkat
+   lain yang memakai browser yang sama. */
+async function freshDocument(request) {
+  return fetch(request, { cache: 'no-cache' });
+}
+
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
-  if (url.origin !== self.location.origin || request.mode === 'navigate' || !isCacheableAsset(url)) {
+  if (url.origin !== self.location.origin) {
     return;
   }
 
-  // Dokumen HTML sengaja tidak dicache: halaman harus selalu diambil dari
-  // jaringan supaya deploy baru langsung terlihat di PWA yang ter-install.
+  if (request.mode === 'navigate') {
+    event.respondWith(freshDocument(request));
+    return;
+  }
+
+  if (!isCacheableAsset(url)) {
+    return;
+  }
+
+  // Aset dilayani dari precache build ini, dicocokkan lewat pathname saja.
+  // Halaman masih memakai query versi lamanya (?v=34), jadi tanpa
+  // ignoreSearch request itu akan lolos ke jaringan dan bisa dilayani
+  // cache HTTP yang masih menyimpan file lama.
   event.respondWith(
     precached(request).then((hit) => hit || networkFirst(request))
   );

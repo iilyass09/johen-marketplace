@@ -17,16 +17,15 @@
 
     var KEY = 'jhm_splash_seen';
     var param = new URLSearchParams(window.location.search).get('splash');
-    var standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
-        || window.navigator.standalone === true;
 
+    // Ditampilkan sekali per sesi browser - termasuk saat aplikasi PWA dibuka
+    // dalam mode standalone, karena di sana tetap tidak ada splash lain yang
+    // menutupi layar putih sebelum stylesheet selesai dimuat.
     var show;
     if (param === '0') {
         show = false;
     } else if (param === '1') {
         show = true;
-    } else if (standalone) {
-        show = false;
     } else {
         try { show = sessionStorage.getItem(KEY) !== '1'; } catch (e) { show = true; }
     }

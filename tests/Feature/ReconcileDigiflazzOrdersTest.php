@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Services\BalanceService;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
@@ -263,7 +264,7 @@ class ReconcileDigiflazzOrdersTest extends TestCase
 
     public function test_command_is_registered_in_the_scheduler(): void
     {
-        $events = collect(app(\Illuminate\Console\Scheduling\Schedule::class)->events())
+        $events = collect(app(Schedule::class)->events())
             ->filter(fn ($e) => str_contains($e->command ?? '', 'digiflazz:reconcile'));
 
         $this->assertCount(1, $events, 'digiflazz:reconcile harus terdaftar di routes/console.php.');

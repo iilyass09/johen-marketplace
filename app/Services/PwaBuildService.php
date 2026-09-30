@@ -29,6 +29,7 @@ class PwaBuildService
             public_path('css'),
             public_path('js'),
             public_path('img'),
+            public_path('assets'),
         ];
     }
 
@@ -69,10 +70,16 @@ class PwaBuildService
      */
     public static function stamp(): string
     {
+        static $memo = null;
+
+        if ($memo !== null) {
+            return $memo;
+        }
+
         $stamp = Cache::remember(self::CACHE_KEY, self::CACHE_TTL, function () {
             return substr(hash('sha256', (string) self::lastModified()), 0, 8);
         });
 
-        return (string) $stamp;
+        return $memo = (string) $stamp;
     }
 }

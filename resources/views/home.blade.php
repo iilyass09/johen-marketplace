@@ -434,7 +434,7 @@ window.__loadMoreReset = function() {
   <div class="cta-card">
     <span class="cta-glow-2"></span>
     <a href="https://www.johengaming.id" target="_blank" rel="noopener noreferrer" class="cta-logo-link">
-      <img src="{{ asset('logo.png') }}" alt="Johen Gaming" class="cta-logo">
+      <img src="{{ pwa_asset('logo.png') }}" alt="Johen Gaming" class="cta-logo">
     </a>
     <h2>Kunjungi Website Profile Kami</h2>
     <p>Dapatkan informasi lengkap tentang layanan, promo terbaru, dan update seputar Johen Gaming.</p>

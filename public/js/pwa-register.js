@@ -16,7 +16,6 @@
     var guidePreviousFocus = null;
     var guidePreviousOverflow = null;
     var guidePopupLocked = false;
-    var splashInitialized = false;
 
     function isStandalone() {
         return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
@@ -30,40 +29,6 @@
     function buildStamp() {
         var meta = document.querySelector('meta[name="pwa-build"]');
         return (meta && meta.content) || '0';
-    }
-
-    function hideSplash() {
-        var splash = document.getElementById('pwaSplashScreen');
-        if (!splash || splash.classList.contains('is-hiding')) return;
-        splash.classList.add('is-hiding');
-        window.setTimeout(function () {
-            if (splash.parentNode) splash.parentNode.removeChild(splash);
-        }, 240);
-    }
-
-    function initSplash() {
-        if (splashInitialized || !isStandalone() || !document.body) return;
-        splashInitialized = true;
-        document.documentElement.classList.add('pwa-standalone');
-
-        var splash = document.createElement('div');
-        splash.id = 'pwaSplashScreen';
-        splash.className = 'pwa-splash-screen';
-        splash.setAttribute('aria-hidden', 'true');
-
-        var logo = document.createElement('img');
-        logo.src = '/logo.png';
-        logo.alt = '';
-        logo.setAttribute('aria-hidden', 'true');
-        splash.appendChild(logo);
-        document.body.appendChild(splash);
-
-        if (document.readyState === 'complete') {
-            hideSplash();
-        } else {
-            window.addEventListener('load', hideSplash, { once: true });
-        }
-        window.setTimeout(hideSplash, 1800);
     }
 
     function findTarget(node, selector) {
@@ -178,11 +143,8 @@
         showGuide: openGuide
     };
 
-    if (document.body) {
-        initSplash();
-    } else {
-        document.addEventListener('DOMContentLoaded', initSplash, { once: true });
-    }
+    // Layar pembuka saat aplikasi dibuka handled oleh partials/splash, jadi
+    // tidak perlu overlay logo tambahan di sini.
 
     window.addEventListener('beforeinstallprompt', function (event) {
         event.preventDefault();

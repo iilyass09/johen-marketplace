@@ -83,3 +83,18 @@ if (! function_exists('pwa_build')) {
         return \App\Services\PwaBuildService::stamp();
     }
 }
+
+if (! function_exists('pwa_asset')) {
+    /**
+     * URL aset publik dengan cache-buster otomatis dari stamp build.
+     *
+     * Dipakai menggantikan query versi manual (?v=34). Setiap kali ada file
+     * publik yang berubah, URL-nya ikut berubah, jadi tidak ada aset lama
+     * yang masih tertinggal di cache browser - termasuk di PWA yang sudah
+     * ter-install dan di browser bawaan HP.
+     */
+    function pwa_asset(string $path): string
+    {
+        return asset($path).'?v='.pwa_build();
+    }
+}
