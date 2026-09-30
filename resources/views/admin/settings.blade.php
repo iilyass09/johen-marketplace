@@ -7,9 +7,14 @@
 </div>
 
 @php
-    $digiflazzConfigured = app(\App\Services\DigiflazzService::class)->isConfigured();
+    $digiflazzSvc = app(\App\Services\DigiflazzService::class);
+    $digiflazzConfigured = $digiflazzSvc->isConfigured();
     $lastSync = $settings['digiflazz_last_sync'] ?? null;
     $productCount = $settings['digiflazz_product_count'] ?? '0';
+    $digiflazzKey = $digiflazzSvc->getKey();
+    $digiflazzKeyMasked = $digiflazzKey !== ''
+        ? str_repeat('*', 8) . substr($digiflazzKey, -4)
+        : '';
 @endphp
 
 <form action="{{ route('admin.settings.update') }}" method="POST" enctype="multipart/form-data">
@@ -30,18 +35,32 @@
                 <div class="grid grid-cols-2 gap-3 mb-3">
                     <div>
                         <label class="block text-xs font-medium mb-1">Username</label>
-                        <input type="text" name="digiflazz_username" value="{{ old('digiflazz_username', $settings['digiflazz_username'] ?? '') }}" class="input-field text-sm" placeholder="username">
+                        <input type="text" value="{{ $digiflazzSvc->getUsername() }}" class="input-field text-sm" readonly placeholder="username">
                     </div>
                     <div>
                         <label class="block text-xs font-medium mb-1">Key</label>
-                        <input type="password" name="digiflazz_key" value="{{ old('digiflazz_key', $settings['digiflazz_key'] ?? '') }}" class="input-field text-sm" placeholder="key">
+                        <input type="text" value="{{ $digiflazzKeyMasked }}" class="input-field text-sm" readonly placeholder="key">
                     </div>
                 </div>
-                <div class="flex items-center gap-3">
-                    <select name="digiflazz_production" class="input-field text-sm" style="width:auto;min-width:140px">
-                        <option value="0" {{ ($settings['digiflazz_production'] ?? '0') === '1' ? '' : 'selected' }}>Sandbox</option>
-                        <option value="1" {{ ($settings['digiflazz_production'] ?? '0') === '1' ? 'selected' : '' }}>Production</option>
-                    </select>
+                <div class="alert mb-3" style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.25);color:var(--text-dim);font-size:0.74rem">
+                    <i class="fas fa-lock" style="margin-right:0.25rem"></i>
+                    Kredensial &amp; mode dibaca dari <code>.env</code>
+                    (<code>DIGIFLAZZ_USERNAME</code>, <code>DIGIFLAZZ_KEY</code>, <code>DIGIFLAZZ_PRODUCTION</code>).
+                    Diubah di server, lalu jalankan <code>php artisan config:clear</code>.
+                </div>
+                <div class="flex items-center gap-3 flex-wrap">
+                    <div>
+                        <label class="block text-xs font-medium mb-1">Mode</label>
+                        <select class="input-field text-sm" style="width:auto;min-width:140px" disabled>
+                            <option value="0" {{ $digiflazzSvc->isProduction() ? '' : 'selected' }}>Sandbox</option>
+                            <option value="1" {{ $digiflazzSvc->isProduction() ? 'selected' : '' }}>Production</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium mb-1">Margin (%)</label>
+                        <input type="number" name="digiflazz_margin_percent" value="{{ old('digiflazz_margin_percent', $digiflazzSvc->getMarginPercent()) }}"
+                               min="0" max="100" step="0.1" class="input-field text-sm" style="width:100px">
+                    </div>
                     <span class="badge {{ $digiflazzConfigured ? 'badge-success' : 'badge-error' }}" style="font-size:0.7rem">
                         {{ $digiflazzConfigured ? 'Terkonfigurasi' : 'Belum config' }}
                     </span>

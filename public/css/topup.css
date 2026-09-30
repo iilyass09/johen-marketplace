@@ -13,6 +13,8 @@
   --purple-glow:var(--theme-primary-glow,color-mix(in srgb,var(--purple) 45%,transparent));
   --gold:var(--theme-accent,#f0c419);
   --gold-dark:var(--theme-accent-dark,#a9790a);
+  --star:#ffc419;
+  --star-dim:#8a6a12;
   --text:var(--theme-text,#f5f3fb);
   --text-dim:color-mix(in srgb,var(--theme-text,#f5f3fb) 72%,var(--theme-bg,#100821));
   --text-mute:color-mix(in srgb,var(--theme-text,#f5f3fb) 50%,var(--theme-bg,#100821));
@@ -1194,7 +1196,7 @@ img{max-width:100%;display:block;}
 .gd-review-head h4{font-size:.85rem;font-weight:700;color:var(--text);margin-bottom:.6rem;}
 .gd-review-body{display:flex;align-items:center;gap:.5rem;}
 .gd-review-num{font-family:var(--font-display);font-weight:800;font-size:2rem;color:var(--gold);line-height:1;}
-.gd-stars{font-size:2.5rem;color:var(--text-mute);letter-spacing:3px;}
+.gd-stars{font-size:2.5rem;color:var(--star);letter-spacing:3px;-webkit-text-fill-color:var(--star);text-shadow:0 0 12px color-mix(in srgb,var(--star) 45%,transparent);}
 
 .gd-help-section strong{display:block;font-size:.82rem;color:var(--text);}
 .gd-help-section p{font-size:.75rem;color:var(--text-dim);margin-top:.15rem;}
@@ -1242,7 +1244,7 @@ img{max-width:100%;display:block;}
   background:var(--surface-2);border:1.5px solid var(--border);
   border-radius:11px;padding:.75rem .8rem;cursor:pointer;
   transition:border-color .16s ease,background .16s ease,transform .12s ease;
-  font-family:inherit;color:inherit;width:100%;
+  font-family:inherit;color:inherit;width:100%;text-decoration:none;
 }
 .gd-pkg-card:hover{border-color:var(--border-strong);transform:translateY(-1px);}
 .gd-pkg-card.selected{

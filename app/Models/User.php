@@ -29,6 +29,16 @@ class User extends Authenticatable
         ];
     }
 
+    public function balance()
+    {
+        return $this->hasOne(UserBalance::class);
+    }
+
+    public function balanceTransactions(): HasMany
+    {
+        return $this->hasMany(BalanceTransaction::class)->latest('id');
+    }
+
     public function isAdmin(): bool
     {
         return (bool) $this->is_admin;

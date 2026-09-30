@@ -11,3 +11,15 @@ Artisan::command('inspire', function () {
 // Sinkronisasi rutin listing Jual Beli Akun dari johengaming.id.
 // Aktif bila cron `php artisan schedule:run` dipasang di server.
 Schedule::command('jba:sync-johengaming')->dailyAt('02:30');
+
+/*
+ * Rekonsiliasi topup Digiflazz.
+ *
+ * WAJIB aktifkan cron scheduler di server:
+ *   * * * * * cd /path/proyek && php artisan schedule:run >> /dev/null 2>&1
+ *
+ * Tanpa command ini, order yang webhook Digiflazz-nya tidak sampai akan
+ * menggantung selamanya di status "processing" dan saldonya tidak pernah
+ * dikembalikan ke user.
+ */
+Schedule::command('digiflazz:reconcile')->everyFiveMinutes()->withoutOverlapping();

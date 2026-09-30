@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Transaction;
 use App\Models\Voucher;
+use App\Services\BalanceService;
 use App\Services\DigiflazzService;
 use App\Services\PaymentGatewayService;
 use App\Services\XenditService;
@@ -21,12 +22,18 @@ class OrderController extends Controller
     protected DigiflazzService $digiflazz;
     protected XenditService $xendit;
     protected PaymentGatewayService $gateway;
+    protected BalanceService $balance;
 
-    public function __construct(DigiflazzService $digiflazz, XenditService $xendit, PaymentGatewayService $gateway)
-    {
+    public function __construct(
+        DigiflazzService $digiflazz,
+        XenditService $xendit,
+        PaymentGatewayService $gateway,
+        BalanceService $balance
+    ) {
         $this->digiflazz = $digiflazz;
         $this->xendit = $xendit;
         $this->gateway = $gateway;
+        $this->balance = $balance;
     }
 
     public function create(Product $product)
@@ -307,6 +314,10 @@ class OrderController extends Controller
         $skuCodes = $orders->pluck('buyer_sku_code')->unique()->filter();
         $products = Product::whereIn('buyer_sku_code', $skuCodes)->get()->keyBy('buyer_sku_code');
 
-        return view('orders.index', compact('orders', 'brands', 'products'));
+        // Saldo + mutasi untuk panel "Saldo Saya" di menu customer.
+        $balance = $this->balance->balanceFor($user->id);
+        $balanceTransactions = $this->balance->recentFor($user->id, 10);
+
+        return view('orders.index', compact('orders', 'brands', 'products', 'balance', 'balanceTransactions'));
     }
 }

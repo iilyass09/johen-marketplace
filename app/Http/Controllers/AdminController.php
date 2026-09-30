@@ -94,7 +94,7 @@ class AdminController extends Controller
             'xendit_callback_token' => [
                 'label' => 'Xendit callback token terisi',
                 'ok' => (string) config('xendit.callback_token') !== '',
-                'detail' => (string) config('xendit.callback_token') !== '' ? 'Terkonfigurasi.' : 'XENDIT_CALLBACK_TOKEN kosong — webhook akan ditolak.',
+                'detail' => (string) config('xendit.callback_token') !== '' ? 'Terkonfigurasi.' : 'XENDIT_CALLBACK_TOKEN kosong Ã¢â‚¬â€ webhook akan ditolak.',
             ],
             'webhook_route' => [
                 'label' => 'CSRF dikecualikan di webhook',
@@ -109,14 +109,14 @@ class AdminController extends Controller
             'digiflazz_mismatch' => [
                 'label' => 'Digiflazz key & mode konsisten',
                 'ok' => count($this->digiflazz->configProblems()) === 0,
-                'detail' => implode(' ', $this->digiflazz->configProblems()) ?: 'Usia key & mode konsisten (ID: ' . $this->digiflazz->getUsername() . ', production=' . ($this->digiflazz->isProduction() ? 'ya' : 'tidak') . ').',
+                'detail' => implode(' ', $this->digiflazz->configProblems()) ?: 'Key & mode konsisten (username: ' . $this->digiflazz->getUsername() . ', production=' . ($this->digiflazz->isProduction() ? 'ya' : 'tidak') . ').',
             ],
             'simulation' => [
                 'label' => 'Mode simulasi pembayaran',
                 'ok' => !(bool) config('services.payment.simulation'),
                 'detail' => config('services.payment.simulation')
-                    ? 'PAYMENT_SIMULATION=true — order tidak melibatkan pembayaran Digiflazz nyata.'
-                    : 'PAYMENT_SIMULATION=false — pembayaran nyata.',
+                    ? 'PAYMENT_SIMULATION=true Ã¢â‚¬â€ order tidak melibatkan pembayaran Digiflazz nyata.'
+                    : 'PAYMENT_SIMULATION=false Ã¢â‚¬â€ pembayaran nyata.',
             ],
             'push_notification' => [
                 'label' => 'Web Push (notifikasi live chat)',
@@ -134,7 +134,26 @@ class AdminController extends Controller
             'lcadmin' => \App\Models\PushSubscription::where('guard', 'lcadmin')->count(),
         ];
 
-        return view('admin.gateway-status', compact('checks', 'isLocal', 'appUrl', 'pushStats'));
+        $digiflazzConfigured = $this->digiflazz->isConfigured();
+        $balanceResult = $digiflazzConfigured ? $this->digiflazz->checkBalance() : [];
+        $digiflazzBalance = $digiflazzConfigured ? $this->digiflazz->formatBalance($balanceResult) : null;
+        $digiflazzBalanceNumber = (float) ($balanceResult['data']['balance'] ?? $balanceResult['balance'] ?? 0);
+        $digiflazzProductCount = (int) SiteSetting::get('digiflazz_product_count', '0');
+        $digiflazzMarginPercent = $this->digiflazz->getMarginPercent();
+        $digiflazzLastSync = SiteSetting::get('digiflazz_last_sync');
+
+        return view('admin.gateway-status', compact(
+            'checks',
+            'isLocal',
+            'appUrl',
+            'pushStats',
+            'digiflazzConfigured',
+            'digiflazzBalance',
+            'digiflazzBalanceNumber',
+            'digiflazzProductCount',
+            'digiflazzMarginPercent',
+            'digiflazzLastSync',
+        ));
     }
 
     // ---- PRODUCTS ----
@@ -337,6 +356,7 @@ class AdminController extends Controller
             'name' => 'required|string|max:255|unique:brands',
             'category' => 'required|string|max:50',
             'service_type' => 'required|string|in:topup,joki,both',
+            'catalog_group' => 'nullable|string|in:game,pulsa',
             'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'featured_thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'featured_img_1' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
@@ -362,6 +382,7 @@ class AdminController extends Controller
             'name' => $request->name,
             'category' => $request->category,
             'service_type' => $request->input('service_type', 'topup'),
+            'catalog_group' => $request->input('catalog_group', 'game'),
             'description' => $request->description,
             'is_active' => $request->boolean('is_active', true),
             'is_popular' => $request->boolean('is_popular', false),
@@ -407,6 +428,7 @@ class AdminController extends Controller
             'name' => 'required|string|max:255|unique:brands,name,' . $brand->id,
             'category' => 'required|string|max:50',
             'service_type' => 'required|string|in:topup,joki,both',
+            'catalog_group' => 'nullable|string|in:game,pulsa',
             'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'featured_thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'featured_img_1' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
@@ -432,6 +454,7 @@ class AdminController extends Controller
             'name' => $request->name,
             'category' => $request->category,
             'service_type' => $request->input('service_type', 'topup'),
+            'catalog_group' => $request->input('catalog_group', 'game'),
             'description' => $request->description,
             'is_active' => $request->boolean('is_active', true),
             'is_popular' => $request->boolean('is_popular', false),
@@ -940,10 +963,7 @@ class AdminController extends Controller
     public function settings()
     {
         $settings = SiteSetting::allKeyValue();
-        // Ensure digiflazz credentials are available in settings for the view
-        $settings['digiflazz_username'] = $settings['digiflazz_username'] ?? config('digiflazz.username', '');
-        $settings['digiflazz_key'] = $settings['digiflazz_key'] ?? config('digiflazz.key', '');
-        $settings['digiflazz_production'] = $settings['digiflazz_production'] ?? (config('digiflazz.production') ? '1' : '0');
+
         return view('admin.settings', compact('settings'));
     }
 
@@ -963,9 +983,7 @@ class AdminController extends Controller
             'company_address' => 'nullable|string|max:500',
             'company_npwp' => 'nullable|string|max:64',
             'footer_text' => 'nullable|string|max:500',
-            'digiflazz_username' => 'nullable|string|max:255',
-            'digiflazz_key' => 'nullable|string|max:255',
-            'digiflazz_production' => 'nullable|in:0,1',
+            'digiflazz_margin_percent' => 'nullable|numeric|min:0|max:100',
         ]);
 
         $textKeys = ['site_name', 'site_tagline', 'site_description', 'contact_email', 'contact_whatsapp', 'contact_instagram', 'contact_phone_display', 'contact_cs_email', 'contact_cs_hours', 'company_name', 'company_address', 'company_npwp', 'footer_text', 'min_balance_alert'];
@@ -976,20 +994,12 @@ class AdminController extends Controller
             }
         }
 
-        // Save Digiflazz credentials to SiteSetting and update config runtime
-        $digiflazzKeys = ['digiflazz_username', 'digiflazz_key'];
-        foreach ($digiflazzKeys as $key) {
-            if ($request->has($key)) {
-                $value = $request->input($key, '');
-                \App\Models\SiteSetting::set($key, $value);
-                config(["digiflazz." . str_replace('digiflazz_', '', $key) => $value]);
-            }
-        }
-
-        if ($request->has('digiflazz_production')) {
-            $prodValue = $request->input('digiflazz_production') === '1';
-            \App\Models\SiteSetting::set('digiflazz_production', $prodValue ? '1' : '0');
-            config(['digiflazz.production' => $prodValue]);
+        // Kredensial Digiflazz (username/key/production) sengaja TIDAK bisa
+        // disimpan dari sini: sumbernya .env. Row SiteSetting untuk key itu
+        // akan menimpa config() dan memblokir .env, jadi jangan pernah
+        // ditulis ulang dari panel admin.
+        if ($request->has('digiflazz_margin_percent')) {
+            SiteSetting::set('digiflazz_margin_percent', (string) $request->input('digiflazz_margin_percent'));
         }
 
         if ($request->hasFile('site_logo') && $request->file('site_logo')->isValid()) {

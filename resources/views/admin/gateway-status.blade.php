@@ -51,6 +51,46 @@
 
 <div class="card-glass p-5 mt-6">
     <h3 class="font-semibold mb-3">
+        <i class="fas fa-wallet" style="color:var(--accent)"></i> Saldo Digiflazz
+    </h3>
+    @if(!$digiflazzConfigured)
+        <p class="text-sm" style="color:var(--text-muted)">
+            Digiflazz belum dikonfigurasi. Isi <code>DIGIFLAZZ_USERNAME</code> dan <code>DIGIFLAZZ_KEY</code> di <code>.env</code>, lalu jalankan <code>php artisan config:clear</code>.
+        </p>
+    @elseif($digiflazzBalance === null)
+        <p class="text-sm" style="color:var(--text-muted)">
+            Saldo tidak dapat dibaca saat ini. Periksa koneksi ke <code>api.digiflazz.com</code>.
+        </p>
+    @else
+        <div class="grid grid-cols-3 gap-3">
+            <div class="stat-card" style="text-align:center">
+                <div class="text-2xl font-bold">{{ $digiflazzBalance }}</div>
+                <div class="text-xs" style="color:var(--text-muted)">Saldo tersedia</div>
+            </div>
+            <div class="stat-card" style="text-align:center">
+                <div class="text-2xl font-bold">{{ $digiflazzProductCount }}</div>
+                <div class="text-xs" style="color:var(--text-muted)">Produk tersinkron</div>
+            </div>
+            <div class="stat-card" style="text-align:center">
+                <div class="text-2xl font-bold">{{ $digiflazzMarginPercent }}%</div>
+                <div class="text-xs" style="color:var(--text-muted)">Margin</div>
+            </div>
+        </div>
+        @if($digiflazzLastSync)
+            <p class="text-sm mt-3" style="color:var(--text-muted)">
+                Sinkron terakhir: <strong>{{ \Carbon\Carbon::parse($digiflazzLastSync)->diffForHumans() }}</strong>
+            </p>
+        @endif
+        @if($digiflazzBalanceNumber < 100000)
+            <p class="text-sm mt-2" style="color:var(--warning)">
+                <i class="fas fa-exclamation-triangle"></i> Saldo di bawah Rp100.000 — top up agar pesanan tidak gagal diproses.
+            </p>
+        @endif
+    @endif
+</div>
+
+<div class="card-glass p-5 mt-6">
+    <h3 class="font-semibold mb-3">
         <i class="fas fa-bell" style="color:var(--accent)"></i> Notifikasi Push Chat ({{ $pushStats['configured'] ? 'Terkonfigurasi' : 'VAPID key belum diisi' }})
     </h3>
     <p class="text-sm mb-3" style="color:var(--text-muted)">

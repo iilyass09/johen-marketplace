@@ -34,12 +34,23 @@ class Order extends Model
         'quantity',
         'status',
         'note',
+        'saldo_amount',
+        'saldo_status',
+        'digiflazz_started_at',
+        'digiflazz_poll_count',
+        'last_status_check_at',
+        'saldo_released_at',
+        'reconcile_status',
     ];
 
     protected $appends = ['effective_zone_id'];
 
     protected $casts = [
         'gateway_extra' => 'array',
+        'saldo_amount' => 'decimal:2',
+        'digiflazz_started_at' => 'datetime',
+        'last_status_check_at' => 'datetime',
+        'saldo_released_at' => 'datetime',
     ];
 
     public function user()
@@ -53,13 +64,13 @@ class Order extends Model
      */
     public function getEffectiveZoneIdAttribute(): ?string
     {
-        if (!empty($this->zone_id)) {
+        if (! empty($this->zone_id)) {
             return $this->zone_id;
         }
 
         $name = trim((string) $this->customer_name);
 
-        if ($name !== '' && ctype_digit($name) && !str_contains($this->customer_number, '.')) {
+        if ($name !== '' && ctype_digit($name) && ! str_contains($this->customer_number, '.')) {
             return $name;
         }
 
@@ -69,6 +80,23 @@ class Order extends Model
     public function transaction()
     {
         return $this->hasOne(Transaction::class);
+    }
+
+    public function balanceTransactions()
+    {
+        return $this->hasMany(BalanceTransaction::class);
+    }
+
+    /** Order sudah lunas tapi topup-nya masih berjalan. */
+    public function isAwaitingTopup(): bool
+    {
+        return $this->status === 'processing' && $this->saldo_status === 'held';
+    }
+
+    /** Saldo order ini sudah dikembalikan ke user. */
+    public function isRefunded(): bool
+    {
+        return in_array($this->saldo_status, ['refunded', 'reversed'], true);
     }
 
     public function flashDeal()
@@ -86,7 +114,7 @@ class Order extends Model
         $dealId = $this->flash_deal_id;
         $qty = (int) ($this->quantity ?? 1);
 
-        if (!$dealId || $qty < 1) {
+        if (! $dealId || $qty < 1) {
             return;
         }
 

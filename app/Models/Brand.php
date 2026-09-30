@@ -19,6 +19,7 @@ class Brand extends Model
         'detail_bg_position',
         'category',
         'service_type',
+        'catalog_group',
         'requires_zone_id',
         'description',
         'is_active',
@@ -40,6 +41,7 @@ class Brand extends Model
         if ($this->thumbnail) {
             return media_url($this->thumbnail);
         }
+
         return null;
     }
 
@@ -48,6 +50,7 @@ class Brand extends Model
         if ($this->featured_thumbnail) {
             return media_url($this->featured_thumbnail);
         }
+
         return null;
     }
 
@@ -59,6 +62,7 @@ class Brand extends Model
                 $urls[] = media_url($this->$col);
             }
         }
+
         return $urls;
     }
 
@@ -67,6 +71,7 @@ class Brand extends Model
         if ($this->carousel_bg) {
             return media_url($this->carousel_bg);
         }
+
         return null;
     }
 
@@ -75,6 +80,7 @@ class Brand extends Model
         if ($this->detail_bg) {
             return media_url($this->detail_bg);
         }
+
         return null;
     }
 }

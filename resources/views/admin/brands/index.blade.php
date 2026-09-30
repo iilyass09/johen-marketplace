@@ -65,7 +65,7 @@
                         <div class="flex items-center justify-center gap-1.5">
                             <button type="button" class="btn btn-ghost btn-xs"
                                 data-brand='{{ json_encode(array_merge(
-                                    $brand->only(['id','name','category','service_type','description','sort_order','is_active','is_popular','thumbnail_url','featured_thumbnail_url','carousel_bg_url','detail_bg_url','detail_bg_position']),
+                                    $brand->only(['id','name','category','service_type','catalog_group','description','sort_order','is_active','is_popular','thumbnail_url','featured_thumbnail_url','carousel_bg_url','detail_bg_url','detail_bg_position']),
                                     ['featured_img_urls' => $brand->featured_img_urls]
                                 )) }}'
                                 onclick="openEditModal(this)">
@@ -132,6 +132,15 @@
                         <option value="both">Top Up & Joki</option>
                     </select>
                     <p class="text-red-400 text-xs mt-1 hidden" id="err_service_type"></p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1.5">Grup Katalog</label>
+                    <select name="catalog_group" id="f_catalog_group" class="input-field">
+                        <option value="game">Game</option>
+                        <option value="pulsa">Pulsa / Utility</option>
+                    </select>
+                    <p style="color:var(--text-dim);font-size:0.72rem;margin-top:0.25rem">Hanya brand <strong>Game</strong> yang diimpor saat sinkronisasi Digiflazz.</p>
+                    <p class="text-red-400 text-xs mt-1 hidden" id="err_catalog_group"></p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-1.5">Urutan</label>
@@ -431,6 +440,7 @@ function openCreateModal() {
     initDetailBgFrame(null);
     document.getElementById('detailBgHint').textContent = 'Background header halaman detail game. Maks 2MB.';
     document.getElementById('f_service_type').value = 'topup';
+    document.getElementById('f_catalog_group').value = 'game';
     document.getElementById('f_is_active').checked = true;
     document.getElementById('f_is_popular').checked = false;
     clearBrandErrors();
@@ -447,6 +457,7 @@ function openEditModal(btn) {
     document.getElementById('f_name').value = b.name;
     document.getElementById('f_category').value = b.category || '';
     document.getElementById('f_service_type').value = b.service_type || 'topup';
+    document.getElementById('f_catalog_group').value = b.catalog_group || 'game';
     document.getElementById('f_sort_order').value = b.sort_order;
     document.getElementById('f_description').value = b.description || '';
     document.getElementById('f_is_active').checked = b.is_active;

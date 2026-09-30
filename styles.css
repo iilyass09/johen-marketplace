@@ -12,6 +12,7 @@
   --purple-dark:#4c1d95;
   --purple-glow:rgba(124,58,237,.45);
   --gold:#f0c419;
+  --star:#ffc419;
   --text:#f5f3fb;
   --text-dim:#b3a6d6;
   --text-mute:#7c6ea3;
@@ -1054,7 +1055,7 @@ img{max-width:100%;display:block;}
 .gd-review-head h4{font-size:.85rem;font-weight:700;color:var(--text);margin-bottom:.6rem;}
 .gd-review-body{display:flex;align-items:center;gap:.5rem;}
 .gd-review-num{font-family:var(--font-display);font-weight:800;font-size:2rem;color:var(--gold);line-height:1;}
-.gd-stars{font-size:2.5rem;color:var(--text-mute);letter-spacing:3px;}
+.gd-stars{font-size:2.5rem;color:var(--star);letter-spacing:3px;-webkit-text-fill-color:var(--star);text-shadow:0 0 12px color-mix(in srgb,var(--star) 45%,transparent);}
 
 .gd-help-section strong{display:block;font-size:.82rem;color:var(--text);}
 .gd-help-section p{font-size:.75rem;color:var(--text-dim);margin-top:.15rem;}

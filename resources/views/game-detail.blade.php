@@ -162,7 +162,7 @@
         <div class="gd-pkg-grid gd-pkg-instant" data-type="{{ Str::slug($itemType) }}" data-no-region-filter="true">
           @foreach($typeItems as $p)
             @php $deal = $flashDeals->get($p->id); @endphp
-            <button type="button"
+            <a href="{{ route('orders.create', $p->id) }}"
               class="gd-pkg-card{{ $deal ? ' gd-pkg-card-flash' : '' }}"
               data-id="{{ $p->id }}"
               data-label="{{ $p->product_name }}"
@@ -196,7 +196,7 @@
                 @endif
               </span>
               <span class="gd-pkg-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
-            </button>
+            </a>
           @endforeach
         </div>
       </div>
@@ -225,7 +225,7 @@
              @if($isInstant) data-has-regions="true"@endif>
           @foreach($items as $p)
             @php $deal = $flashDeals->get($p->id); @endphp
-            <button type="button"
+            <a href="{{ route('orders.create', $p->id) }}"
               class="gd-pkg-card{{ $deal ? ' gd-pkg-card-flash' : '' }}"
                 data-id="{{ $p->id }}"
                 data-label="{{ $p->product_name }}"
@@ -259,7 +259,7 @@
                 @endif
               </span>
               <span class="gd-pkg-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
-            </button>
+            </a>
           @endforeach
         </div>
       </div>
@@ -364,8 +364,8 @@
             <h4>Ulasan & Rating</h4>
           </div>
           <div class="gd-review-body">
-            <span class="gd-review-num">0.0</span>
-            <span class="gd-stars">☆☆☆☆☆</span>
+            <span class="gd-review-num">5.0</span>
+            <span class="gd-stars">★★★★★</span>
           </div>
         </div>
       </div>
@@ -488,6 +488,9 @@ let appliedPromo = null;
 document.addEventListener('click', e => {
     const card = e.target.closest('.gd-pkg-card');
     if (!card) return;
+    // Kartu produk juga link ke halaman checkout supaya bisa dibuka/di-crawl
+    // tanpa JavaScript. Di sini alur pemesanan inline yang tetap berjalan.
+    e.preventDefault();
     if (productLock.classList.contains('gd-step-locked')) {
         showToast('Isi Data Akun terlebih dahulu', false);
         userIdInput.scrollIntoView({behavior:'smooth', block:'center'});

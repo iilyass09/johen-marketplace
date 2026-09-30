@@ -20,6 +20,26 @@
 .ord-help-btn{display:inline-flex;align-items:center;gap:.45rem;padding:.55rem 1.1rem;border-radius:10px;background:var(--ord-primary-subtle);color:var(--text);font-size:.8rem;font-weight:700;border:1px solid transparent;transition:all .2s;text-decoration:none;white-space:nowrap;font-family:'Poppins',sans-serif}
 .ord-help-btn:hover{background:rgba(133,77,234,.18);border-color:var(--border-strong);transform:translateY(-2px);box-shadow:0 4px 14px -4px var(--ord-primary-glow)}
 .ord-tabs{display:flex;gap:.5rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.ord-balance{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.25rem 1.5rem;margin-bottom:1.5rem;position:relative;overflow:hidden}
+.ord-balance::after{content:'';position:absolute;inset:0 0 auto auto;width:220px;height:220px;margin-top:-90px;margin-right:-60px;border-radius:50%;background:radial-gradient(circle,rgba(133,77,234,.16),transparent 70%);pointer-events:none}
+.ord-balance-main{position:relative;z-index:1}
+.ord-balance-label{font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-mute)}
+.ord-balance-value{font-size:1.75rem;font-weight:800;letter-spacing:-.02em;margin-top:.15rem;color:var(--text)}
+.ord-balance-hint{font-size:.78rem;color:var(--text-dim);margin-top:.35rem;max-width:60ch}
+.ord-balance-log{margin-top:1rem;border-top:1px solid var(--border);padding-top:.75rem;position:relative;z-index:1}
+.ord-balance-log summary{cursor:pointer;font-size:.8rem;font-weight:600;color:var(--ord-primary);list-style:none;display:inline-flex;align-items:center;gap:.35rem}
+.ord-balance-log summary::-webkit-details-marker{display:none}
+.ord-balance-log summary::before{content:'+';font-weight:800;line-height:1}
+.ord-balance-log[open] summary::before{content:'\2212'}
+.ord-balance-list{list-style:none;margin:.85rem 0 0;padding:0;display:flex;flex-direction:column;gap:.5rem}
+.ord-balance-item{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.6rem .75rem;background:var(--surface-2);border-radius:10px}
+.ord-balance-item-title{font-size:.82rem;font-weight:600;color:var(--text)}
+.ord-balance-item-sub{font-size:.72rem;color:var(--text-mute);margin-top:.1rem}
+.ord-balance-item-amount{font-size:.88rem;font-weight:700;white-space:nowrap}
+.ord-balance-item-amount.is-plus{color:#34d399}
+.ord-balance-item-amount.is-minus{color:#f87171}
+.ord-balance-item-amount.is-neutral{color:var(--text-mute);font-weight:500}
+.ord-refund-note{display:inline-flex;align-items:center;gap:.4rem;margin-top:.4rem;padding:.3rem .6rem;border-radius:8px;background:rgba(148,163,184,.15);color:#94a3b8;font-size:.7rem;font-weight:600}
 .ord-tab{padding:.5rem 1.2rem;border-radius:999px;font-size:.8rem;font-weight:600;background:var(--surface);border:1px solid var(--border);color:var(--text-dim);cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:.4rem;font-family:'Poppins',sans-serif}
 .ord-tab:hover{border-color:var(--ord-primary);color:var(--text)}
 .ord-tab.active{background:var(--ord-primary);color:#fff;border-color:var(--ord-primary);box-shadow:0 0 20px -4px var(--ord-primary-glow)}
@@ -192,6 +212,48 @@ function paymentLogo($type, $logos){
     </a>
   </div>
 
+  {{-- Panel Saldo: pembayaran masuk ke sini, baru dipotong setelah topup
+       berhasil, dan dikembalikan otomatis kalau topup gagal / lewat batas waktu. --}}
+  <div class="ord-balance">
+    <div class="ord-balance-main">
+      <div class="ord-balance-label">Saldo Saya</div>
+      <div class="ord-balance-value">Rp{{ number_format((float) $balance, 0, ',', '.') }}</div>
+      <div class="ord-balance-hint">
+        @if($balance > 0)
+          Saldo ini otomatis kembali ke Anda bila ada topup yang gagal atau tidak selesai.
+        @else
+          Saldo muncul di sini bila ada pembayaran yang belum terpakai atau topup gagal.
+        @endif
+      </div>
+    </div>
+
+    @if($balanceTransactions->isNotEmpty())
+    <details class="ord-balance-log">
+      <summary>Lihat riwayat mutasi saldo</summary>
+      <ul class="ord-balance-list">
+        @foreach($balanceTransactions as $tx)
+          <li class="ord-balance-item">
+            <div class="ord-balance-item-text">
+              <div class="ord-balance-item-title">{{ $tx->typeLabel() }}</div>
+              <div class="ord-balance-item-sub">
+                {{ $tx->order_id ? \App\Models\Order::find($tx->order_id)?->order_id : 'Saldo' }}
+                &middot; {{ $tx->created_at->format('d M Y, H:i') }}
+              </div>
+            </div>
+            <div class="ord-balance-item-amount {{ $tx->affectsBalance() ? ($tx->amount >= 0 ? 'is-plus' : 'is-minus') : 'is-neutral' }}">
+              @if($tx->affectsBalance())
+                {{ $tx->amount >= 0 ? '+' : '-' }}Rp{{ number_format(abs((float) $tx->amount), 0, ',', '.') }}
+              @else
+                &mdash;
+              @endif
+            </div>
+          </li>
+        @endforeach
+      </ul>
+    </details>
+    @endif
+  </div>
+
   <div class="ord-tabs">
     <button class="ord-tab active" data-tab="all">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
@@ -280,6 +342,16 @@ function paymentLogo($type, $logos){
                   @endif
                 </span>
               </div>
+              @if($order->isRefunded())
+                <span class="ord-refund-note">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+                  Saldo Rp{{ number_format((float) $order->saldo_amount, 0, ',', '.') }} sudah dikembalikan
+                </span>
+              @elseif($order->status === 'processing' && $order->saldo_status === 'held')
+                <span class="ord-refund-note" style="background:rgba(96,165,250,.15);color:#60a5fa">
+                  Saldo Rp{{ number_format((float) $order->saldo_amount, 0, ',', '.') }} sedang diproses topup
+                </span>
+              @endif
               <div class="ord-meta">
                 <span class="ord-meta-item">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 12h.01"/></svg>

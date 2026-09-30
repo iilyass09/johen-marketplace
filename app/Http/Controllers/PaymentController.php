@@ -7,7 +7,9 @@ use App\Models\Brand;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Review;
+use App\Services\BalanceService;
 use App\Services\DigiflazzService;
+use App\Services\TopupSettlementService;
 use App\Services\XenditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -18,10 +20,20 @@ class PaymentController extends Controller
 
     protected XenditService $xendit;
 
-    public function __construct(DigiflazzService $digiflazz, XenditService $xendit)
-    {
+    protected TopupSettlementService $settlement;
+
+    protected BalanceService $balance;
+
+    public function __construct(
+        DigiflazzService $digiflazz,
+        XenditService $xendit,
+        TopupSettlementService $settlement,
+        BalanceService $balance,
+    ) {
         $this->digiflazz = $digiflazz;
         $this->xendit = $xendit;
+        $this->settlement = $settlement;
+        $this->balance = $balance;
     }
 
     public function detail(Order $order)
@@ -423,6 +435,9 @@ class PaymentController extends Controller
         return response()->json([
             'status' => $order->status,
             'note' => $order->note,
+            'saldo_status' => $order->saldo_status,
+            'saldo_amount' => (float) $order->saldo_amount,
+            'saldo_refunded' => $order->isRefunded(),
         ]);
     }
 
@@ -562,65 +577,20 @@ class PaymentController extends Controller
 
     private function handlePaid(Order $order): void
     {
-        // Guard idempotency: webhook Xendit bisa terkirim lebih dari sekali.
-        // Hanya proses jika order masih pending agar topUp tidak terkirim ganda.
-        if ($order->status !== 'pending') {
-            return;
-        }
-
-        $order->update(['status' => 'processing']);
-        $order->transaction?->update(['status' => 'processing']);
-
-        $result = $this->digiflazz->topUp(
-            $order->buyer_sku_code,
-            $order->customer_number,
-            $order->order_id,
-            $order->effective_zone_id
-        );
-
-        Log::info('Digiflazz topUp response', ['order_id' => $order->order_id, 'response' => $result]);
-
-        $this->applyDigiflazzResult($order, $result);
+        $this->settlement->markPaid($order);
     }
 
     /**
      * Terapkan hasil respons Digiflazz ke order.
-     * "Pending" berarti transaksi sedang diproses — JANGAN ditandai gagal;
-     * status final akan datang via webhook Digiflazz atau polling checkStatus.
+     *
+     * Logikanya hidup di TopupSettlementService supaya webhook Xendit, webhook
+     * Digiflazz, polling browser, dan command rekonsiliasi memakai satu aturan
+     * yang sama. Method ini tetap ada karena dipanggil dari callback Digiflazz.
      */
     public function applyDigiflazzResult(Order $order, array $result): void
     {
-        if ($order->status === 'success') {
-            return;
-        }
-
-        $data = $result['data'] ?? [];
-        $status = strtolower(trim((string) ($data['status'] ?? '')));
-
-        if ($status === 'sukses') {
-            $order->update([
-                'status' => 'success',
-                'note' => $data['sn'] ?? null,
-            ]);
-            $order->transaction?->update(['status' => 'success', 'raw_response' => $result]);
-
-            $product = Product::where('buyer_sku_code', $order->buyer_sku_code)->first();
-            if ($product) {
-                $product->consumeStock((int) ($order->quantity ?? 1));
-            }
-        } elseif ($status === 'pending') {
-            $order->update(['status' => 'processing', 'note' => null]);
-            $order->transaction?->update(['status' => 'processing', 'raw_response' => $result]);
-        } else {
-            $order->update([
-                'status' => 'failed',
-                'note' => $data['message'] ?? ($data['status'] ?? 'Gagal diproses Digiflazz'),
-            ]);
-            $order->transaction?->update(['status' => 'failed', 'raw_response' => $result]);
-            $order->releaseDiscounts();
-        }
+        $this->settlement->applyResult($order, $result);
     }
-
     /**
      * Webhook dari Digiflazz: push status final transaksi (Sukses/Gagal/Pending).
      * Diverifikasi via header X-Hub-Signature (HMAC-SHA256 body dengan API key).
@@ -666,25 +636,11 @@ class PaymentController extends Controller
 
     /**
      * Polling status transaksi ke Digiflazz untuk order yang masih processing.
+     * Dipanggil dari halaman status order saat user membuka halamannya.
      */
     private function syncFromDigiflazz(Order $order): void
     {
-        try {
-            $result = $this->digiflazz->checkStatus(
-                $order->buyer_sku_code,
-                $order->customer_number,
-                $order->order_id,
-                $order->effective_zone_id
-            );
-
-            $status = strtolower(trim((string) ($result['data']['status'] ?? '')));
-
-            if (in_array($status, ['sukses', 'gagal'], true)) {
-                $this->applyDigiflazzResult($order, $result);
-            }
-        } catch (\Exception $e) {
-            Log::error('Digiflazz status poll failed: '.$e->getMessage());
-        }
+        $this->settlement->poll($order);
     }
 
     private function formatPaymentType(array $invoice): string

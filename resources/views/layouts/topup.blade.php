@@ -4,6 +4,8 @@
         ?? (\App\Models\SiteSetting::get('site_logo') ? media_url(\App\Models\SiteSetting::get('site_logo')) : null)
         ?? asset('logo.png');
     $themeFavicon = $activeThemeLogoUrl ?? asset('logo.png');
+    $splashName = \App\Models\SiteSetting::get('site_name') ?: 'Johen Gaming';
+    $splashTagline = \App\Models\SiteSetting::get('site_tagline') ?: 'Top Up & Joki Game Termurah';
     $biz = business_info();
 @endphp
 <!DOCTYPE html>
@@ -20,13 +22,15 @@
 <link rel="icon" type="image/png" href="{{ $themeFavicon }}">
 <link rel="shortcut icon" href="{{ $themeFavicon }}">
 @include('partials.pwa')
-<link rel="stylesheet" href="{{ asset('css/topup.css') }}?v=32">
+<link rel="stylesheet" href="{{ asset('css/topup.css') }}?v=34">
 @if(!empty($activeThemeCss))
 <style>:root{{{ $activeThemeCss }}}</style>
 @endif
+@include('partials.splash-head')
 @stack('styles')
 </head>
 <body>
+@include('partials.splash')
 @include('partials.floating-decoration')
 @include('partials.particle-effect')
 
